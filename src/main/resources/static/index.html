@@ -1,0 +1,1326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" href="data:," />
+    <title>Universal Stylist v10.2</title>
+
+    <link
+            href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+            rel="stylesheet"
+    />
+
+    <style>
+        :root {
+            --brand-red: #e61b2e;
+            --brand-red-dark: #b31221;
+            --soft-bg: #f8f9fa;
+            --text-dark: #161616;
+            --muted: #6c757d;
+            --card-radius: 28px;
+        }
+
+        body {
+            background: linear-gradient(180deg, #f8f9fa 0%, #eef1f4 100%);
+            font-family: "Helvetica Neue", Arial, sans-serif;
+            color: var(--text-dark);
+            min-height: 100vh;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(22px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .hero-title {
+            font-size: clamp(2.4rem, 5vw, 4.3rem);
+            font-weight: 800;
+            letter-spacing: -0.03em;
+        }
+
+        .hero-subtitle {
+            color: var(--muted);
+            font-size: 1.05rem;
+        }
+
+        .scan-hint {
+            color: var(--muted);
+            font-size: 0.96rem;
+        }
+
+        .macy-red {
+            background-color: var(--brand-red);
+            color: white;
+            border: none;
+            transition: 0.2s ease;
+        }
+
+        .macy-red:hover {
+            background-color: var(--brand-red-dark);
+            color: white;
+        }
+
+        .top-button {
+            border-radius: 999px;
+            font-weight: 700;
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+        }
+
+        .search-shell {
+            border-radius: 22px;
+            overflow: hidden;
+            box-shadow: 0 18px 40px rgba(0, 0, 0, 0.08);
+            background: #fff;
+        }
+
+        .search-shell .form-control,
+        .search-shell .form-select,
+        .search-shell .btn {
+            border-radius: 0 !important;
+            min-height: 62px;
+        }
+
+        .search-shell .form-control:focus,
+        .search-shell .form-select:focus {
+            box-shadow: none;
+        }
+
+        .mirror-card {
+            border: none;
+            border-radius: var(--card-radius);
+            box-shadow: 0 18px 50px rgba(0, 0, 0, 0.08);
+            overflow: hidden;
+            animation: slideUp 0.35s ease-out;
+            background: #fff;
+        }
+
+        .stylist-advice {
+            background: #fff5f6;
+            border-left: 5px solid var(--brand-red);
+            border-radius: 18px;
+        }
+
+        .offcanvas {
+            border-radius: 28px 0 0 28px;
+        }
+
+        .bag-item-img {
+            width: 68px;
+            height: 68px;
+            object-fit: cover;
+            border-radius: 14px;
+            background: #eee;
+        }
+
+        .manager-btn {
+            border-radius: 999px;
+            font-weight: 700;
+        }
+
+        .insights-card {
+            background: linear-gradient(180deg, #1d232b 0%, #171b21 100%);
+            border-radius: 24px;
+            box-shadow: 0 18px 40px rgba(0, 0, 0, 0.18);
+        }
+
+        .insights-heading {
+            color: rgba(255, 255, 255, 0.55);
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            font-weight: 800;
+            letter-spacing: 0.12em;
+        }
+
+        .summary-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 18px;
+        }
+
+        .summary-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.07);
+            border-radius: 18px;
+            padding: 14px;
+        }
+
+        .summary-label {
+            color: rgba(255, 255, 255, 0.62);
+            font-size: 0.72rem;
+            text-transform: uppercase;
+            font-weight: 800;
+            letter-spacing: 0.08em;
+            margin-bottom: 6px;
+        }
+
+        .summary-value {
+            color: #ffffff;
+            font-size: 1.05rem;
+            font-weight: 800;
+            line-height: 1.3;
+        }
+
+        .activity-row {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 16px;
+            padding: 12px;
+        }
+
+        .activity-main {
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 0.95rem;
+            font-weight: 600;
+        }
+
+        .activity-meta {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 0.78rem;
+        }
+
+        .activity-table-shell {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 18px;
+            overflow: hidden;
+        }
+
+        .activity-table {
+            width: 100%;
+            color: #fff;
+            font-size: 0.84rem;
+            margin: 0;
+        }
+
+        .activity-table thead th {
+            color: rgba(255, 255, 255, 0.62);
+            font-size: 0.72rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            font-weight: 800;
+            padding: 12px 14px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .activity-table tbody td {
+            padding: 12px 14px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+            vertical-align: middle;
+        }
+
+        .activity-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .activity-table tbody tr:hover {
+            background: rgba(255, 255, 255, 0.04);
+        }
+
+        .event-pill {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 999px;
+            font-size: 0.72rem;
+            font-weight: 800;
+            letter-spacing: 0.04em;
+        }
+
+        .event-scan {
+            background: rgba(50, 205, 50, 0.15);
+            color: #7CFF7C;
+            border: 1px solid rgba(50, 205, 50, 0.25);
+        }
+
+        .event-save {
+            background: rgba(0, 123, 255, 0.15);
+            color: #71B7FF;
+            border: 1px solid rgba(0, 123, 255, 0.25);
+        }
+
+        .trend-row {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 18px;
+            transition: 0.2s ease;
+        }
+
+        .trend-row:hover {
+            transform: translateY(-1px);
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .trend-rank {
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.08);
+            color: #fff;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.88rem;
+            font-weight: 800;
+            margin-right: 12px;
+            flex-shrink: 0;
+        }
+
+        .store-label {
+            color: #6fe0ff;
+            font-weight: 800;
+            text-transform: uppercase;
+            font-size: 0.72rem;
+            letter-spacing: 0.08em;
+        }
+
+        .trend-item {
+            color: rgba(255, 255, 255, 0.88);
+            font-size: 0.98rem;
+            font-weight: 600;
+        }
+
+        .trend-badge {
+            background: var(--brand-red);
+            color: white;
+            font-size: 0.78rem;
+            padding: 8px 14px;
+            border-radius: 999px;
+            font-weight: 800;
+            box-shadow: 0 8px 18px rgba(230, 27, 46, 0.22);
+            white-space: nowrap;
+        }
+
+        .loading-state,
+        .empty-state {
+            color: var(--muted);
+            text-align: center;
+            padding: 3rem 1rem;
+        }
+
+        .total-box {
+            border-radius: 20px;
+        }
+
+        .bag-remove-btn {
+            border-radius: 999px;
+            white-space: nowrap;
+        }
+
+        .form-select-sm {
+            border-radius: 12px;
+            font-weight: 600;
+            background-color: rgba(255, 255, 255, 0.95);
+        }
+
+        .chart-shell {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 18px;
+            padding: 14px;
+        }
+
+        .chart-row {
+            margin-bottom: 14px;
+        }
+
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 6px;
+            gap: 12px;
+        }
+
+        .chart-label {
+            color: #ffffff;
+            font-weight: 700;
+            font-size: 0.9rem;
+        }
+
+        .chart-meta {
+            color: rgba(255, 255, 255, 0.62);
+            font-size: 0.75rem;
+            white-space: nowrap;
+        }
+
+        .chart-bars {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .chart-bar-track {
+            width: 100%;
+            height: 10px;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 999px;
+            overflow: hidden;
+        }
+
+        .chart-bar-scan,
+        .chart-bar-save {
+            height: 100%;
+            border-radius: 999px;
+        }
+
+        .chart-bar-scan {
+            background: linear-gradient(90deg, #57d957, #88ff88);
+        }
+
+        .chart-bar-save {
+            background: linear-gradient(90deg, #3b82f6, #71b7ff);
+        }
+
+        .chart-legend {
+            display: flex;
+            gap: 14px;
+            margin-top: 12px;
+            flex-wrap: wrap;
+        }
+
+        .legend-item {
+            color: rgba(255, 255, 255, 0.72);
+            font-size: 0.76rem;
+            font-weight: 600;
+        }
+
+        .legend-dot {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 6px;
+        }
+
+        .legend-scan {
+            background: #7CFF7C;
+        }
+
+        .legend-save {
+            background: #71B7FF;
+        }
+
+        .status-message {
+            min-height: 24px;
+            font-size: 0.95rem;
+            font-weight: 600;
+        }
+
+        .suggestion-card {
+            border: 1px solid #e9ecef;
+            border-radius: 18px;
+            overflow: hidden;
+            background: #fff;
+            height: 100%;
+            box-shadow: 0 8px 18px rgba(0, 0, 0, 0.06);
+        }
+
+        .suggestion-img {
+            width: 100%;
+            height: 160px;
+            object-fit: cover;
+            background: #f1f3f5;
+        }
+
+        .suggestion-body {
+            padding: 14px;
+        }
+
+        .suggestion-retailer {
+            font-size: 0.72rem;
+            text-transform: uppercase;
+            color: #6c757d;
+            font-weight: 800;
+            letter-spacing: 0.06em;
+            margin-bottom: 4px;
+        }
+
+        .suggestion-name {
+            font-size: 0.98rem;
+            font-weight: 700;
+            color: #161616;
+            margin-bottom: 8px;
+            line-height: 1.35;
+        }
+
+        .suggestion-meta {
+            font-size: 0.88rem;
+            color: #6c757d;
+            margin-top: 8px;
+        }
+
+        .suggestion-badge {
+            display: inline-block;
+            background: #161616;
+            color: #fff;
+            font-size: 0.72rem;
+            font-weight: 700;
+            padding: 6px 10px;
+            border-radius: 999px;
+        }
+
+        @media (max-width: 768px) {
+            .offcanvas {
+                width: 100% !important;
+                border-radius: 0;
+            }
+
+            .search-shell .form-control,
+            .search-shell .form-select,
+            .search-shell .btn {
+                min-height: 56px;
+            }
+
+            .summary-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .activity-table {
+                font-size: 0.78rem;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="container py-4 py-md-5">
+    <div class="text-end mb-4">
+        <button
+                class="btn btn-dark top-button px-4 py-2"
+                type="button"
+                data-bs-toggle="offcanvas"
+                data-bs-target="#bagSidebar"
+                onclick="loadBag()"
+        >
+            🛍️ View My Bag
+        </button>
+    </div>
+
+    <div class="text-center mb-5">
+        <h1 class="hero-title">Universal Stylist</h1>
+        <p class="hero-subtitle mb-2">Smart Mirror Retail Engine v10.2</p>
+        <p class="scan-hint mb-0">
+            Scan an RFID tag to get styling advice, save items, and track trends across retailers.
+        </p>
+    </div>
+
+    <div class="row justify-content-center mb-2">
+        <div class="col-lg-10 col-xl-9">
+            <div class="input-group input-group-lg search-shell">
+                <select
+                        id="retailerSelect"
+                        class="form-select fw-bold"
+                        style="max-width: 165px;"
+                >
+                    <option value="MACY001">Macy's</option>
+                    <option value="ZARA001">Zara</option>
+                    <option value="NORD001">Nordstrom</option>
+                    <option value="NIKE001">Nike</option>
+                </select>
+
+                <select
+                        id="vibeSelect"
+                        class="form-select border-danger text-danger fw-bold"
+                        style="max-width: 170px;"
+                >
+                    <option value="Casual">Casual</option>
+                    <option value="Formal">Formal</option>
+                    <option value="Date Night">Date Night</option>
+                </select>
+
+                <input
+                        type="text"
+                        id="rfidInput"
+                        class="form-control"
+                        placeholder="Scan an RFID Tag"
+                        onkeydown="if(event.key === 'Enter') handleScan()"
+                />
+
+                <button id="scanBtn" class="btn macy-red px-4 fw-bold" onclick="handleScan()">
+                    Scan Item
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="row justify-content-center mb-4">
+        <div class="col-lg-10 col-xl-9">
+            <div id="scanStatus" class="status-message text-center"></div>
+        </div>
+    </div>
+
+    <div id="productCard" class="row justify-content-center d-none">
+        <div class="col-lg-8 col-xl-7">
+            <div class="card mirror-card">
+                <img
+                        id="productImage"
+                        src=""
+                        alt="Product image"
+                        style="height: 360px; object-fit: cover;"
+                        onerror="this.src='https://placehold.co/600x360/eeeeee/999999?text=Image+Not+Found';"
+                />
+
+                <div class="card-body p-4 p-md-5">
+                    <div class="d-flex justify-content-between align-items-start gap-3 mb-3">
+                        <div>
+                            <h6 class="text-muted text-uppercase small mb-1" id="brandLabel">Retailer</h6>
+                            <h2 class="fw-bold mb-0" id="itemText">Item Name</h2>
+                        </div>
+                        <span class="badge bg-dark fs-6 px-3 py-2" id="priceLabel">$0.00</span>
+                    </div>
+
+                    <div id="adviceBox" class="p-4 stylist-advice mb-4">
+                        <h6 class="fw-bold text-danger text-uppercase small mb-2">Stylist Insight</h6>
+                        <p id="adviceText" class="mb-0 fs-5 text-dark">Processing styling logic...</p>
+                    </div>
+
+                    <div class="mb-4">
+                        <h5 class="fw-bold mb-3">🔥 Complete the Look</h5>
+                        <div id="suggestionsRow" class="row g-3">
+                            <div class="col-12 text-muted">Scan an item to see outfit suggestions.</div>
+                        </div>
+                    </div>
+
+                    <button
+                            id="saveBtn"
+                            class="btn btn-dark btn-lg w-100 rounded-pill fw-bold shadow-sm"
+                            onclick="saveToBag()"
+                    >
+                        🎒 Save to My Style Bag
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div
+        class="offcanvas offcanvas-end"
+        tabindex="-1"
+        id="bagSidebar"
+        style="width: 480px;"
+>
+    <div class="offcanvas-header border-bottom">
+        <h4 class="fw-bold mb-0">My Style Bag 🎒</h4>
+        <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
+    </div>
+
+    <div class="offcanvas-body" id="bagContent">
+        <div class="loading-state">Refreshing bag...</div>
+    </div>
+
+    <div class="p-4 border-top bg-light">
+        <button
+                class="btn btn-outline-secondary manager-btn w-100 mb-3"
+                type="button"
+                data-bs-toggle="collapse"
+                data-bs-target="#adminPanel"
+                onclick="loadAllInsights()"
+        >
+            🛠️ Manager Insights
+        </button>
+
+        <div class="collapse" id="adminPanel">
+            <div class="insights-card text-white border-0 p-4">
+                <div class="insights-heading mb-3">Analytics Summary</div>
+                <div id="analyticsSummary" class="summary-grid">
+                    <div class="summary-card">
+                        <div class="summary-label">Loading</div>
+                        <div class="summary-value">Syncing...</div>
+                    </div>
+                </div>
+
+                <div class="insights-heading mb-3 mt-4">Retailer Performance</div>
+                <div id="retailerStats" class="mb-4">
+                    <div class="text-light opacity-75 small">Loading retailer stats...</div>
+                </div>
+
+                <div class="insights-heading mb-3">Retailer Performance Chart</div>
+                <div id="retailerChart" class="chart-shell mb-4">
+                    <div class="text-light opacity-75 small">Loading chart...</div>
+                </div>
+
+                <div class="insights-heading mb-3 mt-4">Live Activity</div>
+
+                <div class="row g-2 mb-3">
+                    <div class="col-6">
+                        <select id="activityEventFilter" class="form-select form-select-sm" onchange="loadActivity(); loadActivityTable();">
+                            <option value="ALL">All Events</option>
+                            <option value="SCAN">Scans Only</option>
+                            <option value="SAVE">Saves Only</option>
+                        </select>
+                    </div>
+                    <div class="col-6">
+                        <select id="activityRetailerFilter" class="form-select form-select-sm" onchange="loadActivity(); loadActivityTable();">
+                            <option value="ALL">All Retailers</option>
+                            <option value="Macy's">Macy's</option>
+                            <option value="Nordstrom">Nordstrom</option>
+                            <option value="Zara">Zara</option>
+                            <option value="Nike">Nike</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div id="activityFeed" class="d-grid gap-2 mb-4">
+                    <div class="text-light opacity-75 small">Loading activity...</div>
+                </div>
+
+                <div class="insights-heading mb-3">Recent Activity Table</div>
+                <div id="activityTableContainer" class="activity-table-shell mb-4">
+                    <div class="text-light opacity-75 small p-3">Loading recent activity...</div>
+                </div>
+
+                <div class="insights-heading mb-3">Global Store Trends</div>
+                <div id="trendContent" class="d-grid gap-2">
+                    <div class="text-light opacity-75 small">Syncing live analytics...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+    console.log("FINAL SYSTEM BOOT: v10.2 MULTI-RETAILER + SMART OUTFIT SUGGESTIONS ACTIVE");
+
+    let currentRfid = "";
+    let currentLoadedItem = null;
+    let activityRefreshStarted = false;
+
+    function setScanStatus(message, type = "muted") {
+        const status = document.getElementById("scanStatus");
+        const classMap = {
+            success: "text-success",
+            danger: "text-danger",
+            muted: "text-muted"
+        };
+
+        status.className = `status-message text-center ${classMap[type] || "text-muted"}`;
+        status.innerText = message || "";
+    }
+
+    function resetProductCard() {
+        currentRfid = "";
+        currentLoadedItem = null;
+
+        document.getElementById("brandLabel").innerText = "Retailer";
+        document.getElementById("itemText").innerText = "Item Name";
+        document.getElementById("adviceText").innerText = "Processing styling logic...";
+        document.getElementById("productImage").src = "";
+        document.getElementById("priceLabel").innerText = "$0.00";
+        document.getElementById("suggestionsRow").innerHTML =
+            `<div class="col-12 text-muted">Scan an item to see outfit suggestions.</div>`;
+        document.getElementById("productCard").classList.add("d-none");
+    }
+
+    function renderSuggestions(suggestions) {
+        const container = document.getElementById("suggestionsRow");
+
+        if (!suggestions || suggestions.length === 0) {
+            container.innerHTML = `
+                <div class="col-12 text-muted">
+                    No outfit suggestions available right now.
+                </div>
+            `;
+            return;
+        }
+
+        container.innerHTML = suggestions.map(item => `
+            <div class="col-md-4">
+                <div class="suggestion-card">
+                    <img
+                        src="${item.imageUrl || ''}"
+                        alt="${item.itemName || 'Suggested item'}"
+                        class="suggestion-img"
+                        onerror="this.src='https://placehold.co/400x160?text=Outfit';"
+                    />
+                    <div class="suggestion-body">
+                        <div class="suggestion-retailer">${item.retailerName || 'Retailer'}</div>
+                        <div class="suggestion-name">${item.itemName || 'Unnamed Item'}</div>
+                        <span class="suggestion-badge">${item.category || 'Item'}</span>
+                        <div class="suggestion-meta">
+                            $${typeof item.price === "number" ? item.price.toFixed(2) : "0.00"}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `).join("");
+    }
+
+    function setProductCard(data) {
+        currentRfid = data.rfid || "";
+        currentLoadedItem = data;
+
+        document.getElementById("brandLabel").innerText = data.retailerName || "Retailer";
+        document.getElementById("itemText").innerText = data.itemName || "Unknown Item";
+        document.getElementById("adviceText").innerText = data.stylingAdvice || "No stylist advice available.";
+        document.getElementById("productImage").src = data.imageUrl || "";
+        document.getElementById("priceLabel").innerText =
+            typeof data.price === "number" ? `$${data.price.toFixed(2)}` : "$0.00";
+
+        renderSuggestions(data.suggestions || []);
+        document.getElementById("productCard").classList.remove("d-none");
+    }
+
+    async function handleScan() {
+        const retailer = document.getElementById("retailerSelect")?.value || "MACY001";
+        const rfid = document.getElementById("rfidInput").value.trim();
+        const vibe = document.getElementById("vibeSelect").value;
+        const scanBtn = document.getElementById("scanBtn");
+
+        if (!rfid) {
+            setScanStatus("Enter or scan an RFID tag first.", "danger");
+            resetProductCard();
+            return;
+        }
+
+        setScanStatus("Scanning item...", "muted");
+        scanBtn.disabled = true;
+        scanBtn.innerText = "Scanning...";
+
+        try {
+            const resp = await fetch(
+                `/api/v1/macy-stylist/scan/${encodeURIComponent(retailer)}/${encodeURIComponent(rfid)}?vibe=${encodeURIComponent(vibe)}`
+            );
+
+            if (!resp.ok) {
+                let errorMessage = "Could not scan this item for the selected retailer.";
+                try {
+                    errorMessage = await resp.text();
+                } catch (e) {
+                    console.error("Unable to read error text", e);
+                }
+                throw new Error(errorMessage || `Scan request failed with status ${resp.status}`);
+            }
+
+            const data = await resp.json();
+
+            setProductCard(data);
+            document.getElementById("rfidInput").value = "";
+            setScanStatus(`Loaded ${data.itemName || "item"} from ${data.retailerName || "retailer"}.`, "success");
+        } catch (error) {
+            console.error("Scan Error:", error);
+            resetProductCard();
+            setScanStatus("Could not scan this item for the selected retailer. Check the retailer and RFID, then try again.", "danger");
+            alert("Could not scan this item for the selected retailer. Check the retailer and RFID, then try again.");
+        } finally {
+            scanBtn.disabled = false;
+            scanBtn.innerText = "Scan Item";
+        }
+    }
+
+    async function saveToBag() {
+        if (!currentRfid || !currentLoadedItem) {
+            setScanStatus("Scan an item before saving it to your bag.", "danger");
+            alert("Scan an item first before saving.");
+            return;
+        }
+
+        const saveBtn = document.getElementById("saveBtn");
+        saveBtn.disabled = true;
+        saveBtn.innerText = "Saving...";
+
+        try {
+            const resp = await fetch(`/api/v1/macy-stylist/save/${encodeURIComponent(currentRfid)}`, {
+                method: "POST"
+            });
+
+            if (!resp.ok) {
+                throw new Error(`Save request failed with status ${resp.status}`);
+            }
+
+            const msg = await resp.text();
+            setScanStatus(msg, "success");
+            alert("✨ " + msg);
+            loadBag();
+            loadAllInsights();
+        } catch (error) {
+            console.error("Save Error:", error);
+            setScanStatus("Unable to save item right now.", "danger");
+            alert("Unable to save item right now.");
+        } finally {
+            saveBtn.disabled = false;
+            saveBtn.innerText = "🎒 Save to My Style Bag";
+        }
+    }
+
+    async function removeFromBag(id) {
+        try {
+            const resp = await fetch(`/api/v1/macy-stylist/bag/${id}`, {
+                method: "DELETE"
+            });
+
+            if (!resp.ok) {
+                throw new Error(`Remove request failed with status ${resp.status}`);
+            }
+
+            loadBag();
+            loadAllInsights();
+        } catch (error) {
+            console.error("Remove Bag Item Error:", error);
+            alert("Unable to remove item right now.");
+        }
+    }
+
+    async function clearBag() {
+        try {
+            const resp = await fetch(`/api/v1/macy-stylist/bag`, {
+                method: "DELETE"
+            });
+
+            if (!resp.ok) {
+                throw new Error(`Clear bag request failed with status ${resp.status}`);
+            }
+
+            loadBag();
+            loadAllInsights();
+        } catch (error) {
+            console.error("Clear Bag Error:", error);
+            alert("Unable to clear bag right now.");
+        }
+    }
+
+    async function loadBag() {
+        const container = document.getElementById("bagContent");
+        container.innerHTML = `<div class="loading-state">Refreshing bag...</div>`;
+
+        try {
+            const resp = await fetch("/api/v1/macy-stylist/bag");
+
+            if (!resp.ok) {
+                throw new Error(`Bag request failed with status ${resp.status}`);
+            }
+
+            const bag = await resp.json();
+            const items = bag.items || [];
+
+            if (items.length === 0) {
+                container.innerHTML = `<div class="empty-state">Bag is empty.</div>`;
+                return;
+            }
+
+            const itemCards = items.map(item => {
+                const name = item.itemName || "Unnamed Item";
+                const retailer = item.retailerName || "Unknown Retailer";
+                const price = typeof item.price === "number" ? item.price.toFixed(2) : "0.00";
+                const imageUrl = item.imageUrl || "";
+                const id = item.id;
+
+                return `
+                    <div class="d-flex align-items-center mb-3 p-3 border rounded-4 bg-white shadow-sm">
+                        <img
+                            src="${imageUrl}"
+                            class="bag-item-img me-3"
+                            alt="${name}"
+                            onerror="this.src='https://placehold.co/68x68?text=Item';"
+                        />
+                        <div class="flex-grow-1">
+                            <div class="fw-bold text-dark">${name}</div>
+                            <div class="text-muted small">${retailer}</div>
+                            <div class="text-danger fw-bold">$${price}</div>
+                        </div>
+                        <button
+                            class="btn btn-sm btn-outline-danger bag-remove-btn ms-2"
+                            onclick="removeFromBag(${id})"
+                        >
+                            Remove
+                        </button>
+                    </div>
+                `;
+            }).join("");
+
+            const totals = `
+                <div class="mt-4 p-4 bg-light rounded-4 border total-box">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Subtotal</span>
+                        <b>$${Number(bag.subtotal || 0).toFixed(2)}</b>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Tax</span>
+                        <b>$${Number(bag.tax || 0).toFixed(2)}</b>
+                    </div>
+                    <div class="d-flex justify-content-between fs-4 fw-bold text-danger border-top pt-3">
+                        <span>Total</span>
+                        <span>$${Number(bag.total || 0).toFixed(2)}</span>
+                    </div>
+                    <button
+                        class="btn btn-outline-dark w-100 rounded-pill mt-3 fw-bold"
+                        onclick="clearBag()"
+                    >
+                        Clear Bag
+                    </button>
+                </div>
+            `;
+
+            container.innerHTML = itemCards + totals;
+        } catch (error) {
+            console.error("Bag Load Error:", error);
+            container.innerHTML = `<div class="empty-state text-danger">Error loading bag.</div>`;
+        }
+    }
+
+    async function loadAnalyticsSummary() {
+        const container = document.getElementById("analyticsSummary");
+        container.innerHTML = `
+            <div class="summary-card">
+                <div class="summary-label">Loading</div>
+                <div class="summary-value">Syncing...</div>
+            </div>
+        `;
+
+        try {
+            const resp = await fetch("/api/v1/macy-stylist/admin/summary");
+
+            if (!resp.ok) {
+                throw new Error(`Summary request failed with status ${resp.status}`);
+            }
+
+            const summary = await resp.json();
+
+            container.innerHTML = `
+                <div class="summary-card">
+                    <div class="summary-label">Total Scans</div>
+                    <div class="summary-value">${summary.totalScans ?? 0}</div>
+                </div>
+                <div class="summary-card">
+                    <div class="summary-label">Total Saves</div>
+                    <div class="summary-value">${summary.totalSaves ?? 0}</div>
+                </div>
+                <div class="summary-card">
+                    <div class="summary-label">Conversion Rate</div>
+                    <div class="summary-value">${Number(summary.conversionRate ?? 0).toFixed(2)}%</div>
+                </div>
+                <div class="summary-card">
+                    <div class="summary-label">Top Retailer</div>
+                    <div class="summary-value">${summary.topRetailer || "N/A"}</div>
+                </div>
+                <div class="summary-card">
+                    <div class="summary-label">Top Scanned Item</div>
+                    <div class="summary-value">${summary.topScannedItem || "N/A"}</div>
+                </div>
+                <div class="summary-card">
+                    <div class="summary-label">Top Saved Item</div>
+                    <div class="summary-value">${summary.topSavedItem || "N/A"}</div>
+                </div>
+            `;
+        } catch (error) {
+            console.error("Analytics Summary Error:", error);
+            container.innerHTML = `
+                <div class="summary-card">
+                    <div class="summary-label">Error</div>
+                    <div class="summary-value">Unable to load summary</div>
+                </div>
+            `;
+        }
+    }
+
+    async function loadRetailerStats() {
+        const container = document.getElementById("retailerStats");
+        container.innerHTML = `<div class="text-light opacity-75 small">Loading retailer stats...</div>`;
+
+        try {
+            const resp = await fetch("/api/v1/macy-stylist/admin/retailers");
+
+            if (!resp.ok) {
+                throw new Error(`Retailer stats failed: ${resp.status}`);
+            }
+
+            const data = await resp.json();
+
+            if (!data || data.length === 0) {
+                container.innerHTML = `<div class="text-light opacity-75 small">No retailer data.</div>`;
+                return;
+            }
+
+            const rows = data.map(r => `
+                <tr>
+                    <td>${r.retailer}</td>
+                    <td>${r.scans}</td>
+                    <td>${r.saves}</td>
+                    <td>${Number(r.conversionRate ?? 0).toFixed(2)}%</td>
+                </tr>
+            `).join("");
+
+            container.innerHTML = `
+                <div class="activity-table-shell">
+                    <table class="activity-table">
+                        <thead>
+                            <tr>
+                                <th>Retailer</th>
+                                <th>Scans</th>
+                                <th>Saves</th>
+                                <th>Conversion</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${rows}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        } catch (err) {
+            console.error("Retailer Stats Error:", err);
+            container.innerHTML = `<div class="text-danger small">Failed to load retailer stats</div>`;
+        }
+    }
+
+    async function loadRetailerChart() {
+        const container = document.getElementById("retailerChart");
+        container.innerHTML = `<div class="text-light opacity-75 small">Loading chart...</div>`;
+
+        try {
+            const resp = await fetch("/api/v1/macy-stylist/admin/retailers");
+
+            if (!resp.ok) throw new Error("Chart load failed");
+
+            const data = await resp.json();
+
+            if (!data || data.length === 0) {
+                container.innerHTML = `<div class="text-light opacity-75 small">No data available.</div>`;
+                return;
+            }
+
+            const max = Math.max(
+                ...data.map(r => Math.max(r.scans || 0, r.saves || 0)),
+                1
+            );
+
+            let html = "";
+
+            data.forEach(r => {
+                const scanWidth = ((r.scans || 0) / max) * 100;
+                const saveWidth = ((r.saves || 0) / max) * 100;
+
+                html += `
+                    <div class="chart-row">
+                        <div class="chart-header">
+                            <div class="chart-label">${r.retailer}</div>
+                            <div class="chart-meta">
+                                ${r.scans || 0} scans • ${r.saves || 0} saves • ${Number(r.conversionRate || 0).toFixed(2)}%
+                            </div>
+                        </div>
+
+                        <div class="chart-bars">
+                            <div class="chart-bar-track">
+                                <div class="chart-bar-scan" style="width:${scanWidth}%"></div>
+                            </div>
+
+                            <div class="chart-bar-track mt-1">
+                                <div class="chart-bar-save" style="width:${saveWidth}%"></div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = html + `
+                <div class="chart-legend mt-3">
+                    <div class="legend-item">
+                        <span class="legend-dot legend-scan"></span> Scans
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-dot legend-save"></span> Saves
+                    </div>
+                </div>
+            `;
+        } catch (err) {
+            console.error(err);
+            container.innerHTML = `<div class="text-danger small">Chart failed</div>`;
+        }
+    }
+
+    async function loadActivity() {
+        const container = document.getElementById("activityFeed");
+        const eventType = document.getElementById("activityEventFilter")?.value || "ALL";
+        const retailer = document.getElementById("activityRetailerFilter")?.value || "ALL";
+
+        container.innerHTML = `<div class="text-light opacity-75 small">Loading activity...</div>`;
+
+        try {
+            const resp = await fetch(
+                `/api/v1/macy-stylist/admin/activity?eventType=${encodeURIComponent(eventType)}&retailer=${encodeURIComponent(retailer)}`
+            );
+
+            if (!resp.ok) {
+                throw new Error(`Activity request failed with status ${resp.status}`);
+            }
+
+            const data = await resp.json();
+
+            if (!data || data.length === 0) {
+                container.innerHTML = `<div class="text-light opacity-75 small">No matching activity.</div>`;
+                return;
+            }
+
+            let html = "";
+
+            data.forEach(item => {
+                const icon = item.eventType === "SCAN" ? "🟢" : "🔵";
+
+                html += `
+                    <div class="activity-row d-flex justify-content-between align-items-start gap-3">
+                        <div>
+                            <div class="activity-main">${icon} <strong>${item.eventType}</strong> ${item.item}</div>
+                            <div class="store-label mt-1">${item.retailer}</div>
+                        </div>
+                        <div class="activity-meta">${item.timeAgo}</div>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = html;
+        } catch (error) {
+            console.error("Activity Feed Error:", error);
+            container.innerHTML = `<div class="text-danger small">Failed to load activity.</div>`;
+        }
+    }
+
+    async function loadActivityTable() {
+        const container = document.getElementById("activityTableContainer");
+        const eventType = document.getElementById("activityEventFilter")?.value || "ALL";
+        const retailer = document.getElementById("activityRetailerFilter")?.value || "ALL";
+
+        container.innerHTML = `<div class="text-light opacity-75 small p-3">Loading recent activity...</div>`;
+
+        try {
+            const resp = await fetch(
+                `/api/v1/macy-stylist/admin/activity?eventType=${encodeURIComponent(eventType)}&retailer=${encodeURIComponent(retailer)}`
+            );
+
+            if (!resp.ok) {
+                throw new Error(`Activity table request failed with status ${resp.status}`);
+            }
+
+            const data = await resp.json();
+
+            if (!data || data.length === 0) {
+                container.innerHTML = `<div class="text-light opacity-75 small p-3">No matching activity.</div>`;
+                return;
+            }
+
+            const rows = data.map(item => {
+                const pillClass = item.eventType === "SCAN" ? "event-pill event-scan" : "event-pill event-save";
+                const exactTime = formatTimestamp(item.createdAt);
+
+                return `
+                    <tr>
+                        <td><span class="${pillClass}">${item.eventType}</span></td>
+                        <td>${item.retailer}</td>
+                        <td>${item.item}</td>
+                        <td>${exactTime}</td>
+                    </tr>
+                `;
+            }).join("");
+
+            container.innerHTML = `
+                <table class="activity-table">
+                    <thead>
+                        <tr>
+                            <th>Event</th>
+                            <th>Retailer</th>
+                            <th>Item</th>
+                            <th>Timestamp</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${rows}
+                    </tbody>
+                </table>
+            `;
+        } catch (error) {
+            console.error("Activity Table Error:", error);
+            container.innerHTML = `<div class="text-danger small p-3">Failed to load activity table.</div>`;
+        }
+    }
+
+    async function loadTrends() {
+        const container = document.getElementById("trendContent");
+        container.innerHTML = `<div class="text-light opacity-75 small">Syncing live analytics...</div>`;
+
+        try {
+            const resp = await fetch("/api/v1/macy-stylist/admin/trends");
+
+            if (!resp.ok) {
+                throw new Error(`Trend request failed with status ${resp.status}`);
+            }
+
+            const trendList = await resp.json();
+
+            if (!trendList || trendList.length === 0) {
+                container.innerHTML = `<div class="text-light opacity-75 small">No trend data yet.</div>`;
+                return;
+            }
+
+            let html = "";
+
+            for (let i = 0; i < trendList.length; i++) {
+                const trend = trendList[i];
+                const store = trend.store || "Retailer";
+                const item = trend.item || "Product";
+                const count = Number(trend.count) || 0;
+                const saveLabel = count === 1 ? "Save" : "Saves";
+
+                html += `
+                    <div class="trend-row p-3 d-flex justify-content-between align-items-center gap-3">
+                        <div class="d-flex align-items-start flex-grow-1">
+                            <div class="trend-rank">#${i + 1}</div>
+                            <div>
+                                <div class="store-label">${store}</div>
+                                <div class="trend-item">${item}</div>
+                            </div>
+                        </div>
+                        <span class="trend-badge">${count} ${saveLabel}</span>
+                    </div>
+                `;
+            }
+
+            container.innerHTML = html;
+        } catch (error) {
+            console.error("Dashboard Render Error:", error);
+            container.innerHTML = `<span class="text-danger small">Sync error: ${error.message}</span>`;
+        }
+    }
+
+    function formatTimestamp(rawTimestamp) {
+        if (!rawTimestamp) return "N/A";
+
+        const date = new Date(rawTimestamp);
+        if (isNaN(date.getTime())) return rawTimestamp;
+
+        return date.toLocaleString();
+    }
+
+    function loadAllInsights() {
+        loadAnalyticsSummary();
+        loadRetailerStats();
+        loadRetailerChart();
+        loadActivity();
+        loadActivityTable();
+        loadTrends();
+    }
+
+    function startActivityRefresh() {
+        if (activityRefreshStarted) return;
+        activityRefreshStarted = true;
+
+        setInterval(() => {
+            const panel = document.getElementById("adminPanel");
+            if (panel && panel.classList.contains("show")) {
+                loadAllInsights();
+            }
+        }, 5000);
+    }
+
+    startActivityRefresh();
+    setScanStatus("Ready to scan.", "muted");
+</script>
+</body>
+</html>

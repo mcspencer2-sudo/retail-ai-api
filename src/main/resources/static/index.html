@@ -18,8 +18,6 @@
             --ink: #111111;
             --ink-soft: #5d6470;
             --line: rgba(17, 17, 17, 0.08);
-            --surface: rgba(255, 255, 255, 0.82);
-            --surface-strong: #ffffff;
             --card-radius: 28px;
             --shadow-soft: 0 16px 45px rgba(15, 23, 42, 0.08);
             --shadow-card: 0 20px 55px rgba(15, 23, 42, 0.12);
@@ -41,14 +39,8 @@
         }
 
         @keyframes slideUp {
-            from {
-                opacity: 0;
-                transform: translateY(22px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+            from { opacity: 0; transform: translateY(22px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
         @keyframes pulseGlow {
@@ -63,14 +55,8 @@
         }
 
         @keyframes softReveal {
-            from {
-                opacity: 0;
-                transform: translateY(18px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+            from { opacity: 0; transform: translateY(18px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
         .page-shell {
@@ -530,9 +516,29 @@
         }
 
         .offcanvas {
-            border-radius: 30px 0 0 30px;
             border: none;
-            background: #f5f6f8;
+        }
+
+        .premium-bag-canvas {
+            background:
+                radial-gradient(circle at top left, rgba(230, 27, 46, 0.06), transparent 22%),
+                linear-gradient(180deg, #f7f8fa 0%, #eef2f5 100%);
+        }
+
+        .premium-bag-header {
+            padding: 24px 24px 18px;
+            border-bottom: 1px solid rgba(17, 17, 17, 0.08);
+            background: rgba(255,255,255,0.72);
+            backdrop-filter: blur(10px);
+        }
+
+        .bag-kicker {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            font-weight: 800;
+            color: var(--ink-soft);
+            margin-bottom: 4px;
         }
 
         .bag-header-title {
@@ -541,55 +547,166 @@
             letter-spacing: -0.03em;
         }
 
+        .premium-bag-footer {
+            border-top: 1px solid rgba(17,17,17,0.08);
+            background: rgba(255,255,255,0.72);
+            backdrop-filter: blur(10px);
+        }
+
+        .bag-empty-shell {
+            padding: 28px 18px;
+            text-align: center;
+            background: rgba(255,255,255,0.78);
+            border: 1px solid rgba(17,17,17,0.06);
+            border-radius: 26px;
+            box-shadow: 0 12px 24px rgba(15, 23, 42, 0.05);
+        }
+
+        .bag-empty-icon {
+            font-size: 2.2rem;
+            margin-bottom: 10px;
+        }
+
+        .bag-empty-title {
+            font-size: 1.1rem;
+            font-weight: 800;
+            color: var(--ink);
+            margin-bottom: 6px;
+        }
+
+        .bag-empty-text {
+            color: var(--ink-soft);
+            font-size: 0.92rem;
+            margin: 0;
+        }
+
+        .bag-section-label {
+            font-size: 0.76rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            font-weight: 800;
+            color: var(--ink-soft);
+            margin-bottom: 14px;
+        }
+
+        .bag-list {
+            display: grid;
+            gap: 14px;
+        }
+
         .bag-item-card {
             display: flex;
             align-items: center;
             gap: 14px;
-            margin-bottom: 14px;
             padding: 14px;
-            border-radius: 22px;
-            background: #fff;
-            border: 1px solid rgba(17, 17, 17, 0.06);
-            box-shadow: 0 12px 24px rgba(15, 23, 42, 0.06);
+            border-radius: 24px;
+            background: rgba(255,255,255,0.95);
+            border: 1px solid rgba(17,17,17,0.06);
+            box-shadow: 0 14px 26px rgba(15, 23, 42, 0.06);
         }
 
         .bag-item-img {
-            width: 72px;
-            height: 72px;
+            width: 76px;
+            height: 76px;
             object-fit: cover;
             border-radius: 18px;
-            background: #eee;
+            background: #ececec;
             flex-shrink: 0;
         }
 
         .bag-item-name {
-            font-size: 0.98rem;
+            font-size: 1rem;
             font-weight: 800;
             color: var(--ink);
             margin-bottom: 4px;
+            line-height: 1.25;
         }
 
         .bag-item-retailer {
-            font-size: 0.82rem;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            font-weight: 800;
             color: var(--ink-soft);
+            margin-bottom: 6px;
         }
 
-        .bag-item-price {
-            font-size: 0.92rem;
-            color: var(--brand-red);
+        .bag-item-meta {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .bag-pill {
+            display: inline-flex;
+            align-items: center;
+            padding: 6px 10px;
+            border-radius: 999px;
+            font-size: 0.72rem;
             font-weight: 800;
+            background: #111;
+            color: white;
+        }
+
+        .bag-price {
+            font-size: 0.95rem;
+            font-weight: 800;
+            color: var(--brand-red);
+        }
+
+        .bag-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-left: auto;
         }
 
         .bag-remove-btn {
             border-radius: 999px;
+            font-weight: 700;
             white-space: nowrap;
         }
 
-        .total-box {
-            border-radius: 24px;
-            background: linear-gradient(180deg, #ffffff 0%, #fbfbfc 100%) !important;
-            border: 1px solid rgba(17, 17, 17, 0.08) !important;
-            box-shadow: 0 12px 28px rgba(15, 23, 42, 0.06);
+        .premium-total-box {
+            margin-top: 20px;
+            border-radius: 28px;
+            background: linear-gradient(180deg, #ffffff 0%, #fbfbfc 100%);
+            border: 1px solid rgba(17,17,17,0.08);
+            box-shadow: 0 16px 30px rgba(15, 23, 42, 0.06);
+            padding: 22px;
+        }
+
+        .total-kicker {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            font-weight: 800;
+            color: var(--ink-soft);
+            margin-bottom: 12px;
+        }
+
+        .total-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            color: var(--ink);
+        }
+
+        .total-row.final {
+            border-top: 1px solid rgba(17,17,17,0.08);
+            padding-top: 14px;
+            margin-top: 10px;
+            font-size: 1.2rem;
+            font-weight: 900;
+        }
+
+        .clear-bag-btn {
+            margin-top: 14px;
+            border-radius: 999px;
+            font-weight: 800;
+            padding: 0.9rem 1rem;
         }
 
         .manager-btn {
@@ -860,13 +977,8 @@
             margin-right: 6px;
         }
 
-        .legend-scan {
-            background: #7CFF7C;
-        }
-
-        .legend-save {
-            background: #71B7FF;
-        }
+        .legend-scan { background: #7CFF7C; }
+        .legend-save { background: #71B7FF; }
 
         .loading-state,
         .empty-state {
@@ -902,17 +1014,9 @@
             margin-bottom: 14px;
         }
 
-        .loading-line.short {
-            width: 28%;
-        }
-
-        .loading-line.medium {
-            width: 52%;
-        }
-
-        .loading-line.long {
-            width: 82%;
-        }
+        .loading-line.short { width: 28%; }
+        .loading-line.medium { width: 52%; }
+        .loading-line.long { width: 82%; }
 
         @media (max-width: 991px) {
             .hero-title {
@@ -1050,7 +1154,6 @@
                         <button id="scanBtn" class="btn scan-button px-4" onclick="handleScan()">
                             Scan Item
                         </button>
-                        </button>
                     </div>
 
                     <div class="text-center mt-3">
@@ -1127,21 +1230,24 @@
 </div>
 
 <div
-        class="offcanvas offcanvas-end"
+        class="offcanvas offcanvas-end premium-bag-canvas"
         tabindex="-1"
         id="bagSidebar"
-        style="width: 500px;"
+        style="width: 520px;"
 >
-    <div class="offcanvas-header border-bottom px-4 py-4">
-        <h4 class="bag-header-title mb-0">My Style Bag 🎒</h4>
+    <div class="offcanvas-header premium-bag-header">
+        <div>
+            <div class="bag-kicker">Personal Style Cart</div>
+            <h4 class="bag-header-title mb-0">My Style Bag 🎒</h4>
+        </div>
         <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
     </div>
 
-    <div class="offcanvas-body px-4" id="bagContent">
+    <div class="offcanvas-body px-4 pt-3" id="bagContent">
         <div class="loading-state">Refreshing bag...</div>
     </div>
 
-    <div class="p-4 border-top bg-light">
+    <div class="premium-bag-footer px-4 pb-4">
         <button
                 class="btn btn-outline-secondary manager-btn w-100 mb-3"
                 type="button"
@@ -1214,7 +1320,7 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
 <script>
-    console.log("UNIVERSAL STYLIST v11.1 PREMIUM UI + SCAN EXPERIENCE ACTIVE");
+    console.log("UNIVERSAL STYLIST v11.1 PREMIUM UI + BAG ACTIVE");
 
     let currentRfid = "";
     let currentLoadedItem = null;
@@ -1465,7 +1571,15 @@
             const items = bag.items || [];
 
             if (items.length === 0) {
-                container.innerHTML = `<div class="empty-state">Bag is empty.</div>`;
+                container.innerHTML = `
+                    <div class="bag-empty-shell">
+                        <div class="bag-empty-icon">🛍️</div>
+                        <div class="bag-empty-title">Your style bag is empty</div>
+                        <p class="bag-empty-text">
+                            Scan items you love and save them here to build your cross-retailer look.
+                        </p>
+                    </div>
+                `;
                 return;
             }
 
@@ -1475,6 +1589,7 @@
                 const price = typeof item.price === "number" ? item.price.toFixed(2) : "0.00";
                 const imageUrl = item.imageUrl || "";
                 const id = item.id;
+                const category = item.category || "Style Item";
 
                 return `
                     <div class="bag-item-card">
@@ -1482,39 +1597,49 @@
                             src="${imageUrl}"
                             class="bag-item-img"
                             alt="${name}"
-                            onerror="this.src='https://placehold.co/72x72?text=Item';"
+                            onerror="this.src='https://placehold.co/76x76?text=Item';"
                         />
                         <div class="flex-grow-1">
-                            <div class="bag-item-name">${name}</div>
                             <div class="bag-item-retailer">${retailer}</div>
-                            <div class="bag-item-price">$${price}</div>
+                            <div class="bag-item-name">${name}</div>
+                            <div class="bag-item-meta">
+                                <span class="bag-pill">${category}</span>
+                                <span class="bag-price">$${price}</span>
+                            </div>
                         </div>
-                        <button
-                            class="btn btn-sm btn-outline-danger bag-remove-btn"
-                            onclick="removeFromBag(${id})"
-                        >
-                            Remove
-                        </button>
+                        <div class="bag-actions">
+                            <button
+                                class="btn btn-sm btn-outline-danger bag-remove-btn"
+                                onclick="removeFromBag(${id})"
+                            >
+                                Remove
+                            </button>
+                        </div>
                     </div>
                 `;
             }).join("");
 
             const totals = `
-                <div class="mt-4 p-4 total-box">
-                    <div class="d-flex justify-content-between mb-2">
+                <div class="premium-total-box">
+                    <div class="total-kicker">Order Summary</div>
+
+                    <div class="total-row">
                         <span>Subtotal</span>
-                        <b>$${Number(bag.subtotal || 0).toFixed(2)}</b>
+                        <strong>$${Number(bag.subtotal || 0).toFixed(2)}</strong>
                     </div>
-                    <div class="d-flex justify-content-between mb-2">
-                        <span>Tax</span>
-                        <b>$${Number(bag.tax || 0).toFixed(2)}</b>
+
+                    <div class="total-row">
+                        <span>Estimated Tax</span>
+                        <strong>$${Number(bag.tax || 0).toFixed(2)}</strong>
                     </div>
-                    <div class="d-flex justify-content-between fs-4 fw-bold text-danger border-top pt-3">
+
+                    <div class="total-row final">
                         <span>Total</span>
                         <span>$${Number(bag.total || 0).toFixed(2)}</span>
                     </div>
+
                     <button
-                        class="btn btn-outline-dark w-100 rounded-pill mt-3 fw-bold"
+                        class="btn btn-outline-dark w-100 clear-bag-btn"
                         onclick="clearBag()"
                     >
                         Clear Bag
@@ -1522,10 +1647,20 @@
                 </div>
             `;
 
-            container.innerHTML = itemCards + totals;
+            container.innerHTML = `
+                <div class="bag-section-label">Saved Pieces</div>
+                <div class="bag-list">${itemCards}</div>
+                ${totals}
+            `;
         } catch (error) {
             console.error("Bag Load Error:", error);
-            container.innerHTML = `<div class="empty-state text-danger">Error loading bag.</div>`;
+            container.innerHTML = `
+                <div class="bag-empty-shell">
+                    <div class="bag-empty-icon">⚠️</div>
+                    <div class="bag-empty-title">Unable to load bag</div>
+                    <p class="bag-empty-text">Please try again in a moment.</p>
+                </div>
+            `;
         }
     }
 
@@ -1883,44 +2018,6 @@
 
     startActivityRefresh();
     setScanStatus("Ready to scan.", "muted");
-</script>
-<script>
-    async function scanItem() {
-        const retailer = document.querySelector("select").value;
-        const vibe = document.querySelectorAll("select")[1].value;
-        const rfid = document.querySelector("input").value;
-
-        if (!rfid) {
-            alert("Enter RFID");
-            return;
-        }
-
-        // 🔑 Map UI retailer → backend key
-        const retailerMap = {
-            "Macy's": "MACY001",
-            "Zara": "ZARA001",
-            "Nordstrom": "NORD001",
-            "Nike": "NIKE001"
-        };
-
-        const retailerKey = retailerMap[retailer];
-
-        try {
-            const response = await fetch(
-                `/api/v1/macy-stylist/scan/${retailerKey}/${rfid}?vibe=${vibe}`
-            );
-
-            if (!response.ok) throw new Error("Scan failed");
-
-            const data = await response.json();
-
-            renderOutfit(data);
-
-        } catch (error) {
-            console.error(error);
-            alert("Error scanning item");
-        }
-    }
 </script>
 </body>
 </html>

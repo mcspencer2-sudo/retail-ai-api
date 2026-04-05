@@ -1,13 +1,28 @@
 package com.retailai.service;
 
-import com.retailai.model.*;
+import com.retailai.model.ActivityDTO;
+import com.retailai.model.AnalyticsSummaryDTO;
+import com.retailai.model.BagItem;
+import com.retailai.model.BagSummaryResponse;
+import com.retailai.model.OutfitResponse;
+import com.retailai.model.Product;
+import com.retailai.model.RetailerStatsDTO;
+import com.retailai.model.TrendDTO;
+import com.retailai.model.TrendEvent;
 import com.retailai.repository.BagItemRepository;
 import com.retailai.repository.ProductRepository;
 import com.retailai.repository.TrendEventRepository;
 import org.springframework.stereotype.Service;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.Comparator;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -64,6 +79,7 @@ public class InventoryService {
         item.setItemName(product.getItemName());
         item.setImageUrl(product.getImageUrl());
         item.setPrice(product.getPrice());
+        item.setCategory(product.getCategory());
 
         bagItemRepository.save(item);
         saveTrendEvent("SAVE", product);
@@ -208,8 +224,10 @@ public class InventoryService {
                 .filter(p -> !p.getRfid().equalsIgnoreCase(scannedProduct.getRfid()))
                 .filter(p -> targetCategories.contains(normalizeCategory(p.getCategory())))
                 .sorted(Comparator
-                        .comparing((Product p) -> p.getRetailerName().equalsIgnoreCase(scannedProduct.getRetailerName()))
-                        .thenComparing(Product::getRetailerName))
+                        .comparingInt((Product p) -> scoreSuggestion(scannedProduct, p, vibe))
+                        .reversed()
+                        .thenComparing(Product::getRetailerName)
+                        .thenComparing(Product::getItemName))
                 .collect(Collectors.toMap(
                         p -> normalizeCategory(p.getCategory()),
                         p -> p,
@@ -220,6 +238,78 @@ public class InventoryService {
                 .stream()
                 .limit(3)
                 .collect(Collectors.toList());
+    }
+
+    private int scoreSuggestion(Product scannedProduct, Product candidate, String vibe) {
+        int score = 0;
+
+        String scannedCategory = normalizeCategory(scannedProduct.getCategory());
+        String candidateCategory = normalizeCategory(candidate.getCategory());
+        String scannedRetailer = safeLower(scannedProduct.getRetailerName());
+        String candidateRetailer = safeLower(candidate.getRetailerName());
+        String scannedName = safeLower(scannedProduct.getItemName());
+        String candidateName = safeLower(candidate.getItemName());
+        String vibeLower = safeLower(vibe);
+
+        if (!candidateCategory.isBlank()) {
+            score += 40;
+        }
+
+        if (!candidateRetailer.equals(scannedRetailer)) {
+            score += 20;
+        } else {
+            score += 5;
+        }
+
+        double scannedPrice = scannedProduct.getPrice();
+        double candidatePrice = candidate.getPrice();
+
+        if (scannedPrice > 0 && candidatePrice > 0) {
+            double ratio = candidatePrice / scannedPrice;
+
+            if (ratio >= 0.6 && ratio <= 1.4) {
+                score += 20;
+            } else if (ratio >= 0.4 && ratio <= 1.8) {
+                score += 10;
+            }
+        }
+
+        if ("casual".equals(vibeLower)) {
+            if (containsAny(candidateName, "tee", "t-shirt", "shirt", "jeans", "sneakers", "hoodie", "coat")) {
+                score += 12;
+            }
+        }
+
+        if ("formal".equals(vibeLower)) {
+            if (containsAny(candidateName, "shirt", "blazer", "trouser", "oxford", "loafer", "coat", "dress")) {
+                score += 12;
+            }
+        }
+
+        if ("date night".equals(vibeLower)) {
+            if (containsAny(candidateName, "boots", "jacket", "coat", "fitted", "heel", "sleek", "dress")) {
+                score += 12;
+            }
+        }
+
+        if ("tops".equals(scannedCategory) && ("bottoms".equals(candidateCategory) || "shoes".equals(candidateCategory))) {
+            score += 10;
+        }
+        if ("bottoms".equals(scannedCategory) && ("tops".equals(candidateCategory) || "shoes".equals(candidateCategory))) {
+            score += 10;
+        }
+        if ("shoes".equals(scannedCategory) && ("tops".equals(candidateCategory) || "bottoms".equals(candidateCategory))) {
+            score += 10;
+        }
+        if ("outerwear".equals(scannedCategory) && ("tops".equals(candidateCategory) || "bottoms".equals(candidateCategory))) {
+            score += 10;
+        }
+
+        if (containsAny(scannedName, "coat", "jacket") && "outerwear".equals(candidateCategory)) {
+            score -= 10;
+        }
+
+        return score;
     }
 
     private Set<String> getTargetCategories(String scannedCategory, String vibe) {
@@ -259,6 +349,19 @@ public class InventoryService {
         return targets;
     }
 
+    private boolean containsAny(String text, String... keywords) {
+        for (String keyword : keywords) {
+            if (text.contains(keyword)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private String safeLower(String value) {
+        return value == null ? "" : value.trim().toLowerCase();
+    }
+
     private String normalizeCategory(String category) {
         if (category == null) {
             return "";
@@ -286,9 +389,11 @@ public class InventoryService {
     }
 
     private String timeAgo(LocalDateTime createdAt) {
-        if (createdAt == null) return "N/A";
+        if (createdAt == null) {
+            return "N/A";
+        }
 
-        long minutes = java.time.Duration.between(createdAt, LocalDateTime.now()).toMinutes();
+        long minutes = Duration.between(createdAt, LocalDateTime.now()).toMinutes();
 
         if (minutes < 1) return "Just now";
         if (minutes < 60) return minutes + " min ago";

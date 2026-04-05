@@ -10,12 +10,15 @@ public class BagItem {
     private Long id;
 
     private String rfid;
-    private String retailerName; // ✅ ADD THIS
+    private String retailerName;
     private String itemName;
     private String imageUrl;
     private double price;
 
-    // ✅ GETTERS + SETTERS
+    // ✅ ADD THIS
+    private String category;
+
+    // ===== GETTERS & SETTERS =====
 
     public Long getId() {
         return id;
@@ -33,7 +36,7 @@ public class BagItem {
         return retailerName;
     }
 
-    public void setRetailerName(String retailerName) { // ✅ THIS FIXES YOUR ERROR
+    public void setRetailerName(String retailerName) {
         this.retailerName = retailerName;
     }
 
@@ -59,5 +62,14 @@ public class BagItem {
 
     public void setPrice(double price) {
         this.price = price;
+    }
+
+    // ✅ ADD THESE
+    public String getCategory() {
+        return category;
+    }
+
+    public void setCategory(String category) {
+        this.category = category;
     }
 }

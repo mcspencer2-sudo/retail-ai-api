@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link rel="icon" href="data:," />
-    <title>Universal Stylist v11.0</title>
+    <title>Universal Stylist v11.1</title>
 
     <link
             href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
@@ -54,6 +54,28 @@
         @keyframes fadeIn {
             from { opacity: 0; }
             to { opacity: 1; }
+        }
+
+        @keyframes pulseGlow {
+            0% { opacity: 0.7; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.02); }
+            100% { opacity: 0.7; transform: scale(1); }
+        }
+
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+
+        @keyframes softReveal {
+            from {
+                opacity: 0;
+                transform: translateY(18px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         .page-shell {
@@ -191,6 +213,11 @@
             box-shadow: var(--shadow-card);
             padding: 18px;
             backdrop-filter: blur(18px);
+            transition: box-shadow 0.25s ease, transform 0.25s ease;
+        }
+
+        .scanner-frame.scanning-mode {
+            box-shadow: 0 22px 60px rgba(230, 27, 46, 0.14);
         }
 
         .scanner-meta {
@@ -270,16 +297,43 @@
             filter: brightness(0.96);
         }
 
+        .scan-button.scanning {
+            background: linear-gradient(135deg, #111111, #333333);
+            animation: pulseGlow 1.2s ease-in-out infinite;
+        }
+
         .status-message {
             min-height: 26px;
             font-size: 0.95rem;
             font-weight: 700;
-            margin-top: 14px;
+        }
+
+        .scan-status-live {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 16px;
+            background: rgba(255,255,255,0.9);
+            border: 1px solid rgba(17,17,17,0.08);
+            border-radius: 999px;
+            font-weight: 700;
+        }
+
+        .scan-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--brand-red);
+            animation: pulseGlow 1s ease-in-out infinite;
         }
 
         .product-shell {
             margin-top: 26px;
             animation: slideUp 0.35s ease-out;
+        }
+
+        .product-shell.revealed {
+            animation: softReveal 0.45s ease-out;
         }
 
         .mirror-card {
@@ -398,6 +452,7 @@
             height: 100%;
             box-shadow: 0 14px 28px rgba(15, 23, 42, 0.07);
             transition: transform 0.22s ease, box-shadow 0.22s ease;
+            animation: softReveal 0.45s ease-out;
         }
 
         .suggestion-card:hover {
@@ -825,6 +880,45 @@
             padding: 3rem 1rem;
         }
 
+        .loading-card {
+            border-radius: 28px;
+            background: rgba(255,255,255,0.92);
+            box-shadow: var(--shadow-card);
+            padding: 28px;
+            animation: softReveal 0.25s ease-out;
+        }
+
+        .loading-hero {
+            width: 100%;
+            height: 320px;
+            border-radius: 24px;
+            background: linear-gradient(90deg, #f0f0f0 25%, #fafafa 50%, #f0f0f0 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.6s linear infinite;
+            margin-bottom: 24px;
+        }
+
+        .loading-line {
+            height: 16px;
+            border-radius: 999px;
+            background: linear-gradient(90deg, #f0f0f0 25%, #fafafa 50%, #f0f0f0 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.6s linear infinite;
+            margin-bottom: 14px;
+        }
+
+        .loading-line.short {
+            width: 28%;
+        }
+
+        .loading-line.medium {
+            width: 52%;
+        }
+
+        .loading-line.long {
+            width: 82%;
+        }
+
         @media (max-width: 991px) {
             .hero-title {
                 font-size: clamp(2.6rem, 8vw, 4.2rem);
@@ -925,7 +1019,7 @@
                 <div class="scanner-frame">
                     <div class="scanner-meta">
                         <div class="scanner-label">Live scan console</div>
-                        <div class="scanner-pill">Smart Mirror Retail Engine v11.0</div>
+                        <div class="scanner-pill">Smart Mirror Retail Engine v11.1</div>
                     </div>
 
                     <div class="input-group input-group-lg search-shell">
@@ -963,11 +1057,25 @@
                         </button>
                     </div>
 
-                    <div id="scanStatus" class="status-message text-center mt-3"></div>
+                    <div class="text-center mt-3">
+                        <div id="scanStatus" class="status-message"></div>
+                    </div>
                 </div>
             </div>
         </div>
     </section>
+
+    <div id="loadingState" class="row justify-content-center d-none">
+        <div class="col-xl-9">
+            <div class="loading-card">
+                <div class="loading-hero"></div>
+                <div class="loading-line short"></div>
+                <div class="loading-line medium"></div>
+                <div class="loading-line long"></div>
+                <div class="loading-line long"></div>
+            </div>
+        </div>
+    </div>
 
     <div id="productCard" class="row justify-content-center d-none product-shell">
         <div class="col-xl-9">
@@ -1110,7 +1218,7 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
 <script>
-    console.log("UNIVERSAL STYLIST v11.0 PREMIUM UI ACTIVE");
+    console.log("UNIVERSAL STYLIST v11.1 PREMIUM UI + SCAN EXPERIENCE ACTIVE");
 
     let currentRfid = "";
     let currentLoadedItem = null;
@@ -1118,14 +1226,41 @@
 
     function setScanStatus(message, type = "muted") {
         const status = document.getElementById("scanStatus");
+
+        if (!message) {
+            status.innerHTML = "";
+            return;
+        }
+
+        if (type === "muted") {
+            status.innerHTML = `
+                <div class="scan-status-live text-muted">
+                    <span class="scan-dot"></span>
+                    <span>${message}</span>
+                </div>
+            `;
+            return;
+        }
+
         const classMap = {
             success: "text-success",
-            danger: "text-danger",
-            muted: "text-muted"
+            danger: "text-danger"
         };
 
-        status.className = `status-message text-center ${classMap[type] || "text-muted"}`;
-        status.innerText = message || "";
+        status.innerHTML = `<span class="${classMap[type] || "text-muted"} fw-bold">${message}</span>`;
+    }
+
+    function showLoadingState() {
+        document.getElementById("loadingState").classList.remove("d-none");
+        document.getElementById("productCard").classList.add("d-none");
+        document.querySelector(".scanner-frame")?.classList.add("scanning-mode");
+        document.getElementById("scanBtn")?.classList.add("scanning");
+    }
+
+    function hideLoadingState() {
+        document.getElementById("loadingState").classList.add("d-none");
+        document.querySelector(".scanner-frame")?.classList.remove("scanning-mode");
+        document.getElementById("scanBtn")?.classList.remove("scanning");
     }
 
     function resetProductCard() {
@@ -1140,6 +1275,7 @@
         document.getElementById("suggestionsRow").innerHTML =
             `<div class="col-12 text-muted">Scan an item to see outfit suggestions.</div>`;
         document.getElementById("productCard").classList.add("d-none");
+        hideLoadingState();
     }
 
     function renderSuggestions(suggestions) {
@@ -1188,7 +1324,9 @@
             typeof data.price === "number" ? `$${data.price.toFixed(2)}` : "$0.00";
 
         renderSuggestions(data.suggestions || []);
-        document.getElementById("productCard").classList.remove("d-none");
+        const card = document.getElementById("productCard");
+        card.classList.remove("d-none");
+        card.classList.add("revealed");
     }
 
     async function handleScan() {
@@ -1200,14 +1338,19 @@
         if (!rfid) {
             setScanStatus("Enter or scan an RFID tag first.", "danger");
             resetProductCard();
+            hideLoadingState();
             return;
         }
 
-        setScanStatus("Scanning item...", "muted");
+        setScanStatus("Analyzing item and building your look...", "muted");
+        showLoadingState();
+
         scanBtn.disabled = true;
-        scanBtn.innerText = "Scanning...";
+        scanBtn.innerText = "Analyzing...";
 
         try {
+            await new Promise(resolve => setTimeout(resolve, 1200));
+
             const resp = await fetch(
                 `/api/v1/macy-stylist/scan/${encodeURIComponent(retailer)}/${encodeURIComponent(rfid)}?vibe=${encodeURIComponent(vibe)}`
             );
@@ -1224,11 +1367,13 @@
 
             const data = await resp.json();
 
+            hideLoadingState();
             setProductCard(data);
             document.getElementById("rfidInput").value = "";
             setScanStatus(`Loaded ${data.itemName || "item"} from ${data.retailerName || "retailer"}.`, "success");
         } catch (error) {
             console.error("Scan Error:", error);
+            hideLoadingState();
             resetProductCard();
             setScanStatus("Could not scan this item for the selected retailer. Check the retailer and RFID, then try again.", "danger");
             alert("Could not scan this item for the selected retailer. Check the retailer and RFID, then try again.");

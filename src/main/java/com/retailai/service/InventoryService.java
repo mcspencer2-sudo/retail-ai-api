@@ -1,31 +1,17 @@
 package com.retailai.service;
 
-import com.retailai.model.ActivityDTO;
-import com.retailai.model.AnalyticsSummaryDTO;
-import com.retailai.model.BagItem;
-import com.retailai.model.BagSummaryResponse;
-import com.retailai.model.OutfitResponse;
-import com.retailai.model.Product;
-import com.retailai.model.RetailerStatsDTO;
-import com.retailai.model.TrendDTO;
-import com.retailai.model.TrendEvent;
+import com.retailai.model.*;
 import com.retailai.repository.BagItemRepository;
 import com.retailai.repository.ProductRepository;
 import com.retailai.repository.TrendEventRepository;
 import org.springframework.stereotype.Service;
 
-import java.time.Duration;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class InventoryService {
-
-    private static final double TAX_RATE = 0.07;
 
     private final ProductRepository productRepository;
     private final BagItemRepository bagItemRepository;
@@ -42,332 +28,269 @@ public class InventoryService {
         this.aiStylistService = aiStylistService;
     }
 
-    public OutfitResponse scanItem(String retailerKey, String rfid, String vibe) {
+    public OutfitResponse scanItem(String retailerId, String rfid, String vibe) {
+        String retailerName = mapRetailerIdToName(retailerId);
+
         Product product = productRepository.findById(rfid)
-                .orElseThrow(() -> new RuntimeException("Item not found for RFID: " + rfid));
+                .orElseThrow(() -> new RuntimeException("RFID not found: " + rfid));
 
-        String expectedRetailerName = resolveRetailerName(retailerKey);
-        String actualRetailerName = product.getRetailerName();
-
-        if (!normalize(expectedRetailerName).equals(normalize(actualRetailerName))) {
-            throw new RuntimeException(
-                    "RFID " + rfid + " does not belong to retailer " + expectedRetailerName
-            );
+        if (!product.getRetailerName().equalsIgnoreCase(retailerName)) {
+            throw new RuntimeException("RFID does not belong to selected retailer");
         }
 
-        trendEventRepository.save(
-                new TrendEvent(
-                        product.getRetailerName(),
-                        product.getItemName(),
-                        "SCAN",
-                        LocalDateTime.now()
-                )
-        );
+        saveTrendEvent("SCAN", product);
 
-        String advice = aiStylistService.generateAdvice(product, vibe);
-        List<Product> suggestions = getOutfitSuggestions(product);
+        String stylingAdvice = aiStylistService.generateAdvice(product, vibe);
+        List<Product> suggestions = generateSmartSuggestions(product, vibe);
 
         return new OutfitResponse(
                 product.getRfid(),
                 product.getRetailerName(),
                 product.getItemName(),
-                advice,
+                stylingAdvice,
                 product.getImageUrl(),
                 product.getPrice(),
                 suggestions
         );
     }
 
-    public List<Product> getOutfitSuggestions(Product baseItem) {
-        List<Product> all = new ArrayList<>(productRepository.findAll());
-        Collections.shuffle(all);
-
-        Product top = null;
-        Product bottom = null;
-        Product shoes = null;
-        Product outerwear = null;
-
-        String baseCategory = normalize(baseItem.getCategory());
-
-        for (Product p : all) {
-            if (p.getRfid().equalsIgnoreCase(baseItem.getRfid())) {
-                continue;
-            }
-
-            String cat = normalize(p.getCategory());
-
-            if (cat.equals("tops") && top == null && !baseCategory.equals("tops")) {
-                top = p;
-            } else if (cat.equals("bottoms") && bottom == null && !baseCategory.equals("bottoms")) {
-                bottom = p;
-            } else if (cat.equals("shoes") && shoes == null && !baseCategory.equals("shoes")) {
-                shoes = p;
-            } else if (cat.equals("outerwear") && outerwear == null && !baseCategory.equals("outerwear")) {
-                outerwear = p;
-            }
-        }
-
-        List<Product> outfit = new ArrayList<>();
-
-        if (top != null) {
-            outfit.add(top);
-        }
-        if (bottom != null) {
-            outfit.add(bottom);
-        }
-        if (shoes != null) {
-            outfit.add(shoes);
-        }
-        if (outerwear != null) {
-            outfit.add(outerwear);
-        }
-
-        return outfit;
-    }
-
     public String saveToBag(String rfid) {
         Product product = productRepository.findById(rfid)
-                .orElseThrow(() -> new RuntimeException("Cannot save. RFID not found: " + rfid));
+                .orElseThrow(() -> new RuntimeException("Product not found"));
 
-        BagItem bagItem = new BagItem(
-                product.getRfid(),
-                product.getRetailerName(),
-                product.getItemName(),
-                product.getImageUrl(),
-                product.getPrice(),
-                LocalDateTime.now()
-        );
+        BagItem item = new BagItem();
+        item.setRfid(product.getRfid());
+        item.setRetailerName(product.getRetailerName());
+        item.setItemName(product.getItemName());
+        item.setImageUrl(product.getImageUrl());
+        item.setPrice(product.getPrice());
 
-        bagItemRepository.save(bagItem);
-
-        trendEventRepository.save(
-                new TrendEvent(
-                        product.getRetailerName(),
-                        product.getItemName(),
-                        "SAVE",
-                        LocalDateTime.now()
-                )
-        );
+        bagItemRepository.save(item);
+        saveTrendEvent("SAVE", product);
 
         return product.getItemName() + " added to your style bag.";
     }
 
     public BagSummaryResponse getBagSummary() {
         List<BagItem> items = bagItemRepository.findAll();
-
-        double subtotal = items.stream()
-                .mapToDouble(BagItem::getPrice)
-                .sum();
-
-        double tax = subtotal * TAX_RATE;
+        double subtotal = items.stream().mapToDouble(BagItem::getPrice).sum();
+        double tax = subtotal * 0.0825;
         double total = subtotal + tax;
 
         return new BagSummaryResponse(items, subtotal, tax, total);
     }
 
     public String removeBagItem(Long id) {
-        BagItem item = bagItemRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Bag item not found with id: " + id));
-
-        bagItemRepository.delete(item);
-        return item.getItemName() + " removed from your style bag.";
+        bagItemRepository.deleteById(id);
+        return "Item removed from bag.";
     }
 
     public String clearBag() {
         bagItemRepository.deleteAll();
-        return "Style bag cleared.";
+        return "Bag cleared.";
     }
 
     public List<TrendDTO> getTrends() {
-        List<TrendEvent> saveEvents = trendEventRepository.findByEventTypeIgnoreCase("SAVE");
+        Map<String, Long> grouped = trendEventRepository.findAll().stream()
+                .filter(event -> "SAVE".equalsIgnoreCase(event.getEventType()))
+                .collect(Collectors.groupingBy(
+                        e -> e.getRetailerName() + "||" + e.getItemName(),
+                        Collectors.counting()
+                ));
 
-        Map<String, Integer> counts = new HashMap<>();
-
-        for (TrendEvent event : saveEvents) {
-            String key = event.getRetailerName() + "||" + event.getItemName();
-            counts.put(key, counts.getOrDefault(key, 0) + 1);
-        }
-
-        List<TrendDTO> trends = new ArrayList<>();
-
-        for (Map.Entry<String, Integer> entry : counts.entrySet()) {
-            String[] parts = entry.getKey().split("\\|\\|", 2);
-            String store = parts[0];
-            String item = parts[1];
-            int count = entry.getValue();
-
-            trends.add(new TrendDTO(store, item, count));
-        }
-
-        trends.sort((a, b) -> Integer.compare(b.getCount(), a.getCount()));
-        return trends;
+        return grouped.entrySet().stream()
+                .map(entry -> {
+                    String[] parts = entry.getKey().split("\\|\\|");
+                    return new TrendDTO(parts[0], parts[1], entry.getValue());
+                })
+                .sorted(Comparator.comparingLong(TrendDTO::getCount).reversed())
+                .limit(10)
+                .collect(Collectors.toList());
     }
 
     public AnalyticsSummaryDTO getAnalyticsSummary() {
-        List<TrendEvent> allEvents = trendEventRepository.findAll();
+        List<TrendEvent> events = trendEventRepository.findAll();
 
-        long totalScans = 0;
-        long totalSaves = 0;
-
-        Map<String, Integer> scannedItemCounts = new HashMap<>();
-        Map<String, Integer> savedItemCounts = new HashMap<>();
-        Map<String, Integer> retailerCounts = new HashMap<>();
-
-        for (TrendEvent event : allEvents) {
-            String itemName = event.getItemName();
-            String retailerName = event.getRetailerName();
-
-            retailerCounts.put(retailerName, retailerCounts.getOrDefault(retailerName, 0) + 1);
-
-            if ("SCAN".equalsIgnoreCase(event.getEventType())) {
-                totalScans++;
-                scannedItemCounts.put(itemName, scannedItemCounts.getOrDefault(itemName, 0) + 1);
-            } else if ("SAVE".equalsIgnoreCase(event.getEventType())) {
-                totalSaves++;
-                savedItemCounts.put(itemName, savedItemCounts.getOrDefault(itemName, 0) + 1);
-            }
-        }
+        long totalScans = events.stream().filter(e -> "SCAN".equalsIgnoreCase(e.getEventType())).count();
+        long totalSaves = events.stream().filter(e -> "SAVE".equalsIgnoreCase(e.getEventType())).count();
 
         double conversionRate = totalScans == 0 ? 0.0 : ((double) totalSaves / totalScans) * 100.0;
 
-        String topScannedItem = findTopKey(scannedItemCounts);
-        String topSavedItem = findTopKey(savedItemCounts);
-        String topRetailer = findTopKey(retailerCounts);
+        String topRetailer = events.stream()
+                .collect(Collectors.groupingBy(TrendEvent::getRetailerName, Collectors.counting()))
+                .entrySet().stream()
+                .max(Map.Entry.comparingByValue())
+                .map(Map.Entry::getKey)
+                .orElse("N/A");
+
+        String topScannedItem = events.stream()
+                .filter(e -> "SCAN".equalsIgnoreCase(e.getEventType()))
+                .collect(Collectors.groupingBy(TrendEvent::getItemName, Collectors.counting()))
+                .entrySet().stream()
+                .max(Map.Entry.comparingByValue())
+                .map(Map.Entry::getKey)
+                .orElse("N/A");
+
+        String topSavedItem = events.stream()
+                .filter(e -> "SAVE".equalsIgnoreCase(e.getEventType()))
+                .collect(Collectors.groupingBy(TrendEvent::getItemName, Collectors.counting()))
+                .entrySet().stream()
+                .max(Map.Entry.comparingByValue())
+                .map(Map.Entry::getKey)
+                .orElse("N/A");
 
         return new AnalyticsSummaryDTO(
                 totalScans,
                 totalSaves,
-                Math.round(conversionRate * 100.0) / 100.0,
+                conversionRate,
+                topRetailer,
                 topScannedItem,
-                topSavedItem,
-                topRetailer
+                topSavedItem
         );
     }
 
     public List<ActivityDTO> getRecentActivity(String eventType, String retailer) {
-        List<TrendEvent> events;
-
-        boolean allEvents = eventType == null || eventType.isBlank() || eventType.equalsIgnoreCase("ALL");
-        boolean allRetailers = retailer == null || retailer.isBlank() || retailer.equalsIgnoreCase("ALL");
-
-        if (allEvents && allRetailers) {
-            events = trendEventRepository.findAll();
-        } else if (!allEvents && allRetailers) {
-            events = trendEventRepository.findByEventTypeIgnoreCase(eventType);
-        } else if (allEvents) {
-            events = trendEventRepository.findByRetailerNameIgnoreCase(retailer);
-        } else {
-            events = trendEventRepository.findByEventTypeIgnoreCaseAndRetailerNameIgnoreCase(eventType, retailer);
-        }
-
-        events.sort((a, b) -> b.getCreatedAt().compareTo(a.getCreatedAt()));
-
-        List<ActivityDTO> activityList = new ArrayList<>();
-        int limit = Math.min(events.size(), 12);
-
-        for (int i = 0; i < limit; i++) {
-            TrendEvent event = events.get(i);
-
-            activityList.add(new ActivityDTO(
-                    event.getRetailerName(),
-                    event.getItemName(),
-                    event.getEventType(),
-                    getTimeAgo(event.getCreatedAt()),
-                    event.getCreatedAt().toString()
-            ));
-        }
-
-        return activityList;
+        return trendEventRepository.findAll().stream()
+                .sorted(Comparator.comparing(TrendEvent::getCreatedAt).reversed())
+                .filter(e -> "ALL".equalsIgnoreCase(eventType) || e.getEventType().equalsIgnoreCase(eventType))
+                .filter(e -> "ALL".equalsIgnoreCase(retailer) || e.getRetailerName().equalsIgnoreCase(retailer))
+                .limit(20)
+                .map(event -> new ActivityDTO(
+                        event.getEventType(),
+                        event.getRetailerName(),
+                        event.getItemName(),
+                        timeAgo(event.getCreatedAt()),
+                        event.getCreatedAt()
+                ))
+                .collect(Collectors.toList());
     }
 
     public List<RetailerStatsDTO> getRetailerStats() {
         List<TrendEvent> events = trendEventRepository.findAll();
 
-        Map<String, Long> scanCounts = new HashMap<>();
-        Map<String, Long> saveCounts = new HashMap<>();
+        Map<String, Long> scansByRetailer = events.stream()
+                .filter(e -> "SCAN".equalsIgnoreCase(e.getEventType()))
+                .collect(Collectors.groupingBy(TrendEvent::getRetailerName, Collectors.counting()));
 
-        for (TrendEvent event : events) {
-            String retailer = event.getRetailerName();
+        Map<String, Long> savesByRetailer = events.stream()
+                .filter(e -> "SAVE".equalsIgnoreCase(e.getEventType()))
+                .collect(Collectors.groupingBy(TrendEvent::getRetailerName, Collectors.counting()));
 
-            if ("SCAN".equalsIgnoreCase(event.getEventType())) {
-                scanCounts.put(retailer, scanCounts.getOrDefault(retailer, 0L) + 1);
-            } else if ("SAVE".equalsIgnoreCase(event.getEventType())) {
-                saveCounts.put(retailer, saveCounts.getOrDefault(retailer, 0L) + 1);
-            }
-        }
+        Set<String> retailers = new HashSet<>();
+        retailers.addAll(scansByRetailer.keySet());
+        retailers.addAll(savesByRetailer.keySet());
 
-        List<RetailerStatsDTO> stats = new ArrayList<>();
-
-        for (String retailer : scanCounts.keySet()) {
-            long scans = scanCounts.getOrDefault(retailer, 0L);
-            long saves = saveCounts.getOrDefault(retailer, 0L);
-            double conversionRate = scans == 0 ? 0.0 : ((double) saves / scans) * 100.0;
-
-            stats.add(new RetailerStatsDTO(
-                    retailer,
-                    scans,
-                    saves,
-                    Math.round(conversionRate * 100.0) / 100.0
-            ));
-        }
-
-        for (String retailer : saveCounts.keySet()) {
-            if (!scanCounts.containsKey(retailer)) {
-                stats.add(new RetailerStatsDTO(
-                        retailer,
-                        0,
-                        saveCounts.get(retailer),
-                        0.0
-                ));
-            }
-        }
-
-        stats.sort((a, b) -> Long.compare((b.getScans() + b.getSaves()), (a.getScans() + a.getSaves())));
-        return stats;
+        return retailers.stream()
+                .map(retailer -> {
+                    long scans = scansByRetailer.getOrDefault(retailer, 0L);
+                    long saves = savesByRetailer.getOrDefault(retailer, 0L);
+                    double conversion = scans == 0 ? 0.0 : ((double) saves / scans) * 100.0;
+                    return new RetailerStatsDTO(retailer, scans, saves, conversion);
+                })
+                .sorted(Comparator.comparingLong(RetailerStatsDTO::getScans).reversed())
+                .collect(Collectors.toList());
     }
 
-    private String resolveRetailerName(String retailerKey) {
-        String normalized = normalize(retailerKey);
+    private List<Product> generateSmartSuggestions(Product scannedProduct, String vibe) {
+        List<Product> allProducts = productRepository.findAll();
 
-        return switch (normalized) {
-            case "macy001", "macys", "macy's" -> "Macy's";
-            case "zara001", "zara" -> "Zara";
-            case "nike001", "nike" -> "Nike";
-            case "nord001", "nordstrom" -> "Nordstrom";
-            default -> throw new IllegalArgumentException("Unknown retailer: " + retailerKey);
+        Set<String> targetCategories = getTargetCategories(scannedProduct.getCategory(), vibe);
+
+        return allProducts.stream()
+                .filter(p -> !p.getRfid().equalsIgnoreCase(scannedProduct.getRfid()))
+                .filter(p -> targetCategories.contains(normalizeCategory(p.getCategory())))
+                .sorted(Comparator
+                        .comparing((Product p) -> p.getRetailerName().equalsIgnoreCase(scannedProduct.getRetailerName()))
+                        .thenComparing(Product::getRetailerName))
+                .collect(Collectors.toMap(
+                        p -> normalizeCategory(p.getCategory()),
+                        p -> p,
+                        (first, second) -> first,
+                        LinkedHashMap::new
+                ))
+                .values()
+                .stream()
+                .limit(3)
+                .collect(Collectors.toList());
+    }
+
+    private Set<String> getTargetCategories(String scannedCategory, String vibe) {
+        String category = normalizeCategory(scannedCategory);
+        Set<String> targets = new LinkedHashSet<>();
+
+        switch (category) {
+            case "tops" -> {
+                targets.add("bottoms");
+                targets.add("shoes");
+                if ("Formal".equalsIgnoreCase(vibe)) {
+                    targets.add("outerwear");
+                } else {
+                    targets.add("outerwear");
+                }
+            }
+            case "bottoms" -> {
+                targets.add("tops");
+                targets.add("shoes");
+                if (!"Date Night".equalsIgnoreCase(vibe)) {
+                    targets.add("outerwear");
+                }
+            }
+            case "shoes" -> {
+                targets.add("tops");
+                targets.add("bottoms");
+                targets.add("outerwear");
+            }
+            case "outerwear" -> {
+                targets.add("tops");
+                targets.add("bottoms");
+                targets.add("shoes");
+            }
+            default -> {
+                targets.add("tops");
+                targets.add("bottoms");
+                targets.add("shoes");
+            }
+        }
+
+        return targets;
+    }
+
+    private String normalizeCategory(String category) {
+        if (category == null) return "";
+        return category.trim().toLowerCase();
+    }
+
+    private String mapRetailerIdToName(String retailerId) {
+        return switch (retailerId.toUpperCase()) {
+            case "MACY001" -> "Macy's";
+            case "ZARA001" -> "Zara";
+            case "NORD001" -> "Nordstrom";
+            case "NIKE001" -> "Nike";
+            default -> throw new RuntimeException("Unknown retailer ID: " + retailerId);
         };
     }
 
-    private String normalize(String value) {
-        if (value == null) {
-            return "";
-        }
-
-        return value.trim()
-                .replace("’", "'")
-                .toLowerCase();
+    private void saveTrendEvent(String eventType, Product product) {
+        TrendEvent event = new TrendEvent();
+        event.setEventType(eventType);
+        event.setRetailerName(product.getRetailerName());
+        event.setItemName(product.getItemName());
+        event.setCreatedAt(LocalDateTime.now());
+        trendEventRepository.save(event);
     }
 
-    private String findTopKey(Map<String, Integer> counts) {
-        return counts.entrySet()
-                .stream()
-                .max(Map.Entry.comparingByValue())
-                .map(Map.Entry::getKey)
-                .orElse("N/A");
-    }
+    private String timeAgo(LocalDateTime createdAt) {
+        if (createdAt == null) return "N/A";
 
-    private String getTimeAgo(LocalDateTime time) {
-        long seconds = Duration.between(time, LocalDateTime.now()).getSeconds();
+        long minutes = java.time.Duration.between(createdAt, LocalDateTime.now()).toMinutes();
 
-        if (seconds < 60) {
-            return seconds + "s ago";
-        }
-        if (seconds < 3600) {
-            return (seconds / 60) + "m ago";
-        }
-        if (seconds < 86400) {
-            return (seconds / 3600) + "h ago";
-        }
-        return (seconds / 86400) + "d ago";
+        if (minutes < 1) return "Just now";
+        if (minutes < 60) return minutes + " min ago";
+
+        long hours = minutes / 60;
+        if (hours < 24) return hours + " hr ago";
+
+        long days = hours / 24;
+        return days + " day" + (days > 1 ? "s" : "") + " ago";
     }
 }

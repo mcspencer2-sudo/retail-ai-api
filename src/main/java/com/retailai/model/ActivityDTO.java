@@ -1,21 +1,32 @@
 package com.retailai.model;
 
+import java.time.LocalDateTime;
+
 public class ActivityDTO {
+
+    private String eventType;
     private String retailer;
     private String item;
-    private String eventType;
     private String timeAgo;
-    private String createdAt;
+    private LocalDateTime createdAt;
 
     public ActivityDTO() {
     }
 
-    public ActivityDTO(String retailer, String item, String eventType, String timeAgo, String createdAt) {
+    public ActivityDTO(String eventType, String retailer, String item, String timeAgo, LocalDateTime createdAt) {
+        this.eventType = eventType;
         this.retailer = retailer;
         this.item = item;
-        this.eventType = eventType;
         this.timeAgo = timeAgo;
         this.createdAt = createdAt;
+    }
+
+    public String getEventType() {
+        return eventType;
+    }
+
+    public void setEventType(String eventType) {
+        this.eventType = eventType;
     }
 
     public String getRetailer() {
@@ -34,14 +45,6 @@ public class ActivityDTO {
         this.item = item;
     }
 
-    public String getEventType() {
-        return eventType;
-    }
-
-    public void setEventType(String eventType) {
-        this.eventType = eventType;
-    }
-
     public String getTimeAgo() {
         return timeAgo;
     }
@@ -50,11 +53,11 @@ public class ActivityDTO {
         this.timeAgo = timeAgo;
     }
 
-    public String getCreatedAt() {
+    public LocalDateTime getCreatedAt() {
         return createdAt;
     }
 
-    public void setCreatedAt(String createdAt) {
+    public void setCreatedAt(LocalDateTime createdAt) {
         this.createdAt = createdAt;
     }
 }

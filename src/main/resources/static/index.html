@@ -1047,8 +1047,8 @@
                                 onkeydown="if(event.key === 'Enter') handleScan()"
                         />
 
-                        <button id="scanBtn" class="btn scan-button px-4" onclick="handleScan()">
-                            Scan Item
+                        <button class="scan-btn" onclick="scanItem()">Scan Item</button>
+                        Scan Item
                         </button>
                     </div>
 
@@ -1882,6 +1882,44 @@
 
     startActivityRefresh();
     setScanStatus("Ready to scan.", "muted");
+</script>
+<script>
+    async function scanItem() {
+        const retailer = document.querySelector("select").value;
+        const vibe = document.querySelectorAll("select")[1].value;
+        const rfid = document.querySelector("input").value;
+
+        if (!rfid) {
+            alert("Enter RFID");
+            return;
+        }
+
+        // 🔑 Map UI retailer → backend key
+        const retailerMap = {
+            "Macy's": "MACY001",
+            "Zara": "ZARA001",
+            "Nordstrom": "NORD001",
+            "Nike": "NIKE001"
+        };
+
+        const retailerKey = retailerMap[retailer];
+
+        try {
+            const response = await fetch(
+                `/api/v1/macy-stylist/scan/${retailerKey}/${rfid}?vibe=${vibe}`
+            );
+
+            if (!response.ok) throw new Error("Scan failed");
+
+            const data = await response.json();
+
+            renderOutfit(data);
+
+        } catch (error) {
+            console.error(error);
+            alert("Error scanning item");
+        }
+    }
 </script>
 </body>
 </html>

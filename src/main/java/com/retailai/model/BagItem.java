@@ -1,10 +1,8 @@
 package com.retailai.model;
 
 import jakarta.persistence.*;
-import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "bag_items")
 public class BagItem {
 
     @Id
@@ -12,23 +10,12 @@ public class BagItem {
     private Long id;
 
     private String rfid;
-    private String retailerName;
+    private String retailerName; // ✅ ADD THIS
     private String itemName;
     private String imageUrl;
     private double price;
-    private LocalDateTime savedAt;
 
-    public BagItem() {
-    }
-
-    public BagItem(String rfid, String retailerName, String itemName, String imageUrl, double price, LocalDateTime savedAt) {
-        this.rfid = rfid;
-        this.retailerName = retailerName;
-        this.itemName = itemName;
-        this.imageUrl = imageUrl;
-        this.price = price;
-        this.savedAt = savedAt;
-    }
+    // ✅ GETTERS + SETTERS
 
     public Long getId() {
         return id;
@@ -46,7 +33,7 @@ public class BagItem {
         return retailerName;
     }
 
-    public void setRetailerName(String retailerName) {
+    public void setRetailerName(String retailerName) { // ✅ THIS FIXES YOUR ERROR
         this.retailerName = retailerName;
     }
 
@@ -72,13 +59,5 @@ public class BagItem {
 
     public void setPrice(double price) {
         this.price = price;
-    }
-
-    public LocalDateTime getSavedAt() {
-        return savedAt;
-    }
-
-    public void setSavedAt(LocalDateTime savedAt) {
-        this.savedAt = savedAt;
     }
 }

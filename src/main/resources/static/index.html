@@ -51,11 +51,6 @@
             }
         }
 
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-
         @keyframes pulseGlow {
             0% { opacity: 0.7; transform: scale(1); }
             50% { opacity: 1; transform: scale(1.02); }
@@ -213,7 +208,7 @@
             box-shadow: var(--shadow-card);
             padding: 18px;
             backdrop-filter: blur(18px);
-            transition: box-shadow 0.25s ease, transform 0.25s ease;
+            transition: box-shadow 0.25s ease;
         }
 
         .scanner-frame.scanning-mode {

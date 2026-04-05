@@ -28,14 +28,14 @@ public class InventoryService {
         this.aiStylistService = aiStylistService;
     }
 
-    public OutfitResponse scanItem(String retailerId, String rfid, String vibe) {
-        String retailerName = mapRetailerIdToName(retailerId);
+    public OutfitResponse scanItem(String retailerKey, String rfid, String vibe) {
+        String retailerName = mapRetailerKeyToName(retailerKey);
 
         Product product = productRepository.findById(rfid)
                 .orElseThrow(() -> new RuntimeException("RFID not found: " + rfid));
 
         if (!product.getRetailerName().equalsIgnoreCase(retailerName)) {
-            throw new RuntimeException("RFID does not belong to selected retailer");
+            throw new IllegalArgumentException("RFID does not belong to selected retailer");
         }
 
         saveTrendEvent("SCAN", product);
@@ -81,6 +81,10 @@ public class InventoryService {
     }
 
     public String removeBagItem(Long id) {
+        if (!bagItemRepository.existsById(id)) {
+            throw new RuntimeException("Bag item not found: " + id);
+        }
+
         bagItemRepository.deleteById(id);
         return "Item removed from bag.";
     }
@@ -101,9 +105,9 @@ public class InventoryService {
         return grouped.entrySet().stream()
                 .map(entry -> {
                     String[] parts = entry.getKey().split("\\|\\|");
-                    return new TrendDTO(parts[0], parts[1], entry.getValue());
+                    return new TrendDTO(parts[0], parts[1], entry.getValue().intValue());
                 })
-                .sorted(Comparator.comparingLong(TrendDTO::getCount).reversed())
+                .sorted(Comparator.comparingInt(TrendDTO::getCount).reversed())
                 .limit(10)
                 .collect(Collectors.toList());
     }
@@ -111,8 +115,13 @@ public class InventoryService {
     public AnalyticsSummaryDTO getAnalyticsSummary() {
         List<TrendEvent> events = trendEventRepository.findAll();
 
-        long totalScans = events.stream().filter(e -> "SCAN".equalsIgnoreCase(e.getEventType())).count();
-        long totalSaves = events.stream().filter(e -> "SAVE".equalsIgnoreCase(e.getEventType())).count();
+        long totalScans = events.stream()
+                .filter(e -> "SCAN".equalsIgnoreCase(e.getEventType()))
+                .count();
+
+        long totalSaves = events.stream()
+                .filter(e -> "SAVE".equalsIgnoreCase(e.getEventType()))
+                .count();
 
         double conversionRate = totalScans == 0 ? 0.0 : ((double) totalSaves / totalScans) * 100.0;
 
@@ -193,7 +202,6 @@ public class InventoryService {
 
     private List<Product> generateSmartSuggestions(Product scannedProduct, String vibe) {
         List<Product> allProducts = productRepository.findAll();
-
         Set<String> targetCategories = getTargetCategories(scannedProduct.getCategory(), vibe);
 
         return allProducts.stream()
@@ -222,11 +230,7 @@ public class InventoryService {
             case "tops" -> {
                 targets.add("bottoms");
                 targets.add("shoes");
-                if ("Formal".equalsIgnoreCase(vibe)) {
-                    targets.add("outerwear");
-                } else {
-                    targets.add("outerwear");
-                }
+                targets.add("outerwear");
             }
             case "bottoms" -> {
                 targets.add("tops");
@@ -256,17 +260,19 @@ public class InventoryService {
     }
 
     private String normalizeCategory(String category) {
-        if (category == null) return "";
+        if (category == null) {
+            return "";
+        }
         return category.trim().toLowerCase();
     }
 
-    private String mapRetailerIdToName(String retailerId) {
-        return switch (retailerId.toUpperCase()) {
+    private String mapRetailerKeyToName(String retailerKey) {
+        return switch (retailerKey.toUpperCase()) {
             case "MACY001" -> "Macy's";
             case "ZARA001" -> "Zara";
             case "NORD001" -> "Nordstrom";
             case "NIKE001" -> "Nike";
-            default -> throw new RuntimeException("Unknown retailer ID: " + retailerId);
+            default -> throw new IllegalArgumentException("Unknown retailer key: " + retailerKey);
         };
     }
 

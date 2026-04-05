@@ -7,73 +7,66 @@ import org.springframework.stereotype.Service;
 public class AIStylistService {
 
     public String generateAdvice(Product product, String vibe) {
+        String category = normalize(product.getCategory());
+        String item = product.getItemName();
 
-        String category = product.getCategory() != null
-                ? product.getCategory().toLowerCase()
-                : "";
+        return switch (vibe.toLowerCase()) {
 
-        String name = product.getItemName();
+            case "casual" -> casualAdvice(category, item);
+            case "formal" -> formalAdvice(category, item);
+            case "date night" -> dateNightAdvice(category, item);
+            case "streetwear" -> streetwearAdvice(category, item);
 
-        // 🔵 FORMAL VIBE
-        if ("Formal".equalsIgnoreCase(vibe)) {
+            default -> defaultAdvice(item);
+        };
+    }
 
-            if (category.equals("tops")) {
-                return "Build a sharp formal look with this " + name +
-                        ". Pair it with tailored trousers, polished shoes, and a structured coat for a refined finish.";
-            }
+    private String casualAdvice(String category, String item) {
+        return switch (category) {
+            case "tops" -> "This " + item + " is a versatile everyday piece. Pair it with relaxed denim and clean sneakers for an effortless casual look.";
+            case "bottoms" -> "These " + item + " work perfectly with a simple tee or hoodie. Add sneakers to keep it laid-back and comfortable.";
+            case "shoes" -> "These " + item + " are perfect for daily wear. Pair them with jeans and a basic top for a clean casual outfit.";
+            case "outerwear" -> "This " + item + " layers well over simple outfits. Combine with jeans and sneakers for a clean, casual vibe.";
+            default -> defaultAdvice(item);
+        };
+    }
 
-            if (category.equals("bottoms")) {
-                return "These create a strong formal foundation. Pair with a crisp shirt, blazer, and dress shoes for a clean silhouette.";
-            }
+    private String formalAdvice(String category, String item) {
+        return switch (category) {
+            case "tops" -> "This " + item + " creates a polished base. Pair it with tailored trousers and dress shoes for a refined formal look.";
+            case "bottoms" -> "These " + item + " elevate your outfit. Combine with a button-up shirt and sleek shoes for a sharp appearance.";
+            case "shoes" -> "These " + item + " complete a formal outfit. Pair with structured pieces like trousers and a fitted top.";
+            case "outerwear" -> "This " + item + " adds structure and sophistication. Layer over a clean formal outfit for a finished look.";
+            default -> defaultAdvice(item);
+        };
+    }
 
-            if (category.equals("shoes")) {
-                return "These elevate your formal outfit. Combine with tailored pieces and a structured top for a polished appearance.";
-            }
+    private String dateNightAdvice(String category, String item) {
+        return switch (category) {
+            case "tops" -> "This " + item + " is perfect for a stylish night out. Pair it with fitted bottoms and standout shoes to elevate your look.";
+            case "bottoms" -> "These " + item + " create a sleek silhouette. Combine with a sharp top and bold footwear for a date-ready outfit.";
+            case "shoes" -> "These " + item + " add personality to your look. Pair with fitted pieces for a confident and stylish vibe.";
+            case "outerwear" -> "This " + item + " adds an edge to your outfit. Layer over a clean base to stand out on your night out.";
+            default -> defaultAdvice(item);
+        };
+    }
 
-            if (category.equals("outerwear")) {
-                return "This adds structure and authority to your outfit. Layer it over formal basics for a complete elevated look.";
-            }
-        }
+    private String streetwearAdvice(String category, String item) {
+        return switch (category) {
+            case "tops" -> "This " + item + " works great in a streetwear fit. Pair with oversized bottoms and statement sneakers.";
+            case "bottoms" -> "These " + item + " fit perfectly into a streetwear aesthetic. Combine with a graphic tee and bold sneakers.";
+            case "shoes" -> "These " + item + " are the centerpiece of a streetwear outfit. Keep the rest of the outfit clean to let them stand out.";
+            case "outerwear" -> "This " + item + " adds depth to your streetwear look. Layer it over a hoodie or tee for a strong finish.";
+            default -> defaultAdvice(item);
+        };
+    }
 
-        // 🔴 DATE NIGHT VIBE
-        if ("Date Night".equalsIgnoreCase(vibe)) {
+    private String defaultAdvice(String item) {
+        return "This " + item + " is a strong foundation piece. Pair it with complementary items to build a complete outfit.";
+    }
 
-            if (category.equals("tops")) {
-                return "This " + name +
-                        " works great for a confident date-night look. Pair with fitted jeans and sleek shoes for a sharp finish.";
-            }
-
-            if (category.equals("bottoms")) {
-                return "These create a sleek base. Style with a fitted top and bold outerwear to elevate your date-night outfit.";
-            }
-
-            if (category.equals("shoes")) {
-                return "These shoes anchor your outfit with confidence. Pair with dark denim and a clean top for a strong impression.";
-            }
-
-            if (category.equals("outerwear")) {
-                return "This piece adds instant edge. Layer it over a fitted outfit to create a bold and confident date-night look.";
-            }
-        }
-
-        // 🟢 CASUAL (DEFAULT)
-        if (category.equals("tops")) {
-            return "This " + name +
-                    " is a versatile base. Pair it with jeans and sneakers, and add outerwear for a clean layered casual look.";
-        }
-
-        if (category.equals("bottoms")) {
-            return "These are perfect for everyday styling. Match with a relaxed top and sneakers for an easy casual outfit.";
-        }
-
-        if (category.equals("shoes")) {
-            return "These sneakers ground your outfit. Pair with denim and a clean top for a balanced casual look.";
-        }
-
-        if (category.equals("outerwear")) {
-            return "This adds structure to your outfit. Layer it over simple pieces for a refined casual vibe.";
-        }
-
-        return "A versatile piece you can build around with balanced layers and confident styling.";
+    private String normalize(String category) {
+        if (category == null) return "";
+        return category.trim().toLowerCase();
     }
 }

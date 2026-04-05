@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link rel="icon" href="data:," />
-    <title>Universal Stylist v10.2</title>
+    <title>Universal Stylist v11.0</title>
 
     <link
             href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
@@ -14,17 +14,29 @@
     <style>
         :root {
             --brand-red: #e61b2e;
-            --brand-red-dark: #b31221;
-            --soft-bg: #f8f9fa;
-            --text-dark: #161616;
-            --muted: #6c757d;
+            --brand-red-dark: #bb1020;
+            --ink: #111111;
+            --ink-soft: #5d6470;
+            --line: rgba(17, 17, 17, 0.08);
+            --surface: rgba(255, 255, 255, 0.82);
+            --surface-strong: #ffffff;
             --card-radius: 28px;
+            --shadow-soft: 0 16px 45px rgba(15, 23, 42, 0.08);
+            --shadow-card: 0 20px 55px rgba(15, 23, 42, 0.12);
+            --shadow-button: 0 12px 24px rgba(17, 17, 17, 0.12);
+        }
+
+        * {
+            box-sizing: border-box;
         }
 
         body {
-            background: linear-gradient(180deg, #f8f9fa 0%, #eef1f4 100%);
+            background:
+                radial-gradient(circle at top left, rgba(230, 27, 46, 0.05), transparent 28%),
+                radial-gradient(circle at top right, rgba(17, 17, 17, 0.04), transparent 28%),
+                linear-gradient(180deg, #f8f8f8 0%, #eef1f4 100%);
             font-family: "Helvetica Neue", Arial, sans-serif;
-            color: var(--text-dark);
+            color: var(--ink);
             min-height: 100vh;
         }
 
@@ -39,44 +51,179 @@
             }
         }
 
-        .hero-title {
-            font-size: clamp(2.4rem, 5vw, 4.3rem);
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .page-shell {
+            max-width: 1440px;
+            margin: 0 auto;
+            padding: 22px 18px 48px;
+        }
+
+        .glass-nav {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 18px;
+            padding: 14px 16px;
+            border-radius: 28px;
+            background: rgba(255, 255, 255, 0.72);
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            box-shadow: var(--shadow-soft);
+            backdrop-filter: blur(14px);
+            margin-bottom: 30px;
+        }
+
+        .brand-block {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .brand-mark {
+            width: 46px;
+            height: 46px;
+            border-radius: 16px;
+            background: linear-gradient(145deg, #121212, #2b2b2b);
+            color: #fff;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
             font-weight: 800;
-            letter-spacing: -0.03em;
+            letter-spacing: 0.02em;
+            box-shadow: var(--shadow-button);
         }
 
-        .hero-subtitle {
-            color: var(--muted);
-            font-size: 1.05rem;
+        .brand-copy {
+            display: flex;
+            flex-direction: column;
+            line-height: 1.15;
         }
 
-        .scan-hint {
-            color: var(--muted);
-            font-size: 0.96rem;
+        .brand-title {
+            font-size: 1rem;
+            font-weight: 800;
+            color: var(--ink);
+            margin: 0;
+            letter-spacing: -0.02em;
         }
 
-        .macy-red {
-            background-color: var(--brand-red);
-            color: white;
-            border: none;
-            transition: 0.2s ease;
+        .brand-subtitle {
+            font-size: 0.82rem;
+            color: var(--ink-soft);
+            margin: 0;
         }
 
-        .macy-red:hover {
-            background-color: var(--brand-red-dark);
-            color: white;
+        .nav-actions {
+            display: flex;
+            align-items: center;
+            gap: 12px;
         }
 
         .top-button {
             border-radius: 999px;
             font-weight: 700;
-            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+            padding: 0.9rem 1.4rem;
+            background: linear-gradient(135deg, #101010, #232323);
+            color: white;
+            border: none;
+            box-shadow: var(--shadow-button);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .top-button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 14px 28px rgba(17, 17, 17, 0.16);
+            color: white;
+        }
+
+        .hero-shell {
+            padding: 34px 0 18px;
+            text-align: center;
+        }
+
+        .eyebrow {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 14px;
+            border-radius: 999px;
+            font-size: 0.78rem;
+            font-weight: 800;
+            color: var(--ink-soft);
+            background: rgba(255, 255, 255, 0.82);
+            border: 1px solid var(--line);
+            box-shadow: var(--shadow-soft);
+            margin-bottom: 18px;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
+        .hero-title {
+            font-size: clamp(3rem, 7vw, 5.5rem);
+            font-weight: 900;
+            letter-spacing: -0.05em;
+            margin-bottom: 14px;
+            line-height: 0.96;
+        }
+
+        .hero-subtitle {
+            color: var(--ink-soft);
+            font-size: 1.08rem;
+            margin-bottom: 10px;
+        }
+
+        .scan-hint {
+            color: var(--ink-soft);
+            font-size: 0.98rem;
+            max-width: 760px;
+            margin: 0 auto;
+        }
+
+        .scanner-frame {
+            margin-top: 34px;
+            border-radius: 32px;
+            background: rgba(255, 255, 255, 0.82);
+            border: 1px solid rgba(255, 255, 255, 0.95);
+            box-shadow: var(--shadow-card);
+            padding: 18px;
+            backdrop-filter: blur(18px);
+        }
+
+        .scanner-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 14px;
+            flex-wrap: wrap;
+        }
+
+        .scanner-label {
+            font-size: 0.84rem;
+            font-weight: 800;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--ink-soft);
+        }
+
+        .scanner-pill {
+            font-size: 0.84rem;
+            font-weight: 700;
+            color: var(--ink);
+            background: #fff;
+            border: 1px solid var(--line);
+            border-radius: 999px;
+            padding: 8px 12px;
         }
 
         .search-shell {
-            border-radius: 22px;
+            border-radius: 24px;
             overflow: hidden;
-            box-shadow: 0 18px 40px rgba(0, 0, 0, 0.08);
+            box-shadow: inset 0 0 0 1px rgba(17, 17, 17, 0.05);
             background: #fff;
         }
 
@@ -84,7 +231,19 @@
         .search-shell .form-select,
         .search-shell .btn {
             border-radius: 0 !important;
-            min-height: 62px;
+            min-height: 66px;
+            border: none;
+        }
+
+        .search-shell .form-control,
+        .search-shell .form-select {
+            font-weight: 700;
+            color: var(--ink);
+        }
+
+        .search-shell .form-control::placeholder {
+            color: #8a919c;
+            font-weight: 600;
         }
 
         .search-shell .form-control:focus,
@@ -92,50 +251,316 @@
             box-shadow: none;
         }
 
+        .premium-accent-select {
+            color: var(--brand-red);
+            background: linear-gradient(180deg, #fff, #fff9fa);
+            box-shadow: inset 0 0 0 1px rgba(230, 27, 46, 0.18);
+        }
+
+        .scan-button {
+            background: linear-gradient(135deg, var(--brand-red), #ff3347);
+            color: white;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            transition: filter 0.2s ease, transform 0.2s ease;
+        }
+
+        .scan-button:hover {
+            color: white;
+            filter: brightness(0.96);
+        }
+
+        .status-message {
+            min-height: 26px;
+            font-size: 0.95rem;
+            font-weight: 700;
+            margin-top: 14px;
+        }
+
+        .product-shell {
+            margin-top: 26px;
+            animation: slideUp 0.35s ease-out;
+        }
+
         .mirror-card {
             border: none;
             border-radius: var(--card-radius);
-            box-shadow: 0 18px 50px rgba(0, 0, 0, 0.08);
+            box-shadow: var(--shadow-card);
             overflow: hidden;
-            animation: slideUp 0.35s ease-out;
-            background: #fff;
+            background: rgba(255, 255, 255, 0.92);
+            backdrop-filter: blur(12px);
+        }
+
+        .product-image-wrap {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .product-image-wrap::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(180deg, transparent 65%, rgba(17, 17, 17, 0.04) 100%);
+            pointer-events: none;
+        }
+
+        .product-image {
+            width: 100%;
+            height: 420px;
+            object-fit: cover;
+            display: block;
+        }
+
+        .product-content {
+            padding: 34px;
+        }
+
+        .retailer-chip {
+            font-size: 0.78rem;
+            text-transform: uppercase;
+            color: var(--ink-soft);
+            font-weight: 800;
+            letter-spacing: 0.12em;
+            margin-bottom: 8px;
+        }
+
+        .product-title {
+            font-size: clamp(2rem, 4vw, 3rem);
+            font-weight: 900;
+            letter-spacing: -0.04em;
+            margin-bottom: 0;
+        }
+
+        .price-chip {
+            background: linear-gradient(135deg, #0f0f0f, #232323);
+            color: white;
+            border-radius: 14px;
+            padding: 12px 18px;
+            font-size: 1.05rem;
+            font-weight: 800;
+            box-shadow: var(--shadow-button);
+            white-space: nowrap;
         }
 
         .stylist-advice {
-            background: #fff5f6;
+            background: linear-gradient(180deg, #fff7f8 0%, #fff2f4 100%);
+            border: 1px solid rgba(230, 27, 46, 0.1);
             border-left: 5px solid var(--brand-red);
-            border-radius: 18px;
+            border-radius: 22px;
+            padding: 22px;
+            margin: 26px 0 30px;
+        }
+
+        .advice-label {
+            font-size: 0.78rem;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--brand-red);
+            margin-bottom: 8px;
+        }
+
+        .advice-text {
+            font-size: 1.18rem;
+            line-height: 1.6;
+            color: #20242b;
+            margin: 0;
+        }
+
+        .section-title {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 18px;
+        }
+
+        .section-title h5 {
+            font-size: 1.45rem;
+            font-weight: 900;
+            letter-spacing: -0.03em;
+            margin: 0;
+        }
+
+        .section-kicker {
+            font-size: 0.82rem;
+            font-weight: 800;
+            color: var(--ink-soft);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+
+        .suggestion-card {
+            border: 1px solid rgba(17, 17, 17, 0.06);
+            border-radius: 24px;
+            overflow: hidden;
+            background: linear-gradient(180deg, #ffffff 0%, #fafafa 100%);
+            height: 100%;
+            box-shadow: 0 14px 28px rgba(15, 23, 42, 0.07);
+            transition: transform 0.22s ease, box-shadow 0.22s ease;
+        }
+
+        .suggestion-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 36px rgba(15, 23, 42, 0.12);
+        }
+
+        .suggestion-img {
+            width: 100%;
+            height: 190px;
+            object-fit: cover;
+            background: #f1f3f5;
+            display: block;
+        }
+
+        .suggestion-body {
+            padding: 18px;
+        }
+
+        .suggestion-retailer {
+            font-size: 0.72rem;
+            text-transform: uppercase;
+            color: var(--ink-soft);
+            font-weight: 800;
+            letter-spacing: 0.08em;
+            margin-bottom: 6px;
+        }
+
+        .suggestion-name {
+            font-size: 1.05rem;
+            font-weight: 800;
+            color: var(--ink);
+            margin-bottom: 10px;
+            line-height: 1.35;
+        }
+
+        .suggestion-footer {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .suggestion-badge {
+            display: inline-flex;
+            align-items: center;
+            background: #121212;
+            color: #fff;
+            font-size: 0.73rem;
+            font-weight: 800;
+            padding: 7px 11px;
+            border-radius: 999px;
+            letter-spacing: 0.02em;
+        }
+
+        .suggestion-price {
+            font-size: 0.93rem;
+            font-weight: 800;
+            color: var(--ink-soft);
+        }
+
+        .save-button {
+            margin-top: 30px;
+            border-radius: 999px;
+            font-weight: 800;
+            font-size: 1rem;
+            padding: 1rem 1.2rem;
+            background: linear-gradient(135deg, #101010, #232323);
+            border: none;
+            color: white;
+            box-shadow: var(--shadow-button);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .save-button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 14px 28px rgba(17, 17, 17, 0.15);
+            color: white;
         }
 
         .offcanvas {
-            border-radius: 28px 0 0 28px;
+            border-radius: 30px 0 0 30px;
+            border: none;
+            background: #f5f6f8;
+        }
+
+        .bag-header-title {
+            font-size: 1.6rem;
+            font-weight: 900;
+            letter-spacing: -0.03em;
+        }
+
+        .bag-item-card {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            margin-bottom: 14px;
+            padding: 14px;
+            border-radius: 22px;
+            background: #fff;
+            border: 1px solid rgba(17, 17, 17, 0.06);
+            box-shadow: 0 12px 24px rgba(15, 23, 42, 0.06);
         }
 
         .bag-item-img {
-            width: 68px;
-            height: 68px;
+            width: 72px;
+            height: 72px;
             object-fit: cover;
-            border-radius: 14px;
+            border-radius: 18px;
             background: #eee;
+            flex-shrink: 0;
+        }
+
+        .bag-item-name {
+            font-size: 0.98rem;
+            font-weight: 800;
+            color: var(--ink);
+            margin-bottom: 4px;
+        }
+
+        .bag-item-retailer {
+            font-size: 0.82rem;
+            color: var(--ink-soft);
+        }
+
+        .bag-item-price {
+            font-size: 0.92rem;
+            color: var(--brand-red);
+            font-weight: 800;
+        }
+
+        .bag-remove-btn {
+            border-radius: 999px;
+            white-space: nowrap;
+        }
+
+        .total-box {
+            border-radius: 24px;
+            background: linear-gradient(180deg, #ffffff 0%, #fbfbfc 100%) !important;
+            border: 1px solid rgba(17, 17, 17, 0.08) !important;
+            box-shadow: 0 12px 28px rgba(15, 23, 42, 0.06);
         }
 
         .manager-btn {
             border-radius: 999px;
-            font-weight: 700;
+            font-weight: 800;
+            padding: 0.9rem 1rem;
         }
 
         .insights-card {
-            background: linear-gradient(180deg, #1d232b 0%, #171b21 100%);
-            border-radius: 24px;
-            box-shadow: 0 18px 40px rgba(0, 0, 0, 0.18);
+            background: linear-gradient(180deg, #171b23 0%, #0f1217 100%);
+            border-radius: 28px;
+            box-shadow: 0 24px 54px rgba(0, 0, 0, 0.24);
         }
 
         .insights-heading {
             color: rgba(255, 255, 255, 0.55);
             text-transform: uppercase;
-            font-size: 0.75rem;
+            font-size: 0.74rem;
             font-weight: 800;
             letter-spacing: 0.12em;
+            margin-bottom: 14px;
         }
 
         .summary-grid {
@@ -148,8 +573,8 @@
         .summary-card {
             background: rgba(255, 255, 255, 0.05);
             border: 1px solid rgba(255, 255, 255, 0.07);
-            border-radius: 18px;
-            padding: 14px;
+            border-radius: 20px;
+            padding: 16px;
         }
 
         .summary-label {
@@ -163,39 +588,60 @@
 
         .summary-value {
             color: #ffffff;
-            font-size: 1.05rem;
+            font-size: 1.08rem;
             font-weight: 800;
             line-height: 1.3;
         }
 
-        .activity-row {
+        .form-select-sm {
+            border-radius: 14px;
+            font-weight: 700;
+            background-color: rgba(255, 255, 255, 0.96);
+            border: none;
+        }
+
+        .activity-row,
+        .trend-row {
             background: rgba(255, 255, 255, 0.04);
             border: 1px solid rgba(255, 255, 255, 0.06);
-            border-radius: 16px;
+            border-radius: 18px;
             padding: 12px;
         }
 
+        .activity-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 12px;
+        }
+
         .activity-main {
-            color: rgba(255, 255, 255, 0.9);
+            color: rgba(255, 255, 255, 0.92);
             font-size: 0.95rem;
             font-weight: 600;
         }
 
         .activity-meta {
-            color: rgba(255, 255, 255, 0.6);
+            color: rgba(255, 255, 255, 0.62);
             font-size: 0.78rem;
         }
 
-        .activity-table-shell {
+        .activity-table-shell,
+        .chart-shell {
             background: rgba(255, 255, 255, 0.04);
             border: 1px solid rgba(255, 255, 255, 0.06);
-            border-radius: 18px;
+            border-radius: 20px;
             overflow: hidden;
+            padding: 14px;
+        }
+
+        .activity-table-shell {
+            padding: 0;
         }
 
         .activity-table {
             width: 100%;
-            color: #fff;
+            color: white;
             font-size: 0.84rem;
             margin: 0;
         }
@@ -221,10 +667,6 @@
             border-bottom: none;
         }
 
-        .activity-table tbody tr:hover {
-            background: rgba(255, 255, 255, 0.04);
-        }
-
         .event-pill {
             display: inline-block;
             padding: 5px 10px;
@@ -247,10 +689,7 @@
         }
 
         .trend-row {
-            background: rgba(255, 255, 255, 0.04);
-            border: 1px solid rgba(255, 255, 255, 0.06);
-            border-radius: 18px;
-            transition: 0.2s ease;
+            transition: transform 0.2s ease, background 0.2s ease;
         }
 
         .trend-row:hover {
@@ -263,7 +702,7 @@
             height: 34px;
             border-radius: 50%;
             background: rgba(255, 255, 255, 0.08);
-            color: #fff;
+            color: white;
             display: inline-flex;
             align-items: center;
             justify-content: center;
@@ -298,35 +737,6 @@
             white-space: nowrap;
         }
 
-        .loading-state,
-        .empty-state {
-            color: var(--muted);
-            text-align: center;
-            padding: 3rem 1rem;
-        }
-
-        .total-box {
-            border-radius: 20px;
-        }
-
-        .bag-remove-btn {
-            border-radius: 999px;
-            white-space: nowrap;
-        }
-
-        .form-select-sm {
-            border-radius: 12px;
-            font-weight: 600;
-            background-color: rgba(255, 255, 255, 0.95);
-        }
-
-        .chart-shell {
-            background: rgba(255, 255, 255, 0.04);
-            border: 1px solid rgba(255, 255, 255, 0.06);
-            border-radius: 18px;
-            padding: 14px;
-        }
-
         .chart-row {
             margin-bottom: 14px;
         }
@@ -340,7 +750,7 @@
         }
 
         .chart-label {
-            color: #ffffff;
+            color: white;
             font-weight: 700;
             font-size: 0.9rem;
         }
@@ -408,181 +818,192 @@
             background: #71B7FF;
         }
 
-        .status-message {
-            min-height: 24px;
-            font-size: 0.95rem;
-            font-weight: 600;
+        .loading-state,
+        .empty-state {
+            color: var(--ink-soft);
+            text-align: center;
+            padding: 3rem 1rem;
         }
 
-        .suggestion-card {
-            border: 1px solid #e9ecef;
-            border-radius: 18px;
-            overflow: hidden;
-            background: #fff;
-            height: 100%;
-            box-shadow: 0 8px 18px rgba(0, 0, 0, 0.06);
-        }
-
-        .suggestion-img {
-            width: 100%;
-            height: 160px;
-            object-fit: cover;
-            background: #f1f3f5;
-        }
-
-        .suggestion-body {
-            padding: 14px;
-        }
-
-        .suggestion-retailer {
-            font-size: 0.72rem;
-            text-transform: uppercase;
-            color: #6c757d;
-            font-weight: 800;
-            letter-spacing: 0.06em;
-            margin-bottom: 4px;
-        }
-
-        .suggestion-name {
-            font-size: 0.98rem;
-            font-weight: 700;
-            color: #161616;
-            margin-bottom: 8px;
-            line-height: 1.35;
-        }
-
-        .suggestion-meta {
-            font-size: 0.88rem;
-            color: #6c757d;
-            margin-top: 8px;
-        }
-
-        .suggestion-badge {
-            display: inline-block;
-            background: #161616;
-            color: #fff;
-            font-size: 0.72rem;
-            font-weight: 700;
-            padding: 6px 10px;
-            border-radius: 999px;
-        }
-
-        @media (max-width: 768px) {
-            .offcanvas {
-                width: 100% !important;
-                border-radius: 0;
+        @media (max-width: 991px) {
+            .hero-title {
+                font-size: clamp(2.6rem, 8vw, 4.2rem);
             }
 
-            .search-shell .form-control,
-            .search-shell .form-select,
-            .search-shell .btn {
-                min-height: 56px;
+            .product-content {
+                padding: 24px;
+            }
+
+            .product-image {
+                height: 340px;
             }
 
             .summary-grid {
                 grid-template-columns: 1fr;
             }
+        }
+
+        @media (max-width: 768px) {
+            .page-shell {
+                padding: 14px 12px 34px;
+            }
+
+            .glass-nav {
+                padding: 12px;
+                border-radius: 22px;
+            }
+
+            .brand-copy {
+                display: none;
+            }
+
+            .scanner-frame {
+                padding: 14px;
+                border-radius: 24px;
+            }
+
+            .scanner-meta {
+                margin-bottom: 10px;
+            }
+
+            .search-shell .form-control,
+            .search-shell .form-select,
+            .search-shell .btn {
+                min-height: 58px;
+            }
+
+            .offcanvas {
+                width: 100% !important;
+                border-radius: 0;
+            }
 
             .activity-table {
                 font-size: 0.78rem;
+            }
+
+            .suggestion-img {
+                height: 180px;
             }
         }
     </style>
 </head>
 <body>
-<div class="container py-4 py-md-5">
-    <div class="text-end mb-4">
-        <button
-                class="btn btn-dark top-button px-4 py-2"
-                type="button"
-                data-bs-toggle="offcanvas"
-                data-bs-target="#bagSidebar"
-                onclick="loadBag()"
-        >
-            🛍️ View My Bag
-        </button>
-    </div>
-
-    <div class="text-center mb-5">
-        <h1 class="hero-title">Universal Stylist</h1>
-        <p class="hero-subtitle mb-2">Smart Mirror Retail Engine v10.2</p>
-        <p class="scan-hint mb-0">
-            Scan an RFID tag to get styling advice, save items, and track trends across retailers.
-        </p>
-    </div>
-
-    <div class="row justify-content-center mb-2">
-        <div class="col-lg-10 col-xl-9">
-            <div class="input-group input-group-lg search-shell">
-                <select
-                        id="retailerSelect"
-                        class="form-select fw-bold"
-                        style="max-width: 165px;"
-                >
-                    <option value="MACY001">Macy's</option>
-                    <option value="ZARA001">Zara</option>
-                    <option value="NORD001">Nordstrom</option>
-                    <option value="NIKE001">Nike</option>
-                </select>
-
-                <select
-                        id="vibeSelect"
-                        class="form-select border-danger text-danger fw-bold"
-                        style="max-width: 170px;"
-                >
-                    <option value="Casual">Casual</option>
-                    <option value="Formal">Formal</option>
-                    <option value="Date Night">Date Night</option>
-                </select>
-
-                <input
-                        type="text"
-                        id="rfidInput"
-                        class="form-control"
-                        placeholder="Scan an RFID Tag"
-                        onkeydown="if(event.key === 'Enter') handleScan()"
-                />
-
-                <button id="scanBtn" class="btn macy-red px-4 fw-bold" onclick="handleScan()">
-                    Scan Item
-                </button>
+<div class="page-shell">
+    <div class="glass-nav">
+        <div class="brand-block">
+            <div class="brand-mark">US</div>
+            <div class="brand-copy">
+                <p class="brand-title">Universal Stylist</p>
+                <p class="brand-subtitle">Smart Mirror Retail Engine</p>
             </div>
         </div>
-    </div>
 
-    <div class="row justify-content-center mb-4">
-        <div class="col-lg-10 col-xl-9">
-            <div id="scanStatus" class="status-message text-center"></div>
+        <div class="nav-actions">
+            <button
+                    class="top-button"
+                    type="button"
+                    data-bs-toggle="offcanvas"
+                    data-bs-target="#bagSidebar"
+                    onclick="loadBag()"
+            >
+                🛍️ View My Bag
+            </button>
         </div>
     </div>
 
-    <div id="productCard" class="row justify-content-center d-none">
-        <div class="col-lg-8 col-xl-7">
-            <div class="card mirror-card">
-                <img
-                        id="productImage"
-                        src=""
-                        alt="Product image"
-                        style="height: 360px; object-fit: cover;"
-                        onerror="this.src='https://placehold.co/600x360/eeeeee/999999?text=Image+Not+Found';"
-                />
+    <section class="hero-shell">
+        <div class="eyebrow">Retail Intelligence • AI Styling • Multi-Store</div>
+        <h1 class="hero-title">Universal Stylist</h1>
+        <p class="hero-subtitle">A premium smart mirror experience for modern retail.</p>
+        <p class="scan-hint">
+            Scan an RFID tag to generate styling advice, build a cross-retailer look, save pieces to your bag,
+            and track trend performance across brands.
+        </p>
 
-                <div class="card-body p-4 p-md-5">
-                    <div class="d-flex justify-content-between align-items-start gap-3 mb-3">
+        <div class="row justify-content-center">
+            <div class="col-xl-10">
+                <div class="scanner-frame">
+                    <div class="scanner-meta">
+                        <div class="scanner-label">Live scan console</div>
+                        <div class="scanner-pill">Smart Mirror Retail Engine v11.0</div>
+                    </div>
+
+                    <div class="input-group input-group-lg search-shell">
+                        <select
+                                id="retailerSelect"
+                                class="form-select fw-bold"
+                                style="max-width: 170px;"
+                        >
+                            <option value="MACY001">Macy's</option>
+                            <option value="ZARA001">Zara</option>
+                            <option value="NORD001">Nordstrom</option>
+                            <option value="NIKE001">Nike</option>
+                        </select>
+
+                        <select
+                                id="vibeSelect"
+                                class="form-select premium-accent-select fw-bold"
+                                style="max-width: 185px;"
+                        >
+                            <option value="Casual">Casual</option>
+                            <option value="Formal">Formal</option>
+                            <option value="Date Night">Date Night</option>
+                        </select>
+
+                        <input
+                                type="text"
+                                id="rfidInput"
+                                class="form-control"
+                                placeholder="Scan or enter RFID tag"
+                                onkeydown="if(event.key === 'Enter') handleScan()"
+                        />
+
+                        <button id="scanBtn" class="btn scan-button px-4" onclick="handleScan()">
+                            Scan Item
+                        </button>
+                    </div>
+
+                    <div id="scanStatus" class="status-message text-center mt-3"></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <div id="productCard" class="row justify-content-center d-none product-shell">
+        <div class="col-xl-9">
+            <div class="mirror-card">
+                <div class="product-image-wrap">
+                    <img
+                            id="productImage"
+                            src=""
+                            alt="Product image"
+                            class="product-image"
+                            onerror="this.src='https://placehold.co/1200x700/eeeeee/999999?text=Image+Not+Found';"
+                    />
+                </div>
+
+                <div class="product-content">
+                    <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap mb-2">
                         <div>
-                            <h6 class="text-muted text-uppercase small mb-1" id="brandLabel">Retailer</h6>
-                            <h2 class="fw-bold mb-0" id="itemText">Item Name</h2>
+                            <div class="retailer-chip" id="brandLabel">Retailer</div>
+                            <h2 class="product-title" id="itemText">Item Name</h2>
                         </div>
-                        <span class="badge bg-dark fs-6 px-3 py-2" id="priceLabel">$0.00</span>
+                        <div class="price-chip" id="priceLabel">$0.00</div>
                     </div>
 
-                    <div id="adviceBox" class="p-4 stylist-advice mb-4">
-                        <h6 class="fw-bold text-danger text-uppercase small mb-2">Stylist Insight</h6>
-                        <p id="adviceText" class="mb-0 fs-5 text-dark">Processing styling logic...</p>
+                    <div id="adviceBox" class="stylist-advice">
+                        <div class="advice-label">Stylist Insight</div>
+                        <p id="adviceText" class="advice-text">Processing styling logic...</p>
                     </div>
 
-                    <div class="mb-4">
-                        <h5 class="fw-bold mb-3">🔥 Complete the Look</h5>
+                    <div>
+                        <div class="section-title">
+                            <div>
+                                <div class="section-kicker">Curated cross-retailer outfit</div>
+                                <h5>🔥 Complete the Look</h5>
+                            </div>
+                        </div>
+
                         <div id="suggestionsRow" class="row g-3">
                             <div class="col-12 text-muted">Scan an item to see outfit suggestions.</div>
                         </div>
@@ -590,7 +1011,7 @@
 
                     <button
                             id="saveBtn"
-                            class="btn btn-dark btn-lg w-100 rounded-pill fw-bold shadow-sm"
+                            class="btn save-button btn-lg w-100"
                             onclick="saveToBag()"
                     >
                         🎒 Save to My Style Bag
@@ -605,14 +1026,14 @@
         class="offcanvas offcanvas-end"
         tabindex="-1"
         id="bagSidebar"
-        style="width: 480px;"
+        style="width: 500px;"
 >
-    <div class="offcanvas-header border-bottom">
-        <h4 class="fw-bold mb-0">My Style Bag 🎒</h4>
+    <div class="offcanvas-header border-bottom px-4 py-4">
+        <h4 class="bag-header-title mb-0">My Style Bag 🎒</h4>
         <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
     </div>
 
-    <div class="offcanvas-body" id="bagContent">
+    <div class="offcanvas-body px-4" id="bagContent">
         <div class="loading-state">Refreshing bag...</div>
     </div>
 
@@ -629,7 +1050,7 @@
 
         <div class="collapse" id="adminPanel">
             <div class="insights-card text-white border-0 p-4">
-                <div class="insights-heading mb-3">Analytics Summary</div>
+                <div class="insights-heading">Analytics Summary</div>
                 <div id="analyticsSummary" class="summary-grid">
                     <div class="summary-card">
                         <div class="summary-label">Loading</div>
@@ -637,17 +1058,17 @@
                     </div>
                 </div>
 
-                <div class="insights-heading mb-3 mt-4">Retailer Performance</div>
+                <div class="insights-heading mt-4">Retailer Performance</div>
                 <div id="retailerStats" class="mb-4">
                     <div class="text-light opacity-75 small">Loading retailer stats...</div>
                 </div>
 
-                <div class="insights-heading mb-3">Retailer Performance Chart</div>
+                <div class="insights-heading">Retailer Performance Chart</div>
                 <div id="retailerChart" class="chart-shell mb-4">
                     <div class="text-light opacity-75 small">Loading chart...</div>
                 </div>
 
-                <div class="insights-heading mb-3 mt-4">Live Activity</div>
+                <div class="insights-heading mt-4">Live Activity</div>
 
                 <div class="row g-2 mb-3">
                     <div class="col-6">
@@ -672,12 +1093,12 @@
                     <div class="text-light opacity-75 small">Loading activity...</div>
                 </div>
 
-                <div class="insights-heading mb-3">Recent Activity Table</div>
+                <div class="insights-heading">Recent Activity Table</div>
                 <div id="activityTableContainer" class="activity-table-shell mb-4">
                     <div class="text-light opacity-75 small p-3">Loading recent activity...</div>
                 </div>
 
-                <div class="insights-heading mb-3">Global Store Trends</div>
+                <div class="insights-heading">Global Store Trends</div>
                 <div id="trendContent" class="d-grid gap-2">
                     <div class="text-light opacity-75 small">Syncing live analytics...</div>
                 </div>
@@ -689,7 +1110,7 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
 <script>
-    console.log("FINAL SYSTEM BOOT: v10.2 MULTI-RETAILER + SMART OUTFIT SUGGESTIONS ACTIVE");
+    console.log("UNIVERSAL STYLIST v11.0 PREMIUM UI ACTIVE");
 
     let currentRfid = "";
     let currentLoadedItem = null;
@@ -740,14 +1161,14 @@
                         src="${item.imageUrl || ''}"
                         alt="${item.itemName || 'Suggested item'}"
                         class="suggestion-img"
-                        onerror="this.src='https://placehold.co/400x160?text=Outfit';"
+                        onerror="this.src='https://placehold.co/400x200?text=Outfit';"
                     />
                     <div class="suggestion-body">
                         <div class="suggestion-retailer">${item.retailerName || 'Retailer'}</div>
                         <div class="suggestion-name">${item.itemName || 'Unnamed Item'}</div>
-                        <span class="suggestion-badge">${item.category || 'Item'}</span>
-                        <div class="suggestion-meta">
-                            $${typeof item.price === "number" ? item.price.toFixed(2) : "0.00"}
+                        <div class="suggestion-footer">
+                            <span class="suggestion-badge">${item.category || 'Item'}</span>
+                            <span class="suggestion-price">$${typeof item.price === "number" ? item.price.toFixed(2) : "0.00"}</span>
                         </div>
                     </div>
                 </div>
@@ -915,20 +1336,20 @@
                 const id = item.id;
 
                 return `
-                    <div class="d-flex align-items-center mb-3 p-3 border rounded-4 bg-white shadow-sm">
+                    <div class="bag-item-card">
                         <img
                             src="${imageUrl}"
-                            class="bag-item-img me-3"
+                            class="bag-item-img"
                             alt="${name}"
-                            onerror="this.src='https://placehold.co/68x68?text=Item';"
+                            onerror="this.src='https://placehold.co/72x72?text=Item';"
                         />
                         <div class="flex-grow-1">
-                            <div class="fw-bold text-dark">${name}</div>
-                            <div class="text-muted small">${retailer}</div>
-                            <div class="text-danger fw-bold">$${price}</div>
+                            <div class="bag-item-name">${name}</div>
+                            <div class="bag-item-retailer">${retailer}</div>
+                            <div class="bag-item-price">$${price}</div>
                         </div>
                         <button
-                            class="btn btn-sm btn-outline-danger bag-remove-btn ms-2"
+                            class="btn btn-sm btn-outline-danger bag-remove-btn"
                             onclick="removeFromBag(${id})"
                         >
                             Remove
@@ -938,7 +1359,7 @@
             }).join("");
 
             const totals = `
-                <div class="mt-4 p-4 bg-light rounded-4 border total-box">
+                <div class="mt-4 p-4 total-box">
                     <div class="d-flex justify-content-between mb-2">
                         <span>Subtotal</span>
                         <b>$${Number(bag.subtotal || 0).toFixed(2)}</b>
@@ -1166,7 +1587,7 @@
                 const icon = item.eventType === "SCAN" ? "🟢" : "🔵";
 
                 html += `
-                    <div class="activity-row d-flex justify-content-between align-items-start gap-3">
+                    <div class="activity-row">
                         <div>
                             <div class="activity-main">${icon} <strong>${item.eventType}</strong> ${item.item}</div>
                             <div class="store-label mt-1">${item.retailer}</div>
@@ -1269,7 +1690,7 @@
                 const saveLabel = count === 1 ? "Save" : "Saves";
 
                 html += `
-                    <div class="trend-row p-3 d-flex justify-content-between align-items-center gap-3">
+                    <div class="trend-row d-flex justify-content-between align-items-center gap-3">
                         <div class="d-flex align-items-start flex-grow-1">
                             <div class="trend-rank">#${i + 1}</div>
                             <div>

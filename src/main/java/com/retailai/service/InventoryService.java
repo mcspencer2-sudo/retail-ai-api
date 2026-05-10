@@ -1,13 +1,18 @@
 package com.retailai.service;
 
-import com.retailai.model.ActivityDTO;
-import com.retailai.model.AnalyticsSummaryDTO;
+import com.retailai.dto.ActivityDTO;
+import com.retailai.dto.AnalyticsSummaryDTO;
+import com.retailai.dto.FullOutfitDTO;
+import com.retailai.dto.LookResponseDTO;
+import com.retailai.dto.MerchantInventoryItemDTO;
+import com.retailai.dto.MerchantInventoryPageDTO;
+import com.retailai.dto.RecommendationItemDTO;
+import com.retailai.dto.RetailerStatsDTO;
+import com.retailai.dto.ScanResultDTO;
+import com.retailai.dto.TrendDTO;
 import com.retailai.model.BagItem;
 import com.retailai.model.BagSummaryResponse;
-import com.retailai.model.OutfitResponse;
 import com.retailai.model.Product;
-import com.retailai.model.RetailerStatsDTO;
-import com.retailai.model.TrendDTO;
 import com.retailai.model.TrendEvent;
 import com.retailai.repository.BagItemRepository;
 import com.retailai.repository.ProductRepository;
@@ -16,6 +21,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -28,50 +34,113 @@ import java.util.stream.Collectors;
 @Service
 public class InventoryService {
 
+    private static final int DEFAULT_REORDER_THRESHOLD = 3;
+    private static final int DEFAULT_IDEAL_STOCK_LEVEL = 12;
+
     private final ProductRepository productRepository;
     private final BagItemRepository bagItemRepository;
     private final TrendEventRepository trendEventRepository;
     private final AIStylistService aiStylistService;
 
-    public InventoryService(ProductRepository productRepository,
-                            BagItemRepository bagItemRepository,
-                            TrendEventRepository trendEventRepository,
-                            AIStylistService aiStylistService) {
+    public InventoryService(
+            ProductRepository productRepository,
+            BagItemRepository bagItemRepository,
+            TrendEventRepository trendEventRepository,
+            AIStylistService aiStylistService
+    ) {
         this.productRepository = productRepository;
         this.bagItemRepository = bagItemRepository;
         this.trendEventRepository = trendEventRepository;
         this.aiStylistService = aiStylistService;
     }
 
-    public OutfitResponse scanItem(String retailerKey, String rfid, String vibe) {
-        String retailerName = mapRetailerKeyToName(retailerKey);
+    public ScanResultDTO scanItem(String retailerKey, String rfid, String vibe) {
+        return scanItem(retailerKey, null, rfid, vibe);
+    }
 
-        Product product = productRepository.findById(rfid)
-                .orElseThrow(() -> new RuntimeException("RFID not found: " + rfid));
-
-        if (!product.getRetailerName().equalsIgnoreCase(retailerName)) {
-            throw new IllegalArgumentException("RFID does not belong to selected retailer");
-        }
+    public ScanResultDTO scanItem(String retailerKey, String storeCode, String rfid, String vibe) {
+        Product product = loadScannedProductForContext(retailerKey, storeCode, rfid);
 
         saveTrendEvent("SCAN", product);
 
-        String stylingAdvice = aiStylistService.generateAdvice(product, vibe);
-        List<Product> suggestions = generateSmartSuggestions(product, vibe);
+        String stylingAdvice;
+        try {
+            stylingAdvice = aiStylistService.generateAdvice(product, vibe);
+        } catch (RuntimeException e) {
+            stylingAdvice = "This item is a strong styling anchor and can be paired with complementary pieces for a polished look.";
+        }
 
-        return new OutfitResponse(
-                product.getRfid(),
-                product.getRetailerName(),
-                product.getItemName(),
-                stylingAdvice,
-                product.getImageUrl(),
-                product.getPrice(),
-                suggestions
-        );
+        String whyItWorks = generateWhyItWorks(product, vibe);
+
+        List<RecommendationItemDTO> suggestions;
+        try {
+            suggestions = generateSmartSuggestions(product, vibe);
+        } catch (RuntimeException e) {
+            suggestions = List.of();
+        }
+
+        ScanResultDTO scanResult = new ScanResultDTO();
+        scanResult.setRfid(safe(product.getRfid()));
+        scanResult.setName(safe(product.getItemName()));
+        scanResult.setBrand(safeBrand(product));
+        scanResult.setCategory(safe(product.getCategory()));
+        scanResult.setColor(safeColor(product));
+        scanResult.setRetailer(safe(product.getRetailerName()));
+        scanResult.setRetailerKey(safe(product.getRetailerKey()));
+        scanResult.setStoreCode(safe(product.getStoreCode()));
+        scanResult.setStoreName(safe(product.getStoreName()));
+        scanResult.setPrice(safePrice(product.getPrice()));
+        scanResult.setMatchScore(calculateMainMatchScore(product, vibe));
+        scanResult.setImageUrl(safeImage(product.getImageUrl()));
+        scanResult.setStylingAdvice(stylingAdvice);
+        scanResult.setWhyItWorks(whyItWorks);
+        scanResult.setSuggestions(suggestions);
+
+        FullOutfitDTO fullOutfit = null;
+
+        try {
+            fullOutfit = aiStylistService.buildFullOutfit(scanResult);
+            scanResult.setFullOutfit(fullOutfit);
+        } catch (RuntimeException e) {
+            scanResult.setFullOutfit(null);
+        }
+
+        List<RecommendationItemDTO> filteredSuggestions;
+
+        try {
+            filteredSuggestions = generateAlternativeSuggestions(
+                    product,
+                    vibe,
+                    fullOutfit,
+                    0
+            );
+
+            if (filteredSuggestions.isEmpty()) {
+                filteredSuggestions = removeItemsAlreadyInFullOutfit(suggestions, fullOutfit);
+            }
+        } catch (RuntimeException e) {
+            filteredSuggestions = suggestions;
+        }
+
+        scanResult.setSuggestions(filteredSuggestions);
+
+        return scanResult;
     }
 
     public String saveToBag(String rfid) {
         Product product = productRepository.findById(rfid)
                 .orElseThrow(() -> new RuntimeException("Product not found"));
+
+        if (!isProductAvailableForStyling(product)) {
+            throw new IllegalStateException("This item is currently unavailable and cannot be saved.");
+        }
+
+        boolean alreadySaved = bagItemRepository.findAll().stream()
+                .anyMatch(item -> safe(item.getRfid()).equalsIgnoreCase(rfid));
+
+        if (alreadySaved) {
+            return product.getItemName() + " is already in your style bag.";
+        }
 
         BagItem item = new BagItem();
         item.setRfid(product.getRfid());
@@ -87,9 +156,244 @@ public class InventoryService {
         return product.getItemName() + " added to your style bag.";
     }
 
+    public LookResponseDTO createFullLook(String rfid, String vibe) {
+        return createFullLook(null, null, rfid, vibe);
+    }
+
+    public LookResponseDTO createFullLook(String retailerKey, String storeCode, String rfid, String vibe) {
+        Product scannedProduct = loadScannedProductForContext(retailerKey, storeCode, rfid);
+
+        List<RecommendationItemDTO> suggestions = generateSmartSuggestions(scannedProduct, vibe);
+
+        if (suggestions.isEmpty()) {
+            throw new RuntimeException("No full look recommendations found for RFID: " + rfid);
+        }
+
+        ScanResultDTO scanResult = buildScanResultForLook(scannedProduct, vibe, suggestions);
+        FullOutfitDTO fullOutfit = aiStylistService.buildFullOutfit(scanResult);
+
+        if (fullOutfit == null) {
+            throw new RuntimeException("Unable to build full outfit for RFID: " + rfid);
+        }
+
+        List<RecommendationItemDTO> filteredSuggestions = generateAlternativeSuggestions(
+                scannedProduct,
+                vibe,
+                fullOutfit,
+                0
+        );
+
+        if (filteredSuggestions.isEmpty()) {
+            filteredSuggestions = removeItemsAlreadyInFullOutfit(suggestions, fullOutfit);
+        }
+
+        LookResponseDTO response = new LookResponseDTO();
+        response.setSuggestions(filteredSuggestions);
+        response.setFullOutfit(fullOutfit);
+        response.setVariation(0);
+
+        return response;
+    }
+
+    public LookResponseDTO generateAgain(String rfid, String vibe, Integer variation) {
+        return generateAgain(null, null, rfid, vibe, variation);
+    }
+
+    public LookResponseDTO generateAgain(String retailerKey, String storeCode, String rfid, String vibe, Integer variation) {
+        Product scannedProduct = loadScannedProductForContext(retailerKey, storeCode, rfid);
+
+        int safeVariation = variation == null ? 1 : Math.max(1, variation);
+
+        List<RecommendationItemDTO> suggestions = generateSmartSuggestionsForVariation(
+                scannedProduct,
+                vibe,
+                safeVariation
+        );
+
+        if (suggestions.isEmpty()) {
+            throw new RuntimeException("No alternate look recommendations found for RFID: " + rfid);
+        }
+
+        ScanResultDTO scanResult = buildScanResultForLook(scannedProduct, vibe, suggestions);
+        FullOutfitDTO fullOutfit = aiStylistService.buildFullOutfit(scanResult);
+
+        if (fullOutfit == null) {
+            throw new RuntimeException("Unable to build alternate outfit for RFID: " + rfid);
+        }
+
+        List<RecommendationItemDTO> filteredSuggestions = generateAlternativeSuggestions(
+                scannedProduct,
+                vibe,
+                fullOutfit,
+                safeVariation
+        );
+
+        if (filteredSuggestions.isEmpty()) {
+            filteredSuggestions = removeItemsAlreadyInFullOutfit(suggestions, fullOutfit);
+        }
+
+        LookResponseDTO response = new LookResponseDTO();
+        response.setSuggestions(filteredSuggestions);
+        response.setFullOutfit(fullOutfit);
+        response.setVariation(safeVariation);
+
+        return response;
+    }
+
+    public LookResponseDTO swapLookItem(
+            String rfid,
+            String vibe,
+            String swapCategory,
+            String currentTopRfid,
+            String currentBottomRfid,
+            String currentShoesRfid,
+            String currentOuterwearRfid
+    ) {
+        return swapLookItem(
+                null,
+                null,
+                rfid,
+                vibe,
+                swapCategory,
+                currentTopRfid,
+                currentBottomRfid,
+                currentShoesRfid,
+                currentOuterwearRfid
+        );
+    }
+
+    public LookResponseDTO swapLookItem(
+            String retailerKey,
+            String storeCode,
+            String rfid,
+            String vibe,
+            String swapCategory,
+            String currentTopRfid,
+            String currentBottomRfid,
+            String currentShoesRfid,
+            String currentOuterwearRfid
+    ) {
+        Product scannedProduct = loadScannedProductForContext(retailerKey, storeCode, rfid);
+
+        String normalizedSwapCategory = normalizeSwapCategory(swapCategory);
+        Set<String> targetCategories = getTargetCategories(scannedProduct.getCategory(), vibe);
+
+        if (!targetCategories.contains(normalizedSwapCategory)) {
+            throw new IllegalArgumentException("Swap category is not valid for this scanned item: " + swapCategory);
+        }
+
+        Map<String, Product> currentLook = new LinkedHashMap<>();
+
+        Product currentTop = findProductIfValid(currentTopRfid, "tops", rfid);
+        Product currentBottom = findProductIfValid(currentBottomRfid, "bottoms", rfid);
+        Product currentShoes = findProductIfValid(currentShoesRfid, "shoes", rfid);
+        Product currentOuterwear = findProductIfValid(currentOuterwearRfid, "outerwear", rfid);
+
+        if (currentTop != null) currentLook.put("tops", currentTop);
+        if (currentBottom != null) currentLook.put("bottoms", currentBottom);
+        if (currentShoes != null) currentLook.put("shoes", currentShoes);
+        if (currentOuterwear != null) currentLook.put("outerwear", currentOuterwear);
+
+        List<Product> baseSuggestions = generateSmartSuggestionProducts(scannedProduct, vibe);
+        for (Product product : baseSuggestions) {
+            String category = normalizeCategory(product.getCategory());
+            if (targetCategories.contains(category) && !currentLook.containsKey(category)) {
+                currentLook.put(category, product);
+            }
+        }
+
+        Set<String> excludedRfids = new LinkedHashSet<>();
+        excludedRfids.add(safe(scannedProduct.getRfid()));
+        for (Product product : currentLook.values()) {
+            excludedRfids.add(safe(product.getRfid()));
+        }
+
+        Product replacement = findBestCandidateForCategory(
+                scannedProduct,
+                vibe,
+                normalizedSwapCategory,
+                excludedRfids
+        );
+
+        if (replacement == null) {
+            throw new RuntimeException("No alternate " + normalizedSwapCategory + " recommendation found.");
+        }
+
+        currentLook.put(normalizedSwapCategory, replacement);
+
+        excludedRfids.clear();
+        excludedRfids.add(safe(scannedProduct.getRfid()));
+        for (Product product : currentLook.values()) {
+            excludedRfids.add(safe(product.getRfid()));
+        }
+
+        for (String category : orderedCategories()) {
+            if (!targetCategories.contains(category)) {
+                continue;
+            }
+
+            if (!currentLook.containsKey(category)) {
+                Product fallback = findBestCandidateForCategory(scannedProduct, vibe, category, excludedRfids);
+                if (fallback != null) {
+                    currentLook.put(category, fallback);
+                    excludedRfids.add(safe(fallback.getRfid()));
+                }
+            }
+        }
+
+        List<RecommendationItemDTO> currentLookItems = new ArrayList<>();
+        for (String category : orderedCategories()) {
+            Product product = currentLook.get(category);
+            if (product != null && targetCategories.contains(category)) {
+                currentLookItems.add(toRecommendationDto(scannedProduct, product, vibe));
+            }
+        }
+
+        if (currentLookItems.isEmpty()) {
+            throw new RuntimeException("No outfit recommendations available after swap.");
+        }
+
+        FullOutfitDTO fullOutfit = aiStylistService.buildFullOutfitFromProducts(
+                scannedProduct,
+                currentLook.get("tops"),
+                currentLook.get("bottoms"),
+                currentLook.get("shoes"),
+                currentLook.get("outerwear"),
+                vibe
+        );
+
+        if (fullOutfit == null) {
+            throw new RuntimeException("Unable to build swapped outfit for RFID: " + rfid);
+        }
+
+        List<RecommendationItemDTO> filteredSuggestions = generateSmartSwapSuggestions(
+                scannedProduct,
+                vibe,
+                fullOutfit,
+                normalizedSwapCategory
+        );
+
+        if (filteredSuggestions.isEmpty()) {
+            filteredSuggestions = removeItemsAlreadyInFullOutfit(currentLookItems, fullOutfit);
+        }
+
+        LookResponseDTO response = new LookResponseDTO();
+        response.setSuggestions(filteredSuggestions);
+        response.setFullOutfit(fullOutfit);
+        response.setVariation(0);
+
+        return response;
+    }
+
     public BagSummaryResponse getBagSummary() {
         List<BagItem> items = bagItemRepository.findAll();
-        double subtotal = items.stream().mapToDouble(BagItem::getPrice).sum();
+
+        double subtotal = items.stream()
+                .map(BagItem::getPrice)
+                .filter(price -> price != null)
+                .mapToDouble(Double::doubleValue)
+                .sum();
+
         double tax = subtotal * 0.0825;
         double total = subtotal + tax;
 
@@ -114,14 +418,16 @@ public class InventoryService {
         Map<String, Long> grouped = trendEventRepository.findAll().stream()
                 .filter(event -> "SAVE".equalsIgnoreCase(event.getEventType()))
                 .collect(Collectors.groupingBy(
-                        e -> e.getRetailerName() + "||" + e.getItemName(),
+                        e -> safe(e.getRetailerName()) + "||" + safe(e.getItemName()),
                         Collectors.counting()
                 ));
 
         return grouped.entrySet().stream()
                 .map(entry -> {
-                    String[] parts = entry.getKey().split("\\|\\|");
-                    return new TrendDTO(parts[0], parts[1], entry.getValue().intValue());
+                    String[] parts = entry.getKey().split("\\|\\|", 2);
+                    String store = parts.length > 0 ? parts[0] : "Retailer";
+                    String item = parts.length > 1 ? parts[1] : "Product";
+                    return new TrendDTO(store, item, entry.getValue().intValue());
                 })
                 .sorted(Comparator.comparingInt(TrendDTO::getCount).reversed())
                 .limit(10)
@@ -177,13 +483,13 @@ public class InventoryService {
     public List<ActivityDTO> getRecentActivity(String eventType, String retailer) {
         return trendEventRepository.findAll().stream()
                 .sorted(Comparator.comparing(TrendEvent::getCreatedAt).reversed())
-                .filter(e -> "ALL".equalsIgnoreCase(eventType) || e.getEventType().equalsIgnoreCase(eventType))
-                .filter(e -> "ALL".equalsIgnoreCase(retailer) || e.getRetailerName().equalsIgnoreCase(retailer))
+                .filter(e -> "ALL".equalsIgnoreCase(eventType) || safe(e.getEventType()).equalsIgnoreCase(eventType))
+                .filter(e -> "ALL".equalsIgnoreCase(retailer) || safe(e.getRetailerName()).equalsIgnoreCase(retailer))
                 .limit(20)
                 .map(event -> new ActivityDTO(
-                        event.getEventType(),
-                        event.getRetailerName(),
-                        event.getItemName(),
+                        safe(event.getEventType()),
+                        safe(event.getRetailerName()),
+                        safe(event.getItemName()),
                         timeAgo(event.getCreatedAt()),
                         event.getCreatedAt()
                 ))
@@ -206,28 +512,591 @@ public class InventoryService {
         retailers.addAll(savesByRetailer.keySet());
 
         return retailers.stream()
-                .map(retailer -> {
-                    long scans = scansByRetailer.getOrDefault(retailer, 0L);
-                    long saves = savesByRetailer.getOrDefault(retailer, 0L);
+                .map(retailerName -> {
+                    long scans = scansByRetailer.getOrDefault(retailerName, 0L);
+                    long saves = savesByRetailer.getOrDefault(retailerName, 0L);
                     double conversion = scans == 0 ? 0.0 : ((double) saves / scans) * 100.0;
-                    return new RetailerStatsDTO(retailer, scans, saves, conversion);
+                    return new RetailerStatsDTO(retailerName, scans, saves, conversion);
                 })
                 .sorted(Comparator.comparingLong(RetailerStatsDTO::getScans).reversed())
                 .collect(Collectors.toList());
     }
 
-    private List<Product> generateSmartSuggestions(Product scannedProduct, String vibe) {
-        List<Product> allProducts = productRepository.findAll();
+    public MerchantInventoryItemDTO updateMerchantInventoryStock(
+            String rfid,
+            String retailerKey,
+            String storeCode,
+            Integer stockQuantity
+    ) {
+        if (rfid == null || rfid.isBlank()) {
+            throw new IllegalArgumentException("RFID is required.");
+        }
+
+        if (stockQuantity == null) {
+            throw new IllegalArgumentException("Stock quantity is required.");
+        }
+
+        if (stockQuantity < 0) {
+            throw new IllegalArgumentException("Stock quantity cannot be negative.");
+        }
+
+        Product product = findMerchantInventoryProductForUpdate(rfid, retailerKey, storeCode);
+
+        product.setStockQuantity(stockQuantity);
+
+        boolean active = Boolean.TRUE.equals(product.getActive());
+        product.setAvailable(active && stockQuantity > 0);
+
+        Product saved = productRepository.save(product);
+        return toMerchantInventoryItemDto(saved);
+    }
+
+    public MerchantInventoryItemDTO updateMerchantInventoryActive(
+            String rfid,
+            String retailerKey,
+            String storeCode,
+            Boolean active
+    ) {
+        if (rfid == null || rfid.isBlank()) {
+            throw new IllegalArgumentException("RFID is required.");
+        }
+
+        if (active == null) {
+            throw new IllegalArgumentException("Active flag is required.");
+        }
+
+        Product product = findMerchantInventoryProductForUpdate(rfid, retailerKey, storeCode);
+
+        product.setActive(active);
+
+        int stockQuantity = product.getStockQuantity() == null ? 0 : product.getStockQuantity();
+        product.setAvailable(Boolean.TRUE.equals(active) && stockQuantity > 0);
+
+        Product saved = productRepository.save(product);
+        return toMerchantInventoryItemDto(saved);
+    }
+
+    public MerchantInventoryItemDTO resyncMerchantInventoryItem(
+            String rfid,
+            String retailerKey,
+            String storeCode
+    ) {
+        if (rfid == null || rfid.isBlank()) {
+            throw new IllegalArgumentException("RFID is required.");
+        }
+
+        Product product = findMerchantInventoryProductForUpdate(rfid, retailerKey, storeCode);
+
+        int stockQuantity = product.getStockQuantity() == null ? 0 : product.getStockQuantity();
+        boolean active = Boolean.TRUE.equals(product.getActive());
+
+        product.setAvailable(active && stockQuantity > 0);
+
+        Product saved = productRepository.save(product);
+        return toMerchantInventoryItemDto(saved);
+    }
+
+    public MerchantInventoryPageDTO getMerchantInventory(
+            String retailerKey,
+            String storeCode,
+            String query,
+            String category,
+            int page,
+            int size
+    ) {
+        int safePage = Math.max(page, 0);
+        int safeSize = Math.max(1, Math.min(size, 50));
+
+        List<Product> filtered = findMerchantInventoryProducts(
+                retailerKey,
+                storeCode,
+                query,
+                category
+        );
+
+        int totalItems = filtered.size();
+        int totalPages = totalItems == 0 ? 1 : (int) Math.ceil((double) totalItems / safeSize);
+        int fromIndex = Math.min(safePage * safeSize, totalItems);
+        int toIndex = Math.min(fromIndex + safeSize, totalItems);
+
+        List<MerchantInventoryItemDTO> pageItems = filtered.subList(fromIndex, toIndex).stream()
+                .map(this::toMerchantInventoryItemDto)
+                .collect(Collectors.toList());
+
+        MerchantInventoryPageDTO response = new MerchantInventoryPageDTO();
+        response.setItems(pageItems);
+        response.setTotalItems(totalItems);
+        response.setPage(safePage);
+        response.setSize(safeSize);
+        response.setTotalPages(totalPages);
+
+        return response;
+    }
+
+    public String exportMerchantInventoryCsv(
+            String retailerKey,
+            String storeCode,
+            String query,
+            String category
+    ) {
+        List<Product> products = findMerchantInventoryProducts(
+                retailerKey,
+                storeCode,
+                query,
+                category
+        );
+
+        StringBuilder csv = new StringBuilder();
+
+        csv.append("rfid,item_name,brand,category,color,price,image_url,stock_quantity,retailer_key,retailer_name,store_code,store_name,active,available,low_stock,out_of_stock,reorder_threshold,suggested_reorder_quantity,inventory_alert\n");
+
+        for (Product product : products) {
+            MerchantInventoryItemDTO item = toMerchantInventoryItemDto(product);
+            appendMerchantInventoryCsvRow(csv, item, true);
+        }
+
+        return csv.toString();
+    }
+
+    public String exportLowStockInventoryCsv(
+            String retailerKey,
+            String storeCode,
+            String query,
+            String category,
+            Integer threshold
+    ) {
+        int safeThreshold = threshold == null ? DEFAULT_REORDER_THRESHOLD : Math.max(0, threshold);
+
+        List<Product> products = findMerchantInventoryProducts(
+                retailerKey,
+                storeCode,
+                query,
+                category
+        ).stream()
+                .filter(product -> {
+                    int stockQuantity = product.getStockQuantity() == null ? 0 : product.getStockQuantity();
+                    return stockQuantity <= safeThreshold;
+                })
+                .sorted(Comparator
+                        .comparingInt((Product product) -> product.getStockQuantity() == null ? 0 : product.getStockQuantity())
+                        .thenComparing(product -> safe(product.getItemName()), String.CASE_INSENSITIVE_ORDER)
+                        .thenComparing(product -> safe(product.getRfid())))
+                .collect(Collectors.toList());
+
+        StringBuilder csv = new StringBuilder();
+
+        csv.append("rfid,item_name,brand,category,color,price,image_url,stock_quantity,retailer_key,retailer_name,store_code,store_name,active,available,low_stock_threshold\n");
+
+        for (Product product : products) {
+            MerchantInventoryItemDTO item = toMerchantInventoryItemDto(product);
+
+            csv.append(csvValue(item.getRfid())).append(",");
+            csv.append(csvValue(item.getItemName())).append(",");
+            csv.append(csvValue(item.getBrand())).append(",");
+            csv.append(csvValue(item.getCategory())).append(",");
+            csv.append(csvValue(item.getColor())).append(",");
+            csv.append(item.getPrice() == null ? "0.0" : item.getPrice()).append(",");
+            csv.append(csvValue(item.getImageUrl())).append(",");
+            csv.append(item.getStockQuantity() == null ? "0" : item.getStockQuantity()).append(",");
+            csv.append(csvValue(item.getRetailerKey())).append(",");
+            csv.append(csvValue(item.getRetailerName())).append(",");
+            csv.append(csvValue(item.getStoreCode())).append(",");
+            csv.append(csvValue(item.getStoreName())).append(",");
+            csv.append(Boolean.TRUE.equals(item.getActive())).append(",");
+            csv.append(Boolean.TRUE.equals(item.getAvailable())).append(",");
+            csv.append(safeThreshold).append("\n");
+        }
+
+        return csv.toString();
+    }
+
+    public String exportMerchantReorderReportCsv(
+            String retailerKey,
+            String storeCode,
+            String query,
+            String category
+    ) {
+        List<Product> products = findMerchantInventoryProducts(
+                retailerKey,
+                storeCode,
+                query,
+                category
+        );
+
+        StringBuilder csv = new StringBuilder();
+
+        csv.append("rfid,item_name,brand,category,color,price,image_url,stock_quantity,retailer_key,retailer_name,store_code,store_name,active,available,reorder_threshold,suggested_reorder_quantity,inventory_alert\n");
+
+        for (Product product : products) {
+            MerchantInventoryItemDTO item = toMerchantInventoryItemDto(product);
+
+            boolean needsReorder = Boolean.TRUE.equals(item.getOutOfStock())
+                    || Boolean.TRUE.equals(item.getLowStock());
+
+            if (!needsReorder) {
+                continue;
+            }
+
+            csv.append(csvValue(item.getRfid())).append(",");
+            csv.append(csvValue(item.getItemName())).append(",");
+            csv.append(csvValue(item.getBrand())).append(",");
+            csv.append(csvValue(item.getCategory())).append(",");
+            csv.append(csvValue(item.getColor())).append(",");
+            csv.append(item.getPrice() == null ? "0.0" : item.getPrice()).append(",");
+            csv.append(csvValue(item.getImageUrl())).append(",");
+            csv.append(item.getStockQuantity() == null ? "0" : item.getStockQuantity()).append(",");
+            csv.append(csvValue(item.getRetailerKey())).append(",");
+            csv.append(csvValue(item.getRetailerName())).append(",");
+            csv.append(csvValue(item.getStoreCode())).append(",");
+            csv.append(csvValue(item.getStoreName())).append(",");
+            csv.append(Boolean.TRUE.equals(item.getActive())).append(",");
+            csv.append(Boolean.TRUE.equals(item.getAvailable())).append(",");
+            csv.append(item.getReorderThreshold() == null ? DEFAULT_REORDER_THRESHOLD : item.getReorderThreshold()).append(",");
+            csv.append(item.getSuggestedReorderQuantity() == null ? "0" : item.getSuggestedReorderQuantity()).append(",");
+            csv.append(csvValue(item.getInventoryAlert())).append("\n");
+        }
+
+        return csv.toString();
+    }
+
+    private List<Product> findMerchantInventoryProducts(
+            String retailerKey,
+            String storeCode,
+            String query,
+            String category
+    ) {
+        String safeRetailerKey = retailerKey == null ? "" : retailerKey.trim();
+        String safeStoreCode = storeCode == null ? "" : storeCode.trim();
+        String safeQuery = query == null ? "" : query.trim().toLowerCase();
+        String safeCategory = category == null ? "" : category.trim().toLowerCase();
+
+        List<Product> baseProducts;
+
+        if (!safeRetailerKey.isBlank() && !safeStoreCode.isBlank()) {
+            baseProducts = productRepository.findByRetailerKeyAndStoreCode(
+                    safeRetailerKey,
+                    safeStoreCode
+            );
+        } else if (!safeRetailerKey.isBlank()) {
+            baseProducts = productRepository.findByRetailerKey(safeRetailerKey);
+        } else if (!safeStoreCode.isBlank()) {
+            baseProducts = productRepository.findByStoreCode(safeStoreCode);
+        } else {
+            baseProducts = productRepository.findAll();
+        }
+
+        return baseProducts.stream()
+                .filter(product -> safeCategory.isBlank()
+                        || normalizeCategory(product.getCategory()).equals(safeCategory)
+                        || safe(product.getCategory()).equalsIgnoreCase(safeCategory))
+                .filter(product -> {
+                    if (safeQuery.isBlank()) {
+                        return true;
+                    }
+
+                    return safe(product.getRfid()).toLowerCase().contains(safeQuery)
+                            || safe(product.getItemName()).toLowerCase().contains(safeQuery)
+                            || safe(product.getBrand()).toLowerCase().contains(safeQuery)
+                            || safe(product.getCategory()).toLowerCase().contains(safeQuery)
+                            || safe(product.getColor()).toLowerCase().contains(safeQuery);
+                })
+                .sorted(Comparator
+                        .comparing((Product p) -> safe(p.getItemName()), String.CASE_INSENSITIVE_ORDER)
+                        .thenComparing(p -> safe(p.getRfid())))
+                .collect(Collectors.toList());
+    }
+
+    private Product findMerchantInventoryProductForUpdate(
+            String rfid,
+            String retailerKey,
+            String storeCode
+    ) {
+        Product product = productRepository.findById(rfid)
+                .orElseThrow(() -> new RuntimeException("Inventory item not found for RFID: " + rfid));
+
+        if (retailerKey != null && !retailerKey.isBlank()) {
+            String expectedRetailerKey = safe(retailerKey);
+            String actualRetailerKey = safe(product.getRetailerKey());
+
+            if (!actualRetailerKey.isBlank()) {
+                if (!actualRetailerKey.equalsIgnoreCase(expectedRetailerKey)) {
+                    throw new IllegalArgumentException("RFID does not belong to the selected retailer.");
+                }
+            } else {
+                String expectedRetailerName = mapRetailerKeyToName(expectedRetailerKey);
+                if (!safe(product.getRetailerName()).equalsIgnoreCase(expectedRetailerName)) {
+                    throw new IllegalArgumentException("RFID does not belong to the selected retailer.");
+                }
+            }
+        }
+
+        if (storeCode != null && !storeCode.isBlank()) {
+            if (!safe(product.getStoreCode()).equalsIgnoreCase(safe(storeCode))) {
+                throw new IllegalArgumentException("RFID does not belong to the selected store.");
+            }
+        }
+
+        return product;
+    }
+
+    private MerchantInventoryItemDTO toMerchantInventoryItemDto(Product product) {
+        int stockQuantity = product.getStockQuantity() == null ? 0 : product.getStockQuantity();
+
+        int reorderThreshold = DEFAULT_REORDER_THRESHOLD;
+        int idealStockLevel = DEFAULT_IDEAL_STOCK_LEVEL;
+
+        boolean outOfStock = stockQuantity <= 0;
+        boolean lowStock = stockQuantity > 0 && stockQuantity <= reorderThreshold;
+        int suggestedReorderQuantity = Math.max(0, idealStockLevel - stockQuantity);
+
+        String inventoryAlert;
+        if (outOfStock) {
+            inventoryAlert = "Out of stock — reorder immediately.";
+        } else if (lowStock) {
+            inventoryAlert = "Low stock — suggested reorder: " + suggestedReorderQuantity + " units.";
+        } else {
+            inventoryAlert = "Stock level is healthy.";
+        }
+
+        MerchantInventoryItemDTO dto = new MerchantInventoryItemDTO();
+        dto.setRfid(safe(product.getRfid()));
+        dto.setItemName(safe(product.getItemName()));
+        dto.setBrand(safe(product.getBrand()));
+        dto.setCategory(safe(product.getCategory()));
+        dto.setColor(safeColor(product));
+        dto.setPrice(safePrice(product.getPrice()));
+        dto.setImageUrl(safeImage(product.getImageUrl()));
+        dto.setStockQuantity(stockQuantity);
+        dto.setRetailerName(safe(product.getRetailerName()));
+        dto.setRetailerKey(safe(product.getRetailerKey()));
+        dto.setStoreName(safe(product.getStoreName()));
+        dto.setStoreCode(safe(product.getStoreCode()));
+        dto.setAvailable(Boolean.TRUE.equals(product.getAvailable()));
+        dto.setActive(Boolean.TRUE.equals(product.getActive()));
+
+        dto.setLowStock(lowStock);
+        dto.setOutOfStock(outOfStock);
+        dto.setReorderThreshold(reorderThreshold);
+        dto.setSuggestedReorderQuantity(suggestedReorderQuantity);
+        dto.setInventoryAlert(inventoryAlert);
+
+        return dto;
+    }
+
+    private void appendMerchantInventoryCsvRow(
+            StringBuilder csv,
+            MerchantInventoryItemDTO item,
+            boolean includeInventoryAlertColumns
+    ) {
+        csv.append(csvValue(item.getRfid())).append(",");
+        csv.append(csvValue(item.getItemName())).append(",");
+        csv.append(csvValue(item.getBrand())).append(",");
+        csv.append(csvValue(item.getCategory())).append(",");
+        csv.append(csvValue(item.getColor())).append(",");
+        csv.append(item.getPrice() == null ? "0.0" : item.getPrice()).append(",");
+        csv.append(csvValue(item.getImageUrl())).append(",");
+        csv.append(item.getStockQuantity() == null ? "0" : item.getStockQuantity()).append(",");
+        csv.append(csvValue(item.getRetailerKey())).append(",");
+        csv.append(csvValue(item.getRetailerName())).append(",");
+        csv.append(csvValue(item.getStoreCode())).append(",");
+        csv.append(csvValue(item.getStoreName())).append(",");
+        csv.append(Boolean.TRUE.equals(item.getActive())).append(",");
+        csv.append(Boolean.TRUE.equals(item.getAvailable()));
+
+        if (includeInventoryAlertColumns) {
+            csv.append(",");
+            csv.append(Boolean.TRUE.equals(item.getLowStock())).append(",");
+            csv.append(Boolean.TRUE.equals(item.getOutOfStock())).append(",");
+            csv.append(item.getReorderThreshold() == null ? DEFAULT_REORDER_THRESHOLD : item.getReorderThreshold()).append(",");
+            csv.append(item.getSuggestedReorderQuantity() == null ? "0" : item.getSuggestedReorderQuantity()).append(",");
+            csv.append(csvValue(item.getInventoryAlert()));
+        }
+
+        csv.append("\n");
+    }
+
+    private Product loadScannedProductForContext(String retailerKey, String storeCode, String rfid) {
+        if (rfid == null || rfid.isBlank()) {
+            throw new IllegalArgumentException("RFID is required");
+        }
+
+        Product product = productRepository.findById(rfid)
+                .orElseThrow(() -> new RuntimeException("RFID not found: " + rfid));
+
+        if (!matchesRetailerSelection(product, retailerKey)) {
+            throw new IllegalArgumentException("RFID does not belong to selected retailer");
+        }
+
+        if (!matchesStoreSelection(product, storeCode)) {
+            throw new IllegalArgumentException("RFID does not belong to selected store");
+        }
+
+        if (!isProductAvailableForStyling(product)) {
+            throw new IllegalStateException("This item is not currently available in inventory");
+        }
+
+        return product;
+    }
+
+    private ScanResultDTO buildScanResultForLook(
+            Product scannedProduct,
+            String vibe,
+            List<RecommendationItemDTO> suggestions
+    ) {
+        ScanResultDTO scanResult = new ScanResultDTO();
+        scanResult.setRfid(safe(scannedProduct.getRfid()));
+        scanResult.setName(safe(scannedProduct.getItemName()));
+        scanResult.setBrand(safeBrand(scannedProduct));
+        scanResult.setCategory(safe(scannedProduct.getCategory()));
+        scanResult.setColor(safeColor(scannedProduct));
+        scanResult.setRetailer(safe(scannedProduct.getRetailerName()));
+        scanResult.setPrice(safePrice(scannedProduct.getPrice()));
+        scanResult.setMatchScore(calculateMainMatchScore(scannedProduct, vibe));
+        scanResult.setImageUrl(safeImage(scannedProduct.getImageUrl()));
+        scanResult.setStylingAdvice(aiStylistService.generateAdvice(scannedProduct, vibe));
+        scanResult.setWhyItWorks(generateWhyItWorks(scannedProduct, vibe));
+        scanResult.setSuggestions(suggestions);
+        return scanResult;
+    }
+
+    private List<Product> findAvailableProductsForCategory(Product scannedProduct, String normalizedCategory) {
+        String retailerKey = safe(scannedProduct.getRetailerKey());
+        String storeCode = safe(scannedProduct.getStoreCode());
+        String categoryValue = toStoredCategoryValue(normalizedCategory);
+
+        List<Product> rawResults;
+
+        if (!retailerKey.isBlank() && !storeCode.isBlank()) {
+            rawResults = productRepository.findByRetailerKeyAndStoreCodeAndCategoryIgnoreCaseAndActiveTrueAndAvailableTrueAndStockQuantityGreaterThan(
+                    retailerKey,
+                    storeCode,
+                    categoryValue,
+                    0
+            );
+
+            if (rawResults.isEmpty()) {
+                rawResults = productRepository.findByRetailerKeyAndCategoryIgnoreCaseAndActiveTrueAndAvailableTrueAndStockQuantityGreaterThan(
+                        retailerKey,
+                        categoryValue,
+                        0
+                );
+            }
+        } else if (!retailerKey.isBlank()) {
+            rawResults = productRepository.findByRetailerKeyAndCategoryIgnoreCaseAndActiveTrueAndAvailableTrueAndStockQuantityGreaterThan(
+                    retailerKey,
+                    categoryValue,
+                    0
+            );
+        } else if (!storeCode.isBlank()) {
+            rawResults = productRepository.findByStoreCodeAndCategoryIgnoreCaseAndActiveTrueAndAvailableTrueAndStockQuantityGreaterThan(
+                    storeCode,
+                    categoryValue,
+                    0
+            );
+        } else {
+            rawResults = productRepository.findByCategoryIgnoreCaseAndActiveTrueAndAvailableTrueAndStockQuantityGreaterThan(
+                    categoryValue,
+                    0
+            );
+        }
+
+        if (rawResults.isEmpty()) {
+            return List.of();
+        }
+
+        return rawResults.stream()
+                .filter(this::isProductAvailableForStyling)
+                .collect(Collectors.toList());
+    }
+
+    private List<Product> findAvailableProductsForTargetCategories(
+            Product scannedProduct,
+            Set<String> targetCategories
+    ) {
+        Map<String, Product> deduped = new LinkedHashMap<>();
+
+        for (String category : targetCategories) {
+            List<Product> products = findAvailableProductsForCategory(scannedProduct, category);
+            for (Product product : products) {
+                deduped.putIfAbsent(safe(product.getRfid()), product);
+            }
+        }
+
+        return new ArrayList<>(deduped.values());
+    }
+
+    private String toStoredCategoryValue(String normalizedCategory) {
+        return switch (safeLower(normalizedCategory)) {
+            case "tops" -> "Tops";
+            case "bottoms" -> "Bottoms";
+            case "shoes" -> "Shoes";
+            case "outerwear" -> "Outerwear";
+            default -> normalizedCategory;
+        };
+    }
+
+    private List<RecommendationItemDTO> generateSmartSuggestions(Product scannedProduct, String vibe) {
+        return generateSmartSuggestionProducts(scannedProduct, vibe).stream()
+                .map(candidate -> toRecommendationDto(scannedProduct, candidate, vibe))
+                .collect(Collectors.toList());
+    }
+
+    private List<RecommendationItemDTO> generateSmartSuggestionsForVariation(
+            Product scannedProduct,
+            String vibe,
+            int variation
+    ) {
         Set<String> targetCategories = getTargetCategories(scannedProduct.getCategory(), vibe);
 
-        return allProducts.stream()
-                .filter(p -> !p.getRfid().equalsIgnoreCase(scannedProduct.getRfid()))
+        Map<String, List<Product>> groupedByCategory = findAvailableProductsForTargetCategories(scannedProduct, targetCategories).stream()
+                .filter(p -> !safe(p.getRfid()).equalsIgnoreCase(safe(scannedProduct.getRfid())))
                 .filter(p -> targetCategories.contains(normalizeCategory(p.getCategory())))
                 .sorted(Comparator
                         .comparingInt((Product p) -> scoreSuggestion(scannedProduct, p, vibe))
                         .reversed()
-                        .thenComparing(Product::getRetailerName)
-                        .thenComparing(Product::getItemName))
+                        .thenComparing(p -> safe(p.getRetailerName()))
+                        .thenComparing(p -> safe(p.getStoreName()))
+                        .thenComparing(p -> safe(p.getItemName())))
+                .collect(Collectors.groupingBy(
+                        p -> normalizeCategory(p.getCategory()),
+                        LinkedHashMap::new,
+                        Collectors.toList()
+                ));
+
+        List<Product> selected = new ArrayList<>();
+        int offset = Math.max(0, variation - 1);
+
+        for (String category : orderedCategories()) {
+            if (!targetCategories.contains(category)) {
+                continue;
+            }
+
+            List<Product> candidates = groupedByCategory.getOrDefault(category, List.of());
+            if (candidates.isEmpty()) {
+                continue;
+            }
+
+            Product chosen = candidates.get(offset % candidates.size());
+            selected.add(chosen);
+        }
+
+        return selected.stream()
+                .map(candidate -> toRecommendationDto(scannedProduct, candidate, vibe))
+                .collect(Collectors.toList());
+    }
+
+    private List<Product> generateSmartSuggestionProducts(Product scannedProduct, String vibe) {
+        Set<String> targetCategories = getTargetCategories(scannedProduct.getCategory(), vibe);
+
+        return findAvailableProductsForTargetCategories(scannedProduct, targetCategories).stream()
+                .filter(p -> !safe(p.getRfid()).equalsIgnoreCase(safe(scannedProduct.getRfid())))
+                .filter(p -> targetCategories.contains(normalizeCategory(p.getCategory())))
+                .sorted(Comparator
+                        .comparingInt((Product p) -> scoreSuggestion(scannedProduct, p, vibe))
+                        .reversed()
+                        .thenComparing(p -> safe(p.getRetailerName()))
+                        .thenComparing(p -> safe(p.getStoreName()))
+                        .thenComparing(p -> safe(p.getItemName())))
                 .collect(Collectors.toMap(
                         p -> normalizeCategory(p.getCategory()),
                         p -> p,
@@ -236,8 +1105,435 @@ public class InventoryService {
                 ))
                 .values()
                 .stream()
-                .limit(3)
+                .limit(4)
                 .collect(Collectors.toList());
+    }
+
+    private List<RecommendationItemDTO> generateAlternativeSuggestions(
+            Product scannedProduct,
+            String vibe,
+            FullOutfitDTO fullOutfit,
+            int variationOffset
+    ) {
+        Set<String> targetCategories = getTargetCategories(scannedProduct.getCategory(), vibe);
+        Set<String> excludedRfids = collectUsedRfids(scannedProduct, fullOutfit);
+
+        Map<String, List<Product>> groupedByCategory = findAvailableProductsForTargetCategories(scannedProduct, targetCategories).stream()
+                .filter(p -> !excludedRfids.contains(safe(p.getRfid())))
+                .filter(p -> targetCategories.contains(normalizeCategory(p.getCategory())))
+                .sorted(Comparator
+                        .comparingInt((Product p) -> scoreSuggestion(scannedProduct, p, vibe))
+                        .reversed()
+                        .thenComparing(p -> safe(p.getRetailerName()))
+                        .thenComparing(p -> safe(p.getStoreName()))
+                        .thenComparing(p -> safe(p.getItemName())))
+                .collect(Collectors.groupingBy(
+                        p -> normalizeCategory(p.getCategory()),
+                        LinkedHashMap::new,
+                        Collectors.toList()
+                ));
+
+        List<RecommendationItemDTO> alternatives = new ArrayList<>();
+        int safeOffset = Math.max(0, variationOffset);
+
+        for (String category : orderedCategories()) {
+            if (!targetCategories.contains(category)) {
+                continue;
+            }
+
+            List<Product> candidates = groupedByCategory.getOrDefault(category, List.of());
+            if (candidates.isEmpty()) {
+                continue;
+            }
+
+            Product chosen = candidates.get(safeOffset % candidates.size());
+            alternatives.add(toRecommendationDto(scannedProduct, chosen, vibe));
+        }
+
+        return removeItemsAlreadyInFullOutfit(alternatives, fullOutfit);
+    }
+
+    private List<RecommendationItemDTO> generateSmartSwapSuggestions(
+            Product scannedProduct,
+            String vibe,
+            FullOutfitDTO fullOutfit,
+            String prioritizedCategory
+    ) {
+        Set<String> targetCategories = getTargetCategories(scannedProduct.getCategory(), vibe);
+        Set<String> excludedRfids = collectUsedRfids(scannedProduct, fullOutfit);
+
+        if (prioritizedCategory == null || !targetCategories.contains(prioritizedCategory)) {
+            return List.of();
+        }
+
+        return findAvailableProductsForCategory(scannedProduct, prioritizedCategory).stream()
+                .filter(p -> !excludedRfids.contains(safe(p.getRfid())))
+                .filter(p -> normalizeCategory(p.getCategory()).equals(prioritizedCategory))
+                .sorted(Comparator
+                        .comparingInt((Product p) -> scoreSwapSuggestion(scannedProduct, p, vibe, prioritizedCategory))
+                        .reversed()
+                        .thenComparing(p -> safe(p.getRetailerName()))
+                        .thenComparing(p -> safe(p.getStoreName()))
+                        .thenComparing(p -> safe(p.getItemName())))
+                .limit(3)
+                .map(candidate -> toRecommendationDto(scannedProduct, candidate, vibe))
+                .collect(Collectors.toList());
+    }
+
+    private int scoreSwapSuggestion(
+            Product scannedProduct,
+            Product candidate,
+            String vibe,
+            String prioritizedCategory
+    ) {
+        int score = scoreSuggestion(scannedProduct, candidate, vibe);
+        String candidateCategory = normalizeCategory(candidate.getCategory());
+
+        if (candidateCategory.equals(prioritizedCategory)) {
+            score += 40;
+        }
+
+        if (!safe(candidate.getRetailerName()).equalsIgnoreCase(safe(scannedProduct.getRetailerName()))) {
+            score += 10;
+        }
+
+        if (safe(candidate.getStoreCode()).equalsIgnoreCase(safe(scannedProduct.getStoreCode()))
+                && !safe(candidate.getStoreCode()).isBlank()) {
+            score += 8;
+        }
+
+        String scannedColor = safeLower(safeColor(scannedProduct));
+        String candidateColor = safeLower(safeColor(candidate));
+
+        if (scannedColor.equals(candidateColor)) {
+            score += 10;
+        } else if (isNeutral(scannedColor) || isNeutral(candidateColor)) {
+            score += 6;
+        }
+
+        double scannedPrice = safePrice(scannedProduct.getPrice());
+        double candidatePrice = safePrice(candidate.getPrice());
+
+        if (scannedPrice > 0 && candidatePrice > 0) {
+            double ratio = candidatePrice / scannedPrice;
+
+            if (ratio >= 0.65 && ratio <= 1.35) {
+                score += 8;
+            } else if (ratio >= 0.45 && ratio <= 1.75) {
+                score += 4;
+            }
+        }
+
+        return score;
+    }
+
+    private List<RecommendationItemDTO> removeItemsAlreadyInFullOutfit(
+            List<RecommendationItemDTO> suggestions,
+            FullOutfitDTO fullOutfit
+    ) {
+        if (suggestions == null || suggestions.isEmpty()) {
+            return List.of();
+        }
+
+        if (fullOutfit == null) {
+            return suggestions;
+        }
+
+        Set<String> usedRfids = new LinkedHashSet<>();
+        addOutfitItemRfid(usedRfids, fullOutfit.getTop());
+        addOutfitItemRfid(usedRfids, fullOutfit.getBottom());
+        addOutfitItemRfid(usedRfids, fullOutfit.getShoes());
+        addOutfitItemRfid(usedRfids, fullOutfit.getOuterwear());
+
+        return suggestions.stream()
+                .filter(item -> item != null)
+                .filter(item -> !usedRfids.contains(safe(item.getRfid())))
+                .collect(Collectors.toList());
+    }
+
+    private void addOutfitItemRfid(Set<String> usedRfids, RecommendationItemDTO item) {
+        if (item == null) {
+            return;
+        }
+
+        String rfid = safe(item.getRfid());
+        if (!rfid.isBlank()) {
+            usedRfids.add(rfid);
+        }
+    }
+
+    private Set<String> collectUsedRfids(Product scannedProduct, FullOutfitDTO fullOutfit) {
+        Set<String> usedRfids = new LinkedHashSet<>();
+        usedRfids.add(safe(scannedProduct.getRfid()));
+
+        if (fullOutfit != null) {
+            addOutfitItemRfid(usedRfids, fullOutfit.getTop());
+            addOutfitItemRfid(usedRfids, fullOutfit.getBottom());
+            addOutfitItemRfid(usedRfids, fullOutfit.getShoes());
+            addOutfitItemRfid(usedRfids, fullOutfit.getOuterwear());
+        }
+
+        return usedRfids;
+    }
+
+    private Product findBestCandidateForCategory(
+            Product scannedProduct,
+            String vibe,
+            String targetCategory,
+            Set<String> excludedRfids
+    ) {
+        return findAvailableProductsForCategory(scannedProduct, targetCategory).stream()
+                .filter(p -> !safe(p.getRfid()).equalsIgnoreCase(safe(scannedProduct.getRfid())))
+                .filter(p -> normalizeCategory(p.getCategory()).equals(targetCategory))
+                .filter(p -> !excludedRfids.contains(safe(p.getRfid())))
+                .sorted(Comparator
+                        .comparingInt((Product p) -> scoreSuggestion(scannedProduct, p, vibe))
+                        .reversed()
+                        .thenComparing(p -> safe(p.getRetailerName()))
+                        .thenComparing(p -> safe(p.getStoreName()))
+                        .thenComparing(p -> safe(p.getItemName())))
+                .findFirst()
+                .orElse(null);
+    }
+
+    private Product findProductIfValid(String rfid, String expectedCategory, String scannedRfid) {
+        if (rfid == null || rfid.isBlank()) {
+            return null;
+        }
+
+        Product product = productRepository.findById(rfid).orElse(null);
+
+        if (product == null) {
+            return null;
+        }
+
+        if (safe(product.getRfid()).equalsIgnoreCase(scannedRfid)) {
+            return null;
+        }
+
+        if (!isProductAvailableForStyling(product)) {
+            return null;
+        }
+
+        if (!normalizeCategory(product.getCategory()).equals(expectedCategory)) {
+            return null;
+        }
+
+        return product;
+    }
+
+    private RecommendationItemDTO toRecommendationDto(Product scannedProduct, Product candidate, String vibe) {
+        int styleMatch = calculateStyleMatch(scannedProduct, candidate, vibe);
+        int colorMatch = calculateColorMatch(scannedProduct, candidate);
+        int occasionMatch = calculateOccasionMatch(candidate, vibe);
+        int overallMatch = clampScore((styleMatch + colorMatch + occasionMatch) / 3);
+
+        String reason = generateRecommendationReason(scannedProduct, candidate, vibe);
+
+        RecommendationItemDTO dto = new RecommendationItemDTO();
+        dto.setRfid(safe(candidate.getRfid()));
+        dto.setName(safe(candidate.getItemName()));
+        dto.setBrand(safeBrand(candidate));
+        dto.setCategory(safe(candidate.getCategory()));
+        dto.setColor(safeColor(candidate));
+        dto.setRetailer(safe(candidate.getRetailerName()));
+        dto.setPrice(safePrice(candidate.getPrice()));
+        dto.setMatchScore(overallMatch);
+        dto.setStyleMatch(styleMatch);
+        dto.setColorMatch(colorMatch);
+        dto.setOccasionMatch(occasionMatch);
+        dto.setReason(reason);
+        dto.setImageUrl(safeImage(candidate.getImageUrl()));
+
+        return dto;
+    }
+
+    private int calculateStyleMatch(Product scannedProduct, Product candidate, String vibe) {
+        int score = 80;
+
+        String scannedCategory = normalizeCategory(scannedProduct.getCategory());
+        String candidateCategory = normalizeCategory(candidate.getCategory());
+        String candidateName = safeLower(candidate.getItemName());
+        String vibeLower = safeLower(vibe);
+
+        if ("tops".equals(scannedCategory)
+                && ("bottoms".equals(candidateCategory) || "shoes".equals(candidateCategory) || "outerwear".equals(candidateCategory))) {
+            score += 8;
+        }
+
+        if ("bottoms".equals(scannedCategory)
+                && ("tops".equals(candidateCategory) || "shoes".equals(candidateCategory) || "outerwear".equals(candidateCategory))) {
+            score += 8;
+        }
+
+        if ("shoes".equals(scannedCategory)
+                && ("tops".equals(candidateCategory) || "bottoms".equals(candidateCategory) || "outerwear".equals(candidateCategory))) {
+            score += 8;
+        }
+
+        if ("outerwear".equals(scannedCategory)
+                && ("tops".equals(candidateCategory) || "bottoms".equals(candidateCategory) || "shoes".equals(candidateCategory))) {
+            score += 8;
+        }
+
+        if ("casual".equals(vibeLower) && containsAny(candidateName, "shirt", "jeans", "sneaker", "hoodie", "coat", "trouser")) {
+            score += 8;
+        }
+
+        if ("formal".equals(vibeLower) && containsAny(candidateName, "blazer", "shirt", "trouser", "loafer", "coat")) {
+            score += 8;
+        }
+
+        if ("streetwear".equals(vibeLower) && containsAny(candidateName, "hoodie", "cargo", "sneaker", "oversized", "jacket")) {
+            score += 8;
+        }
+
+        if ("luxury".equals(vibeLower) && containsAny(candidateName, "tailored", "leather", "premium", "coat", "loafer")) {
+            score += 8;
+        }
+
+        if (safe(candidate.getStoreCode()).equalsIgnoreCase(safe(scannedProduct.getStoreCode()))
+                && !safe(candidate.getStoreCode()).isBlank()) {
+            score += 4;
+        }
+
+        return clampScore(score);
+    }
+
+    private int calculateColorMatch(Product scannedProduct, Product candidate) {
+        String scannedColor = safeLower(safeColor(scannedProduct));
+        String candidateColor = safeLower(safeColor(candidate));
+
+        if (scannedColor.isBlank() || candidateColor.isBlank()) {
+            return 82;
+        }
+
+        if (scannedColor.equals(candidateColor)) {
+            return 96;
+        }
+
+        if (isNeutral(scannedColor) || isNeutral(candidateColor)) {
+            return 92;
+        }
+
+        return 86;
+    }
+
+    private int calculateOccasionMatch(Product candidate, String vibe) {
+        int score = 82;
+        String name = safeLower(candidate.getItemName());
+        String vibeLower = safeLower(vibe);
+
+        if ("casual".equals(vibeLower) && containsAny(name, "shirt", "jeans", "sneaker", "hoodie", "coat", "trouser")) {
+            score += 10;
+        }
+
+        if ("formal".equals(vibeLower) && containsAny(name, "blazer", "shirt", "trouser", "loafer", "dress")) {
+            score += 10;
+        }
+
+        if ("date night".equals(vibeLower) && containsAny(name, "boot", "jacket", "coat", "heel", "dress")) {
+            score += 10;
+        }
+
+        if ("streetwear".equals(vibeLower) && containsAny(name, "hoodie", "cargo", "sneaker", "oversized")) {
+            score += 10;
+        }
+
+        if ("luxury".equals(vibeLower) && containsAny(name, "leather", "tailored", "premium", "loafer", "coat")) {
+            score += 10;
+        }
+
+        return clampScore(score);
+    }
+
+    private String generateRecommendationReason(Product scannedProduct, Product candidate, String vibe) {
+        String scannedCategory = normalizeCategory(scannedProduct.getCategory());
+        String candidateCategory = normalizeCategory(candidate.getCategory());
+        String scannedColor = safeLower(safeColor(scannedProduct));
+        String candidateColor = safeLower(safeColor(candidate));
+        String vibeLower = safeLower(vibe);
+
+        if ("outerwear".equals(scannedCategory) && "tops".equals(candidateCategory)) {
+            return "This top softens the outer layer and helps balance the overall silhouette.";
+        }
+
+        if ("outerwear".equals(scannedCategory) && "bottoms".equals(candidateCategory)) {
+            return "These bottoms ground the statement outerwear and keep the look casual and wearable.";
+        }
+
+        if ("tops".equals(candidateCategory) && "casual".equals(vibeLower)) {
+            return "This top keeps the outfit clean and easy to wear while supporting the casual vibe.";
+        }
+
+        if ("outerwear".equals(candidateCategory) && "casual".equals(vibeLower)) {
+            return "This outerwear layer adds structure and helps complete the outfit without losing the relaxed feel.";
+        }
+
+        if ("bottoms".equals(candidateCategory) && "casual".equals(vibeLower)) {
+            return "These bottoms keep the outfit relaxed and work naturally with the selected casual vibe.";
+        }
+
+        if ("shoes".equals(candidateCategory)) {
+            return "These shoes reinforce the outfit direction and help complete the full look.";
+        }
+
+        if (safe(candidate.getStoreCode()).equalsIgnoreCase(safe(scannedProduct.getStoreCode()))
+                && !safe(candidate.getStoreCode()).isBlank()) {
+            return "This piece is available in the same store context and fits the overall styling direction.";
+        }
+
+        if (isNeutral(scannedColor) || isNeutral(candidateColor)) {
+            return "Neutral tones make this piece easy to pair with the rest of the outfit.";
+        }
+
+        return "This piece supports the outfit by matching the vibe, category balance, and overall styling direction.";
+    }
+
+    private List<String> orderedCategories() {
+        return List.of("tops", "bottoms", "shoes", "outerwear");
+    }
+
+    private int calculateMainMatchScore(Product product, String vibe) {
+        int score = 84;
+
+        String category = normalizeCategory(product.getCategory());
+        String name = safeLower(product.getItemName());
+        String vibeLower = safeLower(vibe);
+
+        if (!category.isBlank()) {
+            score += 4;
+        }
+
+        if (!safeColor(product).isBlank()) {
+            score += 2;
+        }
+
+        if (isProductAvailableForStyling(product)) {
+            score += 4;
+        }
+
+        if ("casual".equals(vibeLower) && containsAny(name, "hoodie", "jean", "sneaker", "tee", "coat", "trouser")) {
+            score += 4;
+        }
+
+        if ("formal".equals(vibeLower) && containsAny(name, "blazer", "trouser", "loafer", "shirt", "coat")) {
+            score += 4;
+        }
+
+        if ("streetwear".equals(vibeLower) && containsAny(name, "hoodie", "cargo", "sneaker", "oversized", "jacket")) {
+            score += 4;
+        }
+
+        if ("luxury".equals(vibeLower) && containsAny(name, "coat", "tailored", "premium", "leather")) {
+            score += 4;
+        }
+
+        if ("outerwear".equals(category) || "tops".equals(category) || "shoes".equals(category) || "bottoms".equals(category)) {
+            score += 2;
+        }
+
+        return clampScore(score);
     }
 
     private int scoreSuggestion(Product scannedProduct, Product candidate, String vibe) {
@@ -255,14 +1551,23 @@ public class InventoryService {
             score += 40;
         }
 
+        if (isProductAvailableForStyling(candidate)) {
+            score += 18;
+        }
+
         if (!candidateRetailer.equals(scannedRetailer)) {
             score += 20;
         } else {
             score += 5;
         }
 
-        double scannedPrice = scannedProduct.getPrice();
-        double candidatePrice = candidate.getPrice();
+        if (safe(candidate.getStoreCode()).equalsIgnoreCase(safe(scannedProduct.getStoreCode()))
+                && !safe(candidate.getStoreCode()).isBlank()) {
+            score += 8;
+        }
+
+        double scannedPrice = safePrice(scannedProduct.getPrice());
+        double candidatePrice = safePrice(candidate.getPrice());
 
         if (scannedPrice > 0 && candidatePrice > 0) {
             double ratio = candidatePrice / scannedPrice;
@@ -274,34 +1579,43 @@ public class InventoryService {
             }
         }
 
-        if ("casual".equals(vibeLower)) {
-            if (containsAny(candidateName, "tee", "t-shirt", "shirt", "jeans", "sneakers", "hoodie", "coat")) {
-                score += 12;
-            }
+        if ("casual".equals(vibeLower) && containsAny(candidateName, "tee", "t-shirt", "shirt", "jeans", "sneakers", "hoodie", "coat", "trouser")) {
+            score += 12;
         }
 
-        if ("formal".equals(vibeLower)) {
-            if (containsAny(candidateName, "shirt", "blazer", "trouser", "oxford", "loafer", "coat", "dress")) {
-                score += 12;
-            }
+        if ("formal".equals(vibeLower) && containsAny(candidateName, "shirt", "blazer", "trouser", "oxford", "loafer", "coat", "dress")) {
+            score += 12;
         }
 
-        if ("date night".equals(vibeLower)) {
-            if (containsAny(candidateName, "boots", "jacket", "coat", "fitted", "heel", "sleek", "dress")) {
-                score += 12;
-            }
+        if ("date night".equals(vibeLower) && containsAny(candidateName, "boots", "jacket", "coat", "fitted", "heel", "sleek", "dress")) {
+            score += 12;
         }
 
-        if ("tops".equals(scannedCategory) && ("bottoms".equals(candidateCategory) || "shoes".equals(candidateCategory))) {
+        if ("streetwear".equals(vibeLower) && containsAny(candidateName, "cargo", "hoodie", "sneaker", "jacket", "oversized")) {
+            score += 12;
+        }
+
+        if ("luxury".equals(vibeLower) && containsAny(candidateName, "coat", "leather", "tailored", "premium", "heel", "loafer")) {
+            score += 12;
+        }
+
+        if ("tops".equals(scannedCategory)
+                && ("bottoms".equals(candidateCategory) || "shoes".equals(candidateCategory) || "outerwear".equals(candidateCategory))) {
             score += 10;
         }
-        if ("bottoms".equals(scannedCategory) && ("tops".equals(candidateCategory) || "shoes".equals(candidateCategory))) {
+
+        if ("bottoms".equals(scannedCategory)
+                && ("tops".equals(candidateCategory) || "shoes".equals(candidateCategory) || "outerwear".equals(candidateCategory))) {
             score += 10;
         }
-        if ("shoes".equals(scannedCategory) && ("tops".equals(candidateCategory) || "bottoms".equals(candidateCategory))) {
+
+        if ("shoes".equals(scannedCategory)
+                && ("tops".equals(candidateCategory) || "bottoms".equals(candidateCategory) || "outerwear".equals(candidateCategory))) {
             score += 10;
         }
-        if ("outerwear".equals(scannedCategory) && ("tops".equals(candidateCategory) || "bottoms".equals(candidateCategory))) {
+
+        if ("outerwear".equals(scannedCategory)
+                && ("tops".equals(candidateCategory) || "bottoms".equals(candidateCategory) || "shoes".equals(candidateCategory))) {
             score += 10;
         }
 
@@ -325,9 +1639,7 @@ public class InventoryService {
             case "bottoms" -> {
                 targets.add("tops");
                 targets.add("shoes");
-                if (!"Date Night".equalsIgnoreCase(vibe)) {
-                    targets.add("outerwear");
-                }
+                targets.add("outerwear");
             }
             case "shoes" -> {
                 targets.add("tops");
@@ -343,19 +1655,114 @@ public class InventoryService {
                 targets.add("tops");
                 targets.add("bottoms");
                 targets.add("shoes");
+                targets.add("outerwear");
             }
         }
 
         return targets;
     }
 
+    private String normalizeSwapCategory(String swapCategory) {
+        String normalized = safeLower(swapCategory);
+
+        return switch (normalized) {
+            case "top", "tops", "shirt", "shirts", "tee", "t-shirt", "hoodie" -> "tops";
+            case "bottom", "bottoms", "pants", "trousers", "jeans", "cargo" -> "bottoms";
+            case "shoe", "shoes", "sneaker", "sneakers", "boot", "boots" -> "shoes";
+            case "outerwear", "coat", "jacket", "blazer" -> "outerwear";
+            default -> throw new IllegalArgumentException("Unsupported swap category: " + swapCategory);
+        };
+    }
+
+    private String generateWhyItWorks(Product product, String vibe) {
+        String color = safeColor(product);
+        String category = safe(product.getCategory());
+        String vibeName = safe(vibe);
+
+        return "The " + (color.isBlank() ? "tone" : color.toLowerCase())
+                + ", " + (category.isBlank() ? "silhouette" : category.toLowerCase())
+                + ", and " + (vibeName.isBlank() ? "overall styling direction" : vibeName.toLowerCase() + " styling direction")
+                + " make this piece easy to build around across multiple outfit combinations.";
+    }
+
+    private String csvValue(String value) {
+        if (value == null) {
+            return "";
+        }
+
+        String cleaned = value.trim();
+
+        if (cleaned.contains(",") || cleaned.contains("\"") || cleaned.contains("\n")) {
+            return "\"" + cleaned.replace("\"", "\"\"") + "\"";
+        }
+
+        return cleaned;
+    }
+
+    private int clampScore(int rawScore) {
+        if (rawScore < 70) {
+            return 70;
+        }
+
+        if (rawScore > 98) {
+            return 98;
+        }
+
+        return rawScore;
+    }
+
     private boolean containsAny(String text, String... keywords) {
+        if (text == null || text.isBlank()) {
+            return false;
+        }
+
         for (String keyword : keywords) {
             if (text.contains(keyword)) {
                 return true;
             }
         }
+
         return false;
+    }
+
+    private boolean isNeutral(String color) {
+        return Set.of("black", "white", "grey", "gray", "charcoal", "beige", "cream", "brown", "navy", "neutral")
+                .contains(safeLower(color));
+    }
+
+    private boolean isProductAvailableForStyling(Product product) {
+        if (product == null) {
+            return false;
+        }
+
+        return Boolean.TRUE.equals(product.getActive())
+                && Boolean.TRUE.equals(product.getAvailable())
+                && product.getStockQuantity() != null
+                && product.getStockQuantity() > 0;
+    }
+
+    private boolean matchesRetailerSelection(Product product, String retailerKey) {
+        if (retailerKey == null || retailerKey.isBlank()) {
+            return true;
+        }
+
+        String safeRetailerKey = safe(retailerKey);
+        String safeProductRetailerKey = safe(product.getRetailerKey());
+
+        if (!safeProductRetailerKey.isBlank()) {
+            return safeProductRetailerKey.equalsIgnoreCase(safeRetailerKey);
+        }
+
+        String expectedRetailerName = mapRetailerKeyToName(safeRetailerKey);
+        return safe(product.getRetailerName()).equalsIgnoreCase(expectedRetailerName);
+    }
+
+    private boolean matchesStoreSelection(Product product, String storeCode) {
+        if (storeCode == null || storeCode.isBlank()) {
+            return true;
+        }
+
+        return safe(product.getStoreCode()).equalsIgnoreCase(safe(storeCode));
     }
 
     private String safeLower(String value) {
@@ -363,10 +1770,51 @@ public class InventoryService {
     }
 
     private String normalizeCategory(String category) {
-        if (category == null) {
-            return "";
+        String normalized = safeLower(category);
+
+        return switch (normalized) {
+            case "top", "tops", "shirt", "shirts", "tee", "t-shirt", "hoodie" -> "tops";
+            case "bottom", "bottoms", "pants", "trousers", "jeans", "cargo" -> "bottoms";
+            case "shoe", "shoes", "sneaker", "sneakers", "boot", "boots" -> "shoes";
+            case "outerwear", "coat", "jacket", "blazer" -> "outerwear";
+            default -> normalized;
+        };
+    }
+
+    private String safe(String value) {
+        return value == null ? "" : value.trim();
+    }
+
+    private String safeImage(String imageUrl) {
+        if (imageUrl == null || imageUrl.isBlank()) {
+            return "https://placehold.co/500x620?text=Scanned+Item";
         }
-        return category.trim().toLowerCase();
+
+        return imageUrl.trim();
+    }
+
+    private Double safePrice(Double value) {
+        return value == null ? 0.0 : value;
+    }
+
+    private String safeBrand(Product product) {
+        String brand = product.getBrand();
+
+        if (brand != null && !brand.isBlank()) {
+            return brand.trim();
+        }
+
+        return safe(product.getRetailerName());
+    }
+
+    private String safeColor(Product product) {
+        String color = product.getColor();
+
+        if (color != null && !color.isBlank()) {
+            return color.trim();
+        }
+
+        return "Neutral";
     }
 
     private String mapRetailerKeyToName(String retailerKey) {
@@ -385,6 +1833,7 @@ public class InventoryService {
         event.setRetailerName(product.getRetailerName());
         event.setItemName(product.getItemName());
         event.setCreatedAt(LocalDateTime.now());
+
         trendEventRepository.save(event);
     }
 
@@ -395,13 +1844,22 @@ public class InventoryService {
 
         long minutes = Duration.between(createdAt, LocalDateTime.now()).toMinutes();
 
-        if (minutes < 1) return "Just now";
-        if (minutes < 60) return minutes + " min ago";
+        if (minutes < 1) {
+            return "Just now";
+        }
+
+        if (minutes < 60) {
+            return minutes + " min ago";
+        }
 
         long hours = minutes / 60;
-        if (hours < 24) return hours + " hr ago";
+
+        if (hours < 24) {
+            return hours + " hr ago";
+        }
 
         long days = hours / 24;
+
         return days + " day" + (days > 1 ? "s" : "") + " ago";
     }
 }

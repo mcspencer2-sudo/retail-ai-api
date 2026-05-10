@@ -1,24 +1,29 @@
-package com.retailai.model;
+package com.retailai.dto;
 
 public class AnalyticsSummaryDTO {
+
     private long totalScans;
     private long totalSaves;
     private double conversionRate;
+    private String topRetailer;
     private String topScannedItem;
     private String topSavedItem;
-    private String topRetailer;
 
     public AnalyticsSummaryDTO() {
     }
 
-    public AnalyticsSummaryDTO(long totalScans, long totalSaves, double conversionRate,
-                               String topScannedItem, String topSavedItem, String topRetailer) {
+    public AnalyticsSummaryDTO(long totalScans,
+                               long totalSaves,
+                               double conversionRate,
+                               String topRetailer,
+                               String topScannedItem,
+                               String topSavedItem) {
         this.totalScans = totalScans;
         this.totalSaves = totalSaves;
         this.conversionRate = conversionRate;
+        this.topRetailer = topRetailer;
         this.topScannedItem = topScannedItem;
         this.topSavedItem = topSavedItem;
-        this.topRetailer = topRetailer;
     }
 
     public long getTotalScans() {
@@ -45,6 +50,14 @@ public class AnalyticsSummaryDTO {
         this.conversionRate = conversionRate;
     }
 
+    public String getTopRetailer() {
+        return topRetailer;
+    }
+
+    public void setTopRetailer(String topRetailer) {
+        this.topRetailer = topRetailer;
+    }
+
     public String getTopScannedItem() {
         return topScannedItem;
     }
@@ -59,13 +72,5 @@ public class AnalyticsSummaryDTO {
 
     public void setTopSavedItem(String topSavedItem) {
         this.topSavedItem = topSavedItem;
-    }
-
-    public String getTopRetailer() {
-        return topRetailer;
-    }
-
-    public void setTopRetailer(String topRetailer) {
-        this.topRetailer = topRetailer;
     }
 }

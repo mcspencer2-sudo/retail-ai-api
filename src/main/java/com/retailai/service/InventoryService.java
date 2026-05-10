@@ -802,6 +802,24 @@ public class InventoryService {
     }
 
     private MerchantInventoryItemDTO toMerchantInventoryItemDto(Product product) {
+        int stockQuantity = product.getStockQuantity() == null ? 0 : product.getStockQuantity();
+
+        int reorderThreshold = 3;
+        int idealStockLevel = 12;
+
+        boolean outOfStock = stockQuantity <= 0;
+        boolean lowStock = stockQuantity > 0 && stockQuantity <= reorderThreshold;
+        int suggestedReorderQuantity = Math.max(0, idealStockLevel - stockQuantity);
+
+        String inventoryAlert;
+        if (outOfStock) {
+            inventoryAlert = "Out of stock — reorder immediately.";
+        } else if (lowStock) {
+            inventoryAlert = "Low stock — suggested reorder: " + suggestedReorderQuantity + " units.";
+        } else {
+            inventoryAlert = "Stock level is healthy.";
+        }
+
         MerchantInventoryItemDTO dto = new MerchantInventoryItemDTO();
         dto.setRfid(safe(product.getRfid()));
         dto.setItemName(safe(product.getItemName()));
@@ -810,13 +828,20 @@ public class InventoryService {
         dto.setColor(safeColor(product));
         dto.setPrice(safePrice(product.getPrice()));
         dto.setImageUrl(safeImage(product.getImageUrl()));
-        dto.setStockQuantity(product.getStockQuantity() == null ? 0 : product.getStockQuantity());
+        dto.setStockQuantity(stockQuantity);
         dto.setRetailerName(safe(product.getRetailerName()));
         dto.setRetailerKey(safe(product.getRetailerKey()));
         dto.setStoreName(safe(product.getStoreName()));
         dto.setStoreCode(safe(product.getStoreCode()));
         dto.setAvailable(Boolean.TRUE.equals(product.getAvailable()));
         dto.setActive(Boolean.TRUE.equals(product.getActive()));
+
+        dto.setLowStock(lowStock);
+        dto.setOutOfStock(outOfStock);
+        dto.setReorderThreshold(reorderThreshold);
+        dto.setSuggestedReorderQuantity(suggestedReorderQuantity);
+        dto.setInventoryAlert(inventoryAlert);
+
         return dto;
     }
 

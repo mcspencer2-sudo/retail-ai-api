@@ -2180,6 +2180,12 @@
             border: 1px solid rgba(245, 158, 11, 0.2);
         }
 
+       .merchant-status-pill.danger {
+           background: rgba(239, 68, 68, 0.12);
+           color: #b91c1c;
+           border: 1px solid rgba(239, 68, 68, 0.18);
+       }
+
         .merchant-status-pill.synced {
             background: rgba(0, 113, 227, 0.12);
             color: var(--apple-blue);
@@ -5033,7 +5039,16 @@
                     const stockQuantity = getMerchantItemStock(item);
                     const isActive = isMerchantItemActive(item);
                     const isSynced = isMerchantItemSynced(item);
-                    const isLowStock = stockQuantity <= 3;
+                    const isLowStock = item.lowStock === true || (stockQuantity > 0 && stockQuantity <= 3);
+                    const isOutOfStock = item.outOfStock === true || stockQuantity <= 0;
+                    const suggestedReorderQuantity = Number(item.suggestedReorderQuantity || Math.max(0, 12 - stockQuantity));
+                    const inventoryAlert = item.inventoryAlert || (
+                        isOutOfStock
+                            ? "Out of stock — reorder immediately."
+                            : isLowStock
+                                ? `Low stock — suggested reorder: ${suggestedReorderQuantity} units.`
+                                : "Stock level is healthy."
+                   );
 
                     return `
                         <div class="merchant-inventory-card ${!isActive ? "is-inactive" : ""} ${isLowStock ? "is-low-stock" : ""}">
@@ -5055,7 +5070,8 @@
                                         <span class="merchant-status-pill ${isActive ? "active" : "inactive"}">
                                             ${isActive ? "Active" : "Inactive"}
                                         </span>
-                                        ${isLowStock ? `<span class="merchant-status-pill low-stock">Low Stock</span>` : ""}
+                                        ${isOutOfStock ? `<span class="merchant-status-pill danger">Out of Stock</span>` : ""}
+                                        ${!isOutOfStock && isLowStock ? `<span class="merchant-status-pill low-stock">Needs Reorder</span>` : ""}
                                         ${isSynced ? `<span class="merchant-status-pill synced">Synced</span>` : ""}
                                     </div>
                                 </div>
@@ -5089,6 +5105,21 @@
                                     <span class="merchant-inventory-pill">${escapeHtml(item.category || "Item")}</span>
                                     <span class="merchant-inventory-stock">Stock ${stockQuantity}</span>
                                 </div>
+                                <div class="merchant-inventory-row mt-2">
+                                     <span class="merchant-inventory-row-label">Reorder Alert</span>
+                                     <span class="merchant-inventory-row-value">${escapeHtml(inventoryAlert)}</span>
+                                </div>
+
+                                ${
+                                    isOutOfStock || isLowStock
+                                         ? `
+                                            <div class="merchant-inventory-row mt-2">
+                                            <span class="merchant-inventory-row-label">Suggested Reorder</span>
+                                            <span class="merchant-inventory-row-value">${suggestedReorderQuantity} units</span>
+                                </div>
+        `
+                                  : ""
+        }
 
                                 <div class="merchant-stock-editor">
                                     <div class="merchant-stock-input-group">

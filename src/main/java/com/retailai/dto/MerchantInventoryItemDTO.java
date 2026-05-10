@@ -17,6 +17,12 @@ public class MerchantInventoryItemDTO {
     private Boolean available;
     private Boolean active;
 
+    private Boolean lowStock;
+    private Boolean outOfStock;
+    private Integer reorderThreshold;
+    private Integer suggestedReorderQuantity;
+    private String inventoryAlert;
+
     public String getRfid() {
         return rfid;
     }
@@ -127,5 +133,45 @@ public class MerchantInventoryItemDTO {
 
     public void setActive(Boolean active) {
         this.active = active;
+    }
+
+    public Boolean getLowStock() {
+        return lowStock;
+    }
+
+    public void setLowStock(Boolean lowStock) {
+        this.lowStock = lowStock;
+    }
+
+    public Boolean getOutOfStock() {
+        return outOfStock;
+    }
+
+    public void setOutOfStock(Boolean outOfStock) {
+        this.outOfStock = outOfStock;
+    }
+
+    public Integer getReorderThreshold() {
+        return reorderThreshold;
+    }
+
+    public void setReorderThreshold(Integer reorderThreshold) {
+        this.reorderThreshold = reorderThreshold;
+    }
+
+    public Integer getSuggestedReorderQuantity() {
+        return suggestedReorderQuantity;
+    }
+
+    public void setSuggestedReorderQuantity(Integer suggestedReorderQuantity) {
+        this.suggestedReorderQuantity = suggestedReorderQuantity;
+    }
+
+    public String getInventoryAlert() {
+        return inventoryAlert;
+    }
+
+    public void setInventoryAlert(String inventoryAlert) {
+        this.inventoryAlert = inventoryAlert;
     }
 }

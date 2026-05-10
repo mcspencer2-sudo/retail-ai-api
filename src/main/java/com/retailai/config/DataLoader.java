@@ -17,86 +17,157 @@ public class DataLoader implements CommandLineRunner {
     @Override
     public void run(String... args) {
         if (productRepository.count() == 0) {
-
-            // Macy's
-            productRepository.save(new Product(
+            productRepository.save(buildProduct(
                     "RFID1001",
                     "Macy's",
+                    "MACY001",
+                    "MACY-NYC-01",
+                    "Herald Square",
                     "Oxford Shirt",
+                    "Polo Ralph Lauren",
                     "Tops",
-                    "https://images.unsplash.com/photo-1603252109303-2751441dd157?auto=format&fit=crop&w=900&q=80",
-                    65.00
+                    "Blue",
+                    "/images/products/oxford-shirt.jpg",
+                    80.00,
+                    12
             ));
 
-            productRepository.save(new Product(
-                    "RFID1002",
-                    "Macy's",
-                    "Slim Fit Jeans",
-                    "Bottoms",
-                    "https://images.unsplash.com/photo-1541099649105-f69ad21f3246?auto=format&fit=crop&w=900&q=80",
-                    80.00
-            ));
-
-            // Zara
-            productRepository.save(new Product(
+            productRepository.save(buildProduct(
                     "RFID2001",
                     "Zara",
-                    "Oversized Trench Coat",
-                    "Outerwear",
-                    "https://images.unsplash.com/photo-1529139574466-a303027c1d8b?auto=format&fit=crop&w=900&q=80",
-                    120.00
-            ));
-
-            productRepository.save(new Product(
-                    "RFID2002",
+                    "ZARA001",
+                    "ZARA-SOHO-01",
+                    "SoHo",
+                    "Slim Fit Trousers",
                     "Zara",
-                    "Slim Fit Blazer",
-                    "Formal",
-                    "https://images.unsplash.com/photo-1593030761757-71fae45fa0e7?auto=format&fit=crop&w=900&q=80",
-                    110.00
+                    "Bottoms",
+                    "Black",
+                    "/images/products/slim-fit-trousers.jpg",
+                    65.00,
+                    10
             ));
 
-            // Nike
-            productRepository.save(new Product(
+            productRepository.save(buildProduct(
                     "RFID3001",
                     "Nike",
-                    "Streetwear Hoodie",
-                    "Tops",
-                    "https://images.unsplash.com/photo-1578681994506-b8f463449011?auto=format&fit=crop&w=900&q=80",
-                    95.00
-            ));
-
-            productRepository.save(new Product(
-                    "RFID3002",
-                    "Nike",
+                    "NIKE001",
+                    "NIKE-NYC-01",
+                    "Nike NYC",
                     "Air Max Sneakers",
+                    "Nike",
                     "Shoes",
-                    "https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=900&q=80",
-                    130.00
+                    "White",
+                    "/images/products/air-max-sneakers.jpg",
+                    140.00,
+                    8
             ));
 
-            // Nordstrom
-            productRepository.save(new Product(
+            productRepository.save(buildProduct(
                     "RFID4001",
                     "Nordstrom",
-                    "Leather Chelsea Boots",
-                    "Shoes",
-                    "https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=900&q=80",
-                    150.00
+                    "NORD001",
+                    "NORD-NYC-01",
+                    "57th Street",
+                    "Slim Fit Trousers",
+                    "Theory",
+                    "Bottoms",
+                    "Charcoal",
+                    "/images/products/slim-fit-trousers.jpg",
+                    110.00,
+                    9
             ));
 
-            productRepository.save(new Product(
-                    "RFID4002",
-                    "Nordstrom",
-                    "Wool Coat",
+            productRepository.save(buildProduct(
+                    "RFID5001",
+                    "Nike",
+                    "NIKE001",
+                    "NIKE-SOHO-02",
+                    "Nike SoHo",
+                    "Streetwear Hoodie",
+                    "Nike",
+                    "Tops",
+                    "Black",
+                    "/images/products/streetwear-hoodie.jpg",
+                    95.00,
+                    7
+            ));
+
+            productRepository.save(buildProduct(
+                    "RFID6001",
+                    "Macy's",
+                    "MACY001",
+                    "MACY-BK-02",
+                    "Brooklyn",
+                    "Slim Fit Jeans",
+                    "Levi's",
+                    "Bottoms",
+                    "Dark Blue",
+                    "/images/products/slim-fit-jeans.jpg",
+                    75.00,
+                    11
+            ));
+
+            productRepository.save(buildProduct(
+                    "RFID7001",
+                    "Zara",
+                    "ZARA001",
+                    "ZARA-5TH-02",
+                    "5th Avenue",
+                    "Oversized Trench Coat",
+                    "Zara",
                     "Outerwear",
-                    "https://images.unsplash.com/photo-1544441893-675973e31985?auto=format&fit=crop&w=900&q=80",
-                    180.00
+                    "Beige",
+                    "/images/products/oversized-trench-coat.jpg",
+                    120.00,
+                    6
             ));
 
-            System.out.println("✅ Product seed data loaded successfully.");
-        } else {
-            System.out.println("ℹ️ Products already exist. Skipping seed load.");
+            productRepository.save(buildProduct(
+                    "RFID8001",
+                    "Nordstrom",
+                    "NORD001",
+                    "NORD-WTC-02",
+                    "World Trade Center",
+                    "Chelsea Boots",
+                    "Steve Madden",
+                    "Shoes",
+                    "Brown",
+                    "/images/products/chelsea-boots.jpg",
+                    140.00,
+                    5
+            ));
         }
+    }
+
+    private Product buildProduct(
+            String rfid,
+            String retailerName,
+            String retailerKey,
+            String storeCode,
+            String storeName,
+            String itemName,
+            String brand,
+            String category,
+            String color,
+            String imageUrl,
+            double price,
+            int stockQuantity
+    ) {
+        Product product = new Product();
+        product.setRfid(rfid);
+        product.setRetailerName(retailerName);
+        product.setRetailerKey(retailerKey);
+        product.setStoreCode(storeCode);
+        product.setStoreName(storeName);
+        product.setItemName(itemName);
+        product.setBrand(brand);
+        product.setCategory(category);
+        product.setColor(color);
+        product.setImageUrl(imageUrl);
+        product.setPrice(price);
+        product.setStockQuantity(stockQuantity);
+        product.setAvailable(true);
+        product.setActive(true);
+        return product;
     }
 }

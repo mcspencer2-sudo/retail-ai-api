@@ -1,4 +1,4 @@
-package com.retailai.model;
+package com.retailai.dto;
 
 import java.time.LocalDateTime;
 

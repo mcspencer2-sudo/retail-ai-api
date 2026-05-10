@@ -34,6 +34,9 @@ import java.util.stream.Collectors;
 @Service
 public class InventoryService {
 
+    private static final int DEFAULT_REORDER_THRESHOLD = 3;
+    private static final int DEFAULT_IDEAL_STOCK_LEVEL = 12;
+
     private final ProductRepository productRepository;
     private final BagItemRepository bagItemRepository;
     private final TrendEventRepository trendEventRepository;
@@ -645,25 +648,11 @@ public class InventoryService {
 
         StringBuilder csv = new StringBuilder();
 
-        csv.append("rfid,item_name,brand,category,color,price,image_url,stock_quantity,retailer_key,retailer_name,store_code,store_name,active,available\n");
+        csv.append("rfid,item_name,brand,category,color,price,image_url,stock_quantity,retailer_key,retailer_name,store_code,store_name,active,available,low_stock,out_of_stock,reorder_threshold,suggested_reorder_quantity,inventory_alert\n");
 
         for (Product product : products) {
             MerchantInventoryItemDTO item = toMerchantInventoryItemDto(product);
-
-            csv.append(csvValue(item.getRfid())).append(",");
-            csv.append(csvValue(item.getItemName())).append(",");
-            csv.append(csvValue(item.getBrand())).append(",");
-            csv.append(csvValue(item.getCategory())).append(",");
-            csv.append(csvValue(item.getColor())).append(",");
-            csv.append(item.getPrice() == null ? "0.0" : item.getPrice()).append(",");
-            csv.append(csvValue(item.getImageUrl())).append(",");
-            csv.append(item.getStockQuantity() == null ? "0" : item.getStockQuantity()).append(",");
-            csv.append(csvValue(item.getRetailerKey())).append(",");
-            csv.append(csvValue(item.getRetailerName())).append(",");
-            csv.append(csvValue(item.getStoreCode())).append(",");
-            csv.append(csvValue(item.getStoreName())).append(",");
-            csv.append(Boolean.TRUE.equals(item.getActive())).append(",");
-            csv.append(Boolean.TRUE.equals(item.getAvailable())).append("\n");
+            appendMerchantInventoryCsvRow(csv, item, true);
         }
 
         return csv.toString();
@@ -676,7 +665,7 @@ public class InventoryService {
             String category,
             Integer threshold
     ) {
-        int safeThreshold = threshold == null ? 3 : Math.max(0, threshold);
+        int safeThreshold = threshold == null ? DEFAULT_REORDER_THRESHOLD : Math.max(0, threshold);
 
         List<Product> products = findMerchantInventoryProducts(
                 retailerKey,
@@ -716,6 +705,55 @@ public class InventoryService {
             csv.append(Boolean.TRUE.equals(item.getActive())).append(",");
             csv.append(Boolean.TRUE.equals(item.getAvailable())).append(",");
             csv.append(safeThreshold).append("\n");
+        }
+
+        return csv.toString();
+    }
+
+    public String exportMerchantReorderReportCsv(
+            String retailerKey,
+            String storeCode,
+            String query,
+            String category
+    ) {
+        List<Product> products = findMerchantInventoryProducts(
+                retailerKey,
+                storeCode,
+                query,
+                category
+        );
+
+        StringBuilder csv = new StringBuilder();
+
+        csv.append("rfid,item_name,brand,category,color,price,image_url,stock_quantity,retailer_key,retailer_name,store_code,store_name,active,available,reorder_threshold,suggested_reorder_quantity,inventory_alert\n");
+
+        for (Product product : products) {
+            MerchantInventoryItemDTO item = toMerchantInventoryItemDto(product);
+
+            boolean needsReorder = Boolean.TRUE.equals(item.getOutOfStock())
+                    || Boolean.TRUE.equals(item.getLowStock());
+
+            if (!needsReorder) {
+                continue;
+            }
+
+            csv.append(csvValue(item.getRfid())).append(",");
+            csv.append(csvValue(item.getItemName())).append(",");
+            csv.append(csvValue(item.getBrand())).append(",");
+            csv.append(csvValue(item.getCategory())).append(",");
+            csv.append(csvValue(item.getColor())).append(",");
+            csv.append(item.getPrice() == null ? "0.0" : item.getPrice()).append(",");
+            csv.append(csvValue(item.getImageUrl())).append(",");
+            csv.append(item.getStockQuantity() == null ? "0" : item.getStockQuantity()).append(",");
+            csv.append(csvValue(item.getRetailerKey())).append(",");
+            csv.append(csvValue(item.getRetailerName())).append(",");
+            csv.append(csvValue(item.getStoreCode())).append(",");
+            csv.append(csvValue(item.getStoreName())).append(",");
+            csv.append(Boolean.TRUE.equals(item.getActive())).append(",");
+            csv.append(Boolean.TRUE.equals(item.getAvailable())).append(",");
+            csv.append(item.getReorderThreshold() == null ? DEFAULT_REORDER_THRESHOLD : item.getReorderThreshold()).append(",");
+            csv.append(item.getSuggestedReorderQuantity() == null ? "0" : item.getSuggestedReorderQuantity()).append(",");
+            csv.append(csvValue(item.getInventoryAlert())).append("\n");
         }
 
         return csv.toString();
@@ -804,8 +842,8 @@ public class InventoryService {
     private MerchantInventoryItemDTO toMerchantInventoryItemDto(Product product) {
         int stockQuantity = product.getStockQuantity() == null ? 0 : product.getStockQuantity();
 
-        int reorderThreshold = 3;
-        int idealStockLevel = 12;
+        int reorderThreshold = DEFAULT_REORDER_THRESHOLD;
+        int idealStockLevel = DEFAULT_IDEAL_STOCK_LEVEL;
 
         boolean outOfStock = stockQuantity <= 0;
         boolean lowStock = stockQuantity > 0 && stockQuantity <= reorderThreshold;
@@ -843,6 +881,38 @@ public class InventoryService {
         dto.setInventoryAlert(inventoryAlert);
 
         return dto;
+    }
+
+    private void appendMerchantInventoryCsvRow(
+            StringBuilder csv,
+            MerchantInventoryItemDTO item,
+            boolean includeInventoryAlertColumns
+    ) {
+        csv.append(csvValue(item.getRfid())).append(",");
+        csv.append(csvValue(item.getItemName())).append(",");
+        csv.append(csvValue(item.getBrand())).append(",");
+        csv.append(csvValue(item.getCategory())).append(",");
+        csv.append(csvValue(item.getColor())).append(",");
+        csv.append(item.getPrice() == null ? "0.0" : item.getPrice()).append(",");
+        csv.append(csvValue(item.getImageUrl())).append(",");
+        csv.append(item.getStockQuantity() == null ? "0" : item.getStockQuantity()).append(",");
+        csv.append(csvValue(item.getRetailerKey())).append(",");
+        csv.append(csvValue(item.getRetailerName())).append(",");
+        csv.append(csvValue(item.getStoreCode())).append(",");
+        csv.append(csvValue(item.getStoreName())).append(",");
+        csv.append(Boolean.TRUE.equals(item.getActive())).append(",");
+        csv.append(Boolean.TRUE.equals(item.getAvailable()));
+
+        if (includeInventoryAlertColumns) {
+            csv.append(",");
+            csv.append(Boolean.TRUE.equals(item.getLowStock())).append(",");
+            csv.append(Boolean.TRUE.equals(item.getOutOfStock())).append(",");
+            csv.append(item.getReorderThreshold() == null ? DEFAULT_REORDER_THRESHOLD : item.getReorderThreshold()).append(",");
+            csv.append(item.getSuggestedReorderQuantity() == null ? "0" : item.getSuggestedReorderQuantity()).append(",");
+            csv.append(csvValue(item.getInventoryAlert()));
+        }
+
+        csv.append("\n");
     }
 
     private Product loadScannedProductForContext(String retailerKey, String storeCode, String rfid) {

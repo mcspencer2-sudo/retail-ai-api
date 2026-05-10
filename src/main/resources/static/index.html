@@ -2789,6 +2789,9 @@
                     <button id="exportLowStockBtn" class="btn merchant-admin-btn secondary" type="button">
                         Low Stock CSV
                     </button>
+                    <button id="exportReorderReportBtn" class="btn merchant-admin-btn secondary" type="button">
+                        Download Reorder Report
+                    </button>
                     <button id="loadInventoryBtnTop" class="btn merchant-admin-btn secondary" type="button">
                         Refresh
                     </button>
@@ -5530,6 +5533,79 @@ async function exportInventoryCsv() {
         clearButtonBusy(button, "Export CSV");
     }
 }
+
+async function exportReorderReportCsv() {
+    const retailerKey = document.getElementById("inventoryRetailerSelect")?.value || "";
+    const storeCode = document.getElementById("inventoryStoreCodeSelect")?.value || "";
+    const query = document.getElementById("inventorySearchInput")?.value || "";
+    const category = document.getElementById("inventoryCategoryFilter")?.value || "";
+    const button = document.getElementById("exportReorderReportBtn");
+
+    if (!retailerKey) {
+        setMerchantInventoryStatus("Select a retailer first.", "danger");
+        showToast("Select a retailer first.", "error");
+        return;
+    }
+
+    if (!storeCode) {
+        setMerchantInventoryStatus("Select a store first.", "danger");
+        showToast("Select a store first.", "error");
+        return;
+    }
+
+    try {
+        requireToken();
+
+        setButtonBusy(button, "Downloading...");
+        setMerchantInventoryStatus("Preparing reorder report...", "muted");
+
+        const params = new URLSearchParams({
+            retailerKey,
+            storeCode,
+            q: query,
+            category
+        });
+
+        const resp = await fetch(`${API.merchant}/export/reorder-report?${params.toString()}`, {
+            method: "GET",
+            headers: getAuthHeaders()
+        });
+
+        await assertAuthorizedResponse(resp, "Failed to export reorder report.");
+
+        const blob = await resp.blob();
+
+        let filename = "merchant-reorder-report.csv";
+        const disposition = resp.headers.get("Content-Disposition");
+
+        if (disposition) {
+            const filenameMatch = disposition.match(/filename="?([^"]+)"?/);
+            if (filenameMatch && filenameMatch[1]) {
+                filename = filenameMatch[1];
+            }
+        }
+
+        const downloadUrl = window.URL.createObjectURL(blob);
+        const link = document.createElement("a");
+
+        link.href = downloadUrl;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+
+        link.remove();
+        window.URL.revokeObjectURL(downloadUrl);
+
+        setMerchantInventoryStatus("Reorder report downloaded.", "success");
+        showToast("Reorder report downloaded.", "success");
+    } catch (error) {
+        console.error("Reorder Report Export Error:", error);
+        setMerchantInventoryStatus(error.message || "Failed to export reorder report.", "danger");
+        showToast(error.message || "Failed to export reorder report.", "error");
+    } finally {
+       clearButtonBusy(button, "Download Reorder Report");
+    }
+}
     async function loadMerchantInventory() {
         const retailerKey = document.getElementById("inventoryRetailerSelect")?.value || "";
         const storeCode = document.getElementById("inventoryStoreCodeSelect")?.value || "";
@@ -6650,6 +6726,7 @@ async function exportInventoryCsv() {
         document.getElementById("clearDemoInventoryBtn")?.addEventListener("click", clearDemoInventory);
         document.getElementById("exportInventoryCsvBtn")?.addEventListener("click", exportInventoryCsv);
         document.getElementById("exportLowStockBtn")?.addEventListener("click", exportLowStockInventoryCsv);
+        document.getElementById("exportReorderReportBtn")?.addEventListener("click", exportReorderReportCsv);
         document.getElementById("uploadInventoryBtn")?.addEventListener("click", uploadInventoryCsv);
 
         document.getElementById("uploadRetailerSelect")?.addEventListener("change", event => {

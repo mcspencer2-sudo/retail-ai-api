@@ -33,6 +33,9 @@ import java.time.format.DateTimeFormatter;
 @CrossOrigin(origins = "*")
 public class MerchantInventoryController {
 
+    private static final DateTimeFormatter EXPORT_TIMESTAMP_FORMATTER =
+            DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss");
+
     private final MerchantInventoryImportService merchantInventoryImportService;
     private final InventoryService inventoryService;
     private final DemoInventorySeedService demoInventorySeedService;
@@ -67,6 +70,7 @@ public class MerchantInventoryController {
             }
 
             String originalFilename = file.getOriginalFilename();
+
             if (originalFilename == null || !originalFilename.toLowerCase().endsWith(".csv")) {
                 return ResponseEntity.badRequest().body("Only .csv files are supported.");
             }
@@ -160,13 +164,9 @@ public class MerchantInventoryController {
                     normalizeOptional(category)
             );
 
-            String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss"));
-            String filename = "merchant-inventory-" + timestamp + ".csv";
+            String filename = "merchant-inventory-" + timestamp() + ".csv";
 
-            return ResponseEntity.ok()
-                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
-                    .contentType(MediaType.parseMediaType("text/csv"))
-                    .body(csv);
+            return csvDownloadResponse(csv, filename);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         } catch (RuntimeException e) {
@@ -194,18 +194,40 @@ public class MerchantInventoryController {
                     safeThreshold
             );
 
-            String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss"));
-            String filename = "merchant-low-stock-threshold-" + safeThreshold + "-" + timestamp + ".csv";
+            String filename = "merchant-low-stock-threshold-" + safeThreshold + "-" + timestamp() + ".csv";
 
-            return ResponseEntity.ok()
-                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
-                    .contentType(MediaType.parseMediaType("text/csv"))
-                    .body(csv);
+            return csvDownloadResponse(csv, filename);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         } catch (RuntimeException e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("Low stock inventory export failed: " + e.getMessage());
+        }
+    }
+
+    @GetMapping("/export/reorder-report")
+    public ResponseEntity<?> exportMerchantReorderReportCsv(
+            @RequestParam(required = false) String retailerKey,
+            @RequestParam(required = false) String storeCode,
+            @RequestParam(required = false) String q,
+            @RequestParam(required = false) String category
+    ) {
+        try {
+            String csv = inventoryService.exportMerchantReorderReportCsv(
+                    normalizeOptional(retailerKey),
+                    normalizeOptional(storeCode),
+                    normalizeOptional(q),
+                    normalizeOptional(category)
+            );
+
+            String filename = "merchant-reorder-report-" + timestamp() + ".csv";
+
+            return csvDownloadResponse(csv, filename);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Reorder report export failed: " + e.getMessage());
         }
     }
 
@@ -293,6 +315,17 @@ public class MerchantInventoryController {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body(e.getMessage());
         }
+    }
+
+    private ResponseEntity<String> csvDownloadResponse(String csv, String filename) {
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
+                .contentType(MediaType.parseMediaType("text/csv"))
+                .body(csv);
+    }
+
+    private String timestamp() {
+        return LocalDateTime.now().format(EXPORT_TIMESTAMP_FORMATTER);
     }
 
     private String normalizeOptional(String value) {

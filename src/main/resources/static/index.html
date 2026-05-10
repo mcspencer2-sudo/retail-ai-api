@@ -2777,6 +2777,12 @@
                     <button id="clearDemoInventoryBtn" class="btn merchant-admin-btn secondary" type="button">
                         Clear Demo Inventory
                     </button>
+                    <button id="exportInventoryCsvBtn" class="btn merchant-admin-btn secondary" type="button">
+                        Export CSV
+                    </button>
+                    <button id="exportLowStockBtn" class="btn merchant-admin-btn secondary" type="button">
+                        Low Stock CSV
+                    </button>
                     <button id="loadInventoryBtnTop" class="btn merchant-admin-btn secondary" type="button">
                         Refresh
                     </button>
@@ -5278,6 +5284,221 @@ async function clearDemoInventory() {
     }
 }
 
+async function exportMerchantInventoryCsv() {
+    const retailerKey = document.getElementById("inventoryRetailerSelect")?.value || "";
+    const storeCode = document.getElementById("inventoryStoreCodeSelect")?.value || "";
+    const query = document.getElementById("inventorySearchInput")?.value || "";
+    const category = document.getElementById("inventoryCategoryFilter")?.value || "";
+    const button = document.getElementById("exportInventoryBtn");
+
+    if (!retailerKey) {
+        setMerchantInventoryStatus("Select a retailer first.", "danger");
+        showToast("Select a retailer first.", "error");
+        return;
+    }
+
+    if (!storeCode) {
+        setMerchantInventoryStatus("Select a store first.", "danger");
+        showToast("Select a store first.", "error");
+        return;
+    }
+
+    try {
+        requireToken();
+
+        setButtonBusy(button, "Downloading...");
+        setMerchantInventoryStatus("Preparing CSV export...", "muted");
+
+        const params = new URLSearchParams({
+            retailerKey,
+            storeCode,
+            q: query,
+            category
+        });
+
+        const resp = await fetch(`${API.merchant}/export?${params.toString()}`, {
+            method: "GET",
+            headers: getAuthHeaders()
+        });
+
+        await assertAuthorizedResponse(resp, "Failed to export inventory.");
+
+        const blob = await resp.blob();
+
+        let filename = "merchant-inventory.csv";
+        const disposition = resp.headers.get("Content-Disposition");
+
+        if (disposition) {
+            const filenameMatch = disposition.match(/filename="?([^"]+)"?/);
+            if (filenameMatch && filenameMatch[1]) {
+                filename = filenameMatch[1];
+            }
+        }
+
+        const downloadUrl = window.URL.createObjectURL(blob);
+        const link = document.createElement("a");
+
+        link.href = downloadUrl;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+
+        link.remove();
+        window.URL.revokeObjectURL(downloadUrl);
+
+        setMerchantInventoryStatus("CSV downloaded.", "success");
+        showToast("CSV downloaded.", "success");
+    } catch (error) {
+        console.error("Inventory Export Error:", error);
+        setMerchantInventoryStatus(error.message || "Failed to export inventory.", "danger");
+        showToast(error.message || "Failed to export inventory.", "error");
+    } finally {
+        clearButtonBusy(button, "Download CSV");
+    }
+}
+
+async function exportLowStockInventoryCsv() {
+    const retailerKey = document.getElementById("inventoryRetailerSelect")?.value || "";
+    const storeCode = document.getElementById("inventoryStoreCodeSelect")?.value || "";
+    const query = document.getElementById("inventorySearchInput")?.value || "";
+    const category = document.getElementById("inventoryCategoryFilter")?.value || "";
+    const button = document.getElementById("exportLowStockBtn");
+
+    if (!retailerKey) {
+        setMerchantInventoryStatus("Select a retailer first.", "danger");
+        showToast("Select a retailer first.", "error");
+        return;
+    }
+
+    if (!storeCode) {
+        setMerchantInventoryStatus("Select a store first.", "danger");
+        showToast("Select a store first.", "error");
+        return;
+    }
+
+    try {
+        requireToken();
+
+        setButtonBusy(button, "Downloading...");
+        setMerchantInventoryStatus("Preparing low stock CSV export...", "muted");
+
+        const params = new URLSearchParams({
+            retailerKey,
+            storeCode,
+            q: query,
+            category,
+            threshold: "3"
+        });
+
+        const resp = await fetch(`${API.merchant}/export/low-stock?${params.toString()}`, {
+            method: "GET",
+            headers: getAuthHeaders()
+        });
+
+        await assertAuthorizedResponse(resp, "Failed to export low stock inventory.");
+
+        const blob = await resp.blob();
+
+        let filename = "merchant-low-stock-inventory.csv";
+        const disposition = resp.headers.get("Content-Disposition");
+
+        if (disposition) {
+            const filenameMatch = disposition.match(/filename="?([^"]+)"?/);
+            if (filenameMatch && filenameMatch[1]) {
+                filename = filenameMatch[1];
+            }
+        }
+
+        const downloadUrl = window.URL.createObjectURL(blob);
+        const link = document.createElement("a");
+
+        link.href = downloadUrl;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+
+        link.remove();
+        window.URL.revokeObjectURL(downloadUrl);
+
+        setMerchantInventoryStatus("Low stock CSV downloaded.", "success");
+        showToast("Low stock CSV downloaded.", "success");
+    } catch (error) {
+        console.error("Low Stock Export Error:", error);
+        setMerchantInventoryStatus(error.message || "Failed to export low stock inventory.", "danger");
+        showToast(error.message || "Failed to export low stock inventory.", "error");
+    } finally {
+        clearButtonBusy(button, "Low Stock CSV");
+    }
+}
+
+async function exportInventoryCsv() {
+    const button = document.getElementById("exportInventoryCsvBtn");
+
+    const retailerKey = document.getElementById("inventoryRetailerSelect")?.value || "";
+    const storeCode = document.getElementById("inventoryStoreCodeSelect")?.value || "";
+    const query = document.getElementById("inventorySearchInput")?.value || "";
+    const category = document.getElementById("inventoryCategoryFilter")?.value || "";
+
+    if (!retailerKey) {
+        setMerchantInventoryStatus("Select a retailer before exporting.", "danger");
+        showToast("Select a retailer before exporting.", "error");
+        return;
+    }
+
+    if (!storeCode) {
+        setMerchantInventoryStatus("Select a store before exporting.", "danger");
+        showToast("Select a store before exporting.", "error");
+        return;
+    }
+
+    try {
+        requireToken();
+
+        setButtonBusy(button, "Exporting...");
+        setMerchantInventoryStatus("Preparing CSV export...", "muted");
+
+        const params = new URLSearchParams({
+            retailerKey,
+            storeCode,
+            q: query,
+            category
+        });
+
+        const resp = await fetch(`${API.merchant}/export?${params.toString()}`, {
+            method: "GET",
+            headers: getAuthHeaders()
+        });
+
+        await assertAuthorizedResponse(resp, "Failed to export inventory CSV.");
+
+        const blob = await resp.blob();
+        const downloadUrl = window.URL.createObjectURL(blob);
+
+        const timestamp = new Date()
+            .toISOString()
+            .replaceAll(":", "-")
+            .replaceAll(".", "-");
+
+        const link = document.createElement("a");
+        link.href = downloadUrl;
+        link.download = `merchant-inventory-${timestamp}.csv`;
+
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+
+        window.URL.revokeObjectURL(downloadUrl);
+
+        setMerchantInventoryStatus("Inventory CSV exported.", "success");
+        showToast("Inventory CSV exported.", "success");
+    } catch (error) {
+        console.error("Export Inventory CSV Error:", error);
+        setMerchantInventoryStatus(error.message || "Failed to export inventory CSV.", "danger");
+        showToast(error.message || "Failed to export inventory CSV.", "error");
+    } finally {
+        clearButtonBusy(button, "Export CSV");
+    }
+}
     async function loadMerchantInventory() {
         const retailerKey = document.getElementById("inventoryRetailerSelect")?.value || "";
         const storeCode = document.getElementById("inventoryStoreCodeSelect")?.value || "";
@@ -6396,6 +6617,8 @@ async function clearDemoInventory() {
         document.getElementById("viewSavedLooksBtn")?.addEventListener("click", renderSavedLooksDrawer);
         document.getElementById("seedDemoInventoryBtn")?.addEventListener("click", seedDemoInventory);
         document.getElementById("clearDemoInventoryBtn")?.addEventListener("click", clearDemoInventory);
+        document.getElementById("exportInventoryCsvBtn")?.addEventListener("click", exportInventoryCsv);
+        document.getElementById("exportLowStockBtn")?.addEventListener("click", exportLowStockInventoryCsv);
         document.getElementById("uploadInventoryBtn")?.addEventListener("click", uploadInventoryCsv);
 
         document.getElementById("uploadRetailerSelect")?.addEventListener("change", event => {

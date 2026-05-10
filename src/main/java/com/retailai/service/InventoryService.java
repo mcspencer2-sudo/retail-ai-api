@@ -601,48 +601,15 @@ public class InventoryService {
             int page,
             int size
     ) {
-        String safeRetailerKey = retailerKey == null ? "" : retailerKey.trim();
-        String safeStoreCode = storeCode == null ? "" : storeCode.trim();
-        String safeQuery = query == null ? "" : query.trim().toLowerCase();
-        String safeCategory = category == null ? "" : category.trim().toLowerCase();
-
         int safePage = Math.max(page, 0);
         int safeSize = Math.max(1, Math.min(size, 50));
 
-        List<Product> baseProducts;
-
-        if (!safeRetailerKey.isBlank() && !safeStoreCode.isBlank()) {
-            baseProducts = productRepository.findByRetailerKeyAndStoreCode(
-                    safeRetailerKey,
-                    safeStoreCode
-            );
-        } else if (!safeRetailerKey.isBlank()) {
-            baseProducts = productRepository.findByRetailerKey(safeRetailerKey);
-        } else if (!safeStoreCode.isBlank()) {
-            baseProducts = productRepository.findByStoreCode(safeStoreCode);
-        } else {
-            baseProducts = productRepository.findAll();
-        }
-
-        List<Product> filtered = baseProducts.stream()
-                .filter(product -> safeCategory.isBlank()
-                        || normalizeCategory(product.getCategory()).equals(safeCategory)
-                        || safe(product.getCategory()).equalsIgnoreCase(safeCategory))
-                .filter(product -> {
-                    if (safeQuery.isBlank()) {
-                        return true;
-                    }
-
-                    return safe(product.getRfid()).toLowerCase().contains(safeQuery)
-                            || safe(product.getItemName()).toLowerCase().contains(safeQuery)
-                            || safe(product.getBrand()).toLowerCase().contains(safeQuery)
-                            || safe(product.getCategory()).toLowerCase().contains(safeQuery)
-                            || safe(product.getColor()).toLowerCase().contains(safeQuery);
-                })
-                .sorted(Comparator
-                        .comparing((Product p) -> safe(p.getItemName()), String.CASE_INSENSITIVE_ORDER)
-                        .thenComparing(p -> safe(p.getRfid())))
-                .collect(Collectors.toList());
+        List<Product> filtered = findMerchantInventoryProducts(
+                retailerKey,
+                storeCode,
+                query,
+                category
+        );
 
         int totalItems = filtered.size();
         int totalPages = totalItems == 0 ? 1 : (int) Math.ceil((double) totalItems / safeSize);
@@ -661,6 +628,144 @@ public class InventoryService {
         response.setTotalPages(totalPages);
 
         return response;
+    }
+
+    public String exportMerchantInventoryCsv(
+            String retailerKey,
+            String storeCode,
+            String query,
+            String category
+    ) {
+        List<Product> products = findMerchantInventoryProducts(
+                retailerKey,
+                storeCode,
+                query,
+                category
+        );
+
+        StringBuilder csv = new StringBuilder();
+
+        csv.append("rfid,item_name,brand,category,color,price,image_url,stock_quantity,retailer_key,retailer_name,store_code,store_name,active,available\n");
+
+        for (Product product : products) {
+            MerchantInventoryItemDTO item = toMerchantInventoryItemDto(product);
+
+            csv.append(csvValue(item.getRfid())).append(",");
+            csv.append(csvValue(item.getItemName())).append(",");
+            csv.append(csvValue(item.getBrand())).append(",");
+            csv.append(csvValue(item.getCategory())).append(",");
+            csv.append(csvValue(item.getColor())).append(",");
+            csv.append(item.getPrice() == null ? "0.0" : item.getPrice()).append(",");
+            csv.append(csvValue(item.getImageUrl())).append(",");
+            csv.append(item.getStockQuantity() == null ? "0" : item.getStockQuantity()).append(",");
+            csv.append(csvValue(item.getRetailerKey())).append(",");
+            csv.append(csvValue(item.getRetailerName())).append(",");
+            csv.append(csvValue(item.getStoreCode())).append(",");
+            csv.append(csvValue(item.getStoreName())).append(",");
+            csv.append(Boolean.TRUE.equals(item.getActive())).append(",");
+            csv.append(Boolean.TRUE.equals(item.getAvailable())).append("\n");
+        }
+
+        return csv.toString();
+    }
+
+    public String exportLowStockInventoryCsv(
+            String retailerKey,
+            String storeCode,
+            String query,
+            String category,
+            Integer threshold
+    ) {
+        int safeThreshold = threshold == null ? 3 : Math.max(0, threshold);
+
+        List<Product> products = findMerchantInventoryProducts(
+                retailerKey,
+                storeCode,
+                query,
+                category
+        ).stream()
+                .filter(product -> {
+                    int stockQuantity = product.getStockQuantity() == null ? 0 : product.getStockQuantity();
+                    return stockQuantity <= safeThreshold;
+                })
+                .sorted(Comparator
+                        .comparingInt((Product product) -> product.getStockQuantity() == null ? 0 : product.getStockQuantity())
+                        .thenComparing(product -> safe(product.getItemName()), String.CASE_INSENSITIVE_ORDER)
+                        .thenComparing(product -> safe(product.getRfid())))
+                .collect(Collectors.toList());
+
+        StringBuilder csv = new StringBuilder();
+
+        csv.append("rfid,item_name,brand,category,color,price,image_url,stock_quantity,retailer_key,retailer_name,store_code,store_name,active,available,low_stock_threshold\n");
+
+        for (Product product : products) {
+            MerchantInventoryItemDTO item = toMerchantInventoryItemDto(product);
+
+            csv.append(csvValue(item.getRfid())).append(",");
+            csv.append(csvValue(item.getItemName())).append(",");
+            csv.append(csvValue(item.getBrand())).append(",");
+            csv.append(csvValue(item.getCategory())).append(",");
+            csv.append(csvValue(item.getColor())).append(",");
+            csv.append(item.getPrice() == null ? "0.0" : item.getPrice()).append(",");
+            csv.append(csvValue(item.getImageUrl())).append(",");
+            csv.append(item.getStockQuantity() == null ? "0" : item.getStockQuantity()).append(",");
+            csv.append(csvValue(item.getRetailerKey())).append(",");
+            csv.append(csvValue(item.getRetailerName())).append(",");
+            csv.append(csvValue(item.getStoreCode())).append(",");
+            csv.append(csvValue(item.getStoreName())).append(",");
+            csv.append(Boolean.TRUE.equals(item.getActive())).append(",");
+            csv.append(Boolean.TRUE.equals(item.getAvailable())).append(",");
+            csv.append(safeThreshold).append("\n");
+        }
+
+        return csv.toString();
+    }
+
+    private List<Product> findMerchantInventoryProducts(
+            String retailerKey,
+            String storeCode,
+            String query,
+            String category
+    ) {
+        String safeRetailerKey = retailerKey == null ? "" : retailerKey.trim();
+        String safeStoreCode = storeCode == null ? "" : storeCode.trim();
+        String safeQuery = query == null ? "" : query.trim().toLowerCase();
+        String safeCategory = category == null ? "" : category.trim().toLowerCase();
+
+        List<Product> baseProducts;
+
+        if (!safeRetailerKey.isBlank() && !safeStoreCode.isBlank()) {
+            baseProducts = productRepository.findByRetailerKeyAndStoreCode(
+                    safeRetailerKey,
+                    safeStoreCode
+            );
+        } else if (!safeRetailerKey.isBlank()) {
+            baseProducts = productRepository.findByRetailerKey(safeRetailerKey);
+        } else if (!safeStoreCode.isBlank()) {
+            baseProducts = productRepository.findByStoreCode(safeStoreCode);
+        } else {
+            baseProducts = productRepository.findAll();
+        }
+
+        return baseProducts.stream()
+                .filter(product -> safeCategory.isBlank()
+                        || normalizeCategory(product.getCategory()).equals(safeCategory)
+                        || safe(product.getCategory()).equalsIgnoreCase(safeCategory))
+                .filter(product -> {
+                    if (safeQuery.isBlank()) {
+                        return true;
+                    }
+
+                    return safe(product.getRfid()).toLowerCase().contains(safeQuery)
+                            || safe(product.getItemName()).toLowerCase().contains(safeQuery)
+                            || safe(product.getBrand()).toLowerCase().contains(safeQuery)
+                            || safe(product.getCategory()).toLowerCase().contains(safeQuery)
+                            || safe(product.getColor()).toLowerCase().contains(safeQuery);
+                })
+                .sorted(Comparator
+                        .comparing((Product p) -> safe(p.getItemName()), String.CASE_INSENSITIVE_ORDER)
+                        .thenComparing(p -> safe(p.getRfid())))
+                .collect(Collectors.toList());
     }
 
     private Product findMerchantInventoryProductForUpdate(
@@ -1483,6 +1588,20 @@ public class InventoryService {
                 + ", " + (category.isBlank() ? "silhouette" : category.toLowerCase())
                 + ", and " + (vibeName.isBlank() ? "overall styling direction" : vibeName.toLowerCase() + " styling direction")
                 + " make this piece easy to build around across multiple outfit combinations.";
+    }
+
+    private String csvValue(String value) {
+        if (value == null) {
+            return "";
+        }
+
+        String cleaned = value.trim();
+
+        if (cleaned.contains(",") || cleaned.contains("\"") || cleaned.contains("\n")) {
+            return "\"" + cleaned.replace("\"", "\"\"") + "\"";
+        }
+
+        return cleaned;
     }
 
     private int clampScore(int rawScore) {

@@ -2741,6 +2741,12 @@
                     </div>
 
                     <div class="col-md-2">
+                        <button id="downloadInventoryTemplateBtn" class="btn merchant-admin-btn secondary w-100" type="button">
+                            Download Template
+                        </button>
+                    </div>
+
+                    <div class="col-md-2">
                         <button id="uploadInventoryBtn" class="btn merchant-admin-btn primary w-100" type="button">
                             Upload CSV
                         </button>
@@ -5778,6 +5784,85 @@ async function exportReorderReportCsv() {
         }
     }
 
+    function downloadInventoryImportTemplate() {
+    const headers = [
+        "rfid",
+        "item_name",
+        "brand",
+        "category",
+        "color",
+        "price",
+        "image_url",
+        "stock_quantity",
+        "retailer_key",
+        "retailer_name",
+        "store_code",
+        "store_name",
+        "active",
+        "available"
+    ];
+
+    const sampleRows = [
+        [
+            "RFID1001",
+            "Oxford Shirt",
+            "Polo Ralph Lauren",
+            "Tops",
+            "Blue",
+            "80.0",
+            "/images/products/oxford-shirt.jpg",
+            "12",
+            "MACY001",
+            "Macy's",
+            "MACY-NYC-01",
+            "Herald Square",
+            "TRUE",
+            "TRUE"
+        ],
+        [
+            "RFID1002",
+            "Slim Chino",
+            "Polo Ralph Lauren",
+            "Bottoms",
+            "Khaki",
+            "95.0",
+            "/images/products/slim-chino.jpg",
+            "8",
+            "MACY001",
+            "Macy's",
+            "MACY-NYC-01",
+            "Herald Square",
+            "TRUE",
+            "TRUE"
+        ]
+    ];
+
+    const csvRows = [
+        headers.join(","),
+        ...sampleRows.map(row => row.map(value => {
+            const text = String(value ?? "");
+            return text.includes(",") || text.includes("\"") || text.includes("\n")
+                ? `"${text.replace(/"/g, '""')}"`
+                : text;
+        }).join(","))
+    ];
+
+    const csv = csvRows.join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const downloadUrl = window.URL.createObjectURL(blob);
+    const link = document.createElement("a");
+
+    link.href = downloadUrl;
+    link.download = "merchant-inventory-import-template.csv";
+    document.body.appendChild(link);
+    link.click();
+
+    link.remove();
+    window.URL.revokeObjectURL(downloadUrl);
+
+    showToast("CSV import template downloaded.", "success");
+}
+
     async function uploadInventoryCsv() {
         const retailerKey = document.getElementById("uploadRetailerSelect")?.value || "";
         const storeCode = document.getElementById("uploadStoreCodeSelect")?.value || "";
@@ -6728,6 +6813,7 @@ async function exportReorderReportCsv() {
         document.getElementById("exportLowStockBtn")?.addEventListener("click", exportLowStockInventoryCsv);
         document.getElementById("exportReorderReportBtn")?.addEventListener("click", exportReorderReportCsv);
         document.getElementById("uploadInventoryBtn")?.addEventListener("click", uploadInventoryCsv);
+        document.getElementById("downloadInventoryTemplateBtn")?.addEventListener("click", downloadInventoryImportTemplate);
 
         document.getElementById("uploadRetailerSelect")?.addEventListener("change", event => {
             const retailerKey = event.target.value || "MACY001";

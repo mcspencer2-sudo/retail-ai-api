@@ -2026,6 +2026,101 @@
             margin-bottom: 14px;
         }
 
+        .csv-rules-card {
+            margin-top: 18px;
+            border-radius: 24px;
+            padding: 18px;
+            background: rgba(255, 255, 255, 0.82);
+            border: 1px solid rgba(15, 23, 42, 0.08);
+            box-shadow: 0 12px 28px rgba(15, 23, 42, 0.05);
+        }
+
+       .csv-rules-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 14px;
+            flex-wrap: wrap;
+            margin-bottom: 14px;
+       }
+
+      .csv-rules-title {
+            margin: 0;
+            font-size: 1.02rem;
+            font-weight: 850;
+            color: #111827;
+            letter-spacing: -0.03em;
+       }
+
+      .csv-rules-subtitle {
+           margin: 4px 0 0;
+           color: #667085;
+           font-size: 0.9rem;
+           font-weight: 600;
+       }
+
+      .csv-rules-grid {
+           display: grid;
+           grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 12px;
+      }
+
+      .csv-rule-box {
+          border-radius: 18px;
+          padding: 14px;
+          background: rgba(15, 23, 42, 0.03);
+          border: 1px solid rgba(15, 23, 42, 0.06);
+       }
+
+      .csv-rule-label {
+         font-size: 0.72rem;
+         font-weight: 850;
+         letter-spacing: 0.1em;
+         text-transform: uppercase;
+         color: #7b8190;
+         margin-bottom: 8px;
+      }
+
+      .csv-rule-list {
+         margin: 0;
+         padding-left: 18px;
+         color: #475467;
+         font-size: 0.88rem;
+         line-height: 1.65;
+         font-weight: 600;
+      }
+
+     .csv-rule-code {
+         display: inline-flex;
+         padding: 3px 7px;
+         border-radius: 999px;
+         background: rgba(0, 113, 227, 0.08);
+         color: var(--apple-blue);
+        font-weight: 800;
+        font-size: 0.78rem;
+      }
+
+     .csv-bad-example {
+         margin-top: 12px;
+         border-radius: 18px;
+         padding: 14px;
+         background: rgba(239, 68, 68, 0.06);
+         border: 1px solid rgba(239, 68, 68, 0.14);
+         color: #7f1d1d;
+         font-size: 0.88rem;
+         font-weight: 650;
+     }
+
+     .csv-bad-example strong {
+        color: #b91c1c;
+     }
+
+     @media (max-width: 991px) {
+    .csv-rules-grid {
+        grid-template-columns: 1fr;
+         }
+    }
+
         .inventory-upload-result-card {
             border-radius: 22px;
             padding: 18px;
@@ -2758,6 +2853,63 @@
                 </div>
 
                 <div id="inventoryUploadResult" class="mt-3"></div>
+
+                <div class="csv-rules-card">
+                    <div class="csv-rules-header">
+                        <div>
+                            <h5 class="csv-rules-title">CSV Upload Rules</h5>
+                            <p class="csv-rules-subtitle">
+                                Follow these rules to avoid row-level import errors.
+                            </p>
+                        </div>
+
+                        <button
+                                id="downloadInventoryTemplateBtnSecondary"
+                                class="btn merchant-inline-btn"
+                                type="button"
+                        >
+                            Download Template
+                        </button>
+                    </div>
+
+                    <div class="csv-rules-grid">
+                        <div class="csv-rule-box">
+                            <div class="csv-rule-label">Required Columns</div>
+                            <ul class="csv-rule-list">
+                                <li><span class="csv-rule-code">rfid</span></li>
+                                <li><span class="csv-rule-code">item_name</span></li>
+                                <li><span class="csv-rule-code">category</span></li>
+                                <li><span class="csv-rule-code">price</span></li>
+                                <li><span class="csv-rule-code">stock_quantity</span></li>
+                            </ul>
+                        </div>
+
+                        <div class="csv-rule-box">
+                            <div class="csv-rule-label">Allowed Categories</div>
+                            <ul class="csv-rule-list">
+                                <li>Tops</li>
+                                <li>Bottoms</li>
+                                <li>Shoes</li>
+                                <li>Outerwear</li>
+                            </ul>
+                        </div>
+
+                        <div class="csv-rule-box">
+                            <div class="csv-rule-label">Valid Values</div>
+                            <ul class="csv-rule-list">
+                                <li>Price must be numeric, like <span class="csv-rule-code">80.0</span></li>
+                                <li>Stock must be a whole number, like <span class="csv-rule-code">12</span></li>
+                                <li>Active and available must be <span class="csv-rule-code">TRUE</span> or <span class="csv-rule-code">FALSE</span></li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="csv-bad-example">
+                        <strong>Example bad row:</strong>
+                        price = <span class="csv-rule-code">INVALID</span> will return a row-level error like:
+                        <strong>Row 4 — Invalid price value: INVALID</strong>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -6814,6 +6966,7 @@ async function exportReorderReportCsv() {
         document.getElementById("exportReorderReportBtn")?.addEventListener("click", exportReorderReportCsv);
         document.getElementById("uploadInventoryBtn")?.addEventListener("click", uploadInventoryCsv);
         document.getElementById("downloadInventoryTemplateBtn")?.addEventListener("click", downloadInventoryImportTemplate);
+        document.getElementById("downloadInventoryTemplateBtnSecondary")?.addEventListener("click", downloadInventoryImportTemplate);
 
         document.getElementById("uploadRetailerSelect")?.addEventListener("change", event => {
             const retailerKey = event.target.value || "MACY001";

@@ -1,19 +1,18 @@
 package com.retailai.service;
 
+import com.retailai.dto.InventoryImportErrorDTO;
 import com.retailai.dto.InventoryImportResultDTO;
 import com.retailai.model.Product;
 import com.retailai.repository.ProductRepository;
-import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
-import java.net.URI;
-import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -22,8 +21,28 @@ import java.util.Set;
 @Service
 public class MerchantInventoryImportService {
 
-    private static final Set<String> VALID_CATEGORIES = Set.of(
-            "tops", "bottoms", "shoes", "outerwear"
+    private static final Set<String> REQUIRED_HEADERS = Set.of(
+            "rfid",
+            "item_name",
+            "brand",
+            "category",
+            "color",
+            "price",
+            "image_url",
+            "stock_quantity",
+            "retailer_key",
+            "retailer_name",
+            "store_code",
+            "store_name",
+            "active",
+            "available"
+    );
+
+    private static final Set<String> ALLOWED_CATEGORIES = Set.of(
+            "tops",
+            "bottoms",
+            "shoes",
+            "outerwear"
     );
 
     private final ProductRepository productRepository;
@@ -32,32 +51,42 @@ public class MerchantInventoryImportService {
         this.productRepository = productRepository;
     }
 
-    public InventoryImportResultDTO importCsv(MultipartFile file, String retailerKey, String storeCode) {
+    public InventoryImportResultDTO importCsv(
+            MultipartFile file,
+            String selectedRetailerKey,
+            String selectedStoreCode
+    ) {
         if (file == null || file.isEmpty()) {
             throw new IllegalArgumentException("CSV file is required.");
         }
 
-        if (isBlank(retailerKey)) {
-            throw new IllegalArgumentException("retailerKey is required.");
+        if (selectedRetailerKey == null || selectedRetailerKey.isBlank()) {
+            throw new IllegalArgumentException("Retailer key is required.");
         }
 
-        if (isBlank(storeCode)) {
-            throw new IllegalArgumentException("storeCode is required.");
+        if (selectedStoreCode == null || selectedStoreCode.isBlank()) {
+            throw new IllegalArgumentException("Store code is required.");
         }
 
-        InventoryImportResultDTO result = new InventoryImportResultDTO();
+        List<InventoryImportErrorDTO> errors = new ArrayList<>();
+        Set<String> seenRfidsInFile = new HashSet<>();
+
+        int successCount = 0;
+        int failureCount = 0;
 
         try (BufferedReader reader = new BufferedReader(
-                new InputStreamReader(file.getInputStream(), StandardCharsets.UTF_8))) {
-
+                new InputStreamReader(file.getInputStream(), StandardCharsets.UTF_8)
+        )) {
             String headerLine = reader.readLine();
 
             if (headerLine == null || headerLine.isBlank()) {
                 throw new IllegalArgumentException("CSV file is empty.");
             }
 
-            Map<String, Integer> headerMap = buildHeaderMap(parseCsvLine(headerLine));
-            validateRequiredHeaders(headerMap);
+            List<String> headers = parseCsvLine(stripBom(headerLine));
+            Map<String, Integer> headerIndex = buildHeaderIndex(headers);
+
+            validateRequiredHeaders(headerIndex);
 
             String line;
             int rowNumber = 1;
@@ -65,176 +94,303 @@ public class MerchantInventoryImportService {
             while ((line = reader.readLine()) != null) {
                 rowNumber++;
 
-                if (line.isBlank()) {
+                if (line == null || line.isBlank()) {
+                    continue;
+                }
+
+                List<String> values = parseCsvLine(line);
+
+                if (isBlankRow(values)) {
                     continue;
                 }
 
                 try {
-                    List<String> columns = parseCsvLine(line);
-
-                    Product product = buildProduct(
-                            columns,
-                            headerMap,
-                            retailerKey.trim(),
-                            storeCode.trim(),
-                            rowNumber
+                    Product product = buildProductFromRow(
+                            rowNumber,
+                            values,
+                            headerIndex,
+                            selectedRetailerKey.trim(),
+                            selectedStoreCode.trim(),
+                            seenRfidsInFile
                     );
 
                     productRepository.save(product);
-                    result.addSuccess();
-                } catch (IllegalArgumentException e) {
-                    result.addError(rowNumber, e.getMessage());
-                } catch (Exception e) {
-                    e.printStackTrace();
-                    result.addError(rowNumber, "Unexpected import error: " + e.getMessage());
+                    successCount++;
+                } catch (IllegalArgumentException rowError) {
+                    failureCount++;
+                    errors.add(new InventoryImportErrorDTO(rowNumber, rowError.getMessage()));
                 }
             }
-
-            return result;
         } catch (IllegalArgumentException e) {
             throw e;
         } catch (Exception e) {
-            throw new RuntimeException("Failed to import CSV file.", e);
+            throw new RuntimeException("Could not parse inventory CSV: " + e.getMessage(), e);
         }
+
+        InventoryImportResultDTO result = new InventoryImportResultDTO();
+        result.setSuccessCount(successCount);
+        result.setFailureCount(failureCount);
+        result.setErrors(errors);
+
+        return result;
     }
 
-    private Product buildProduct(
-            List<String> columns,
-            Map<String, Integer> headerMap,
-            String retailerKey,
-            String storeCode,
-            int rowNumber
+    private Product buildProductFromRow(
+            int rowNumber,
+            List<String> values,
+            Map<String, Integer> headerIndex,
+            String selectedRetailerKey,
+            String selectedStoreCode,
+            Set<String> seenRfidsInFile
     ) {
-        String rfid = getRequired(columns, headerMap, "rfid", rowNumber);
-        String itemName = getRequired(columns, headerMap, "item_name", rowNumber);
-        String brand = getOptional(columns, headerMap, "brand");
-        String categoryRaw = getRequired(columns, headerMap, "category", rowNumber);
-        String color = getOptional(columns, headerMap, "color");
-        String priceRaw = getRequired(columns, headerMap, "price", rowNumber);
-        String imageUrl = getOptional(columns, headerMap, "image_url");
-        String stockRaw = getRequired(columns, headerMap, "stock_quantity", rowNumber);
-        String retailerName = getOptional(columns, headerMap, "retailer_name");
-        String storeName = getOptional(columns, headerMap, "store_name");
-        String availableRaw = getOptional(columns, headerMap, "available");
-        String activeRaw = getOptional(columns, headerMap, "active");
+        String rfid = requiredValue(values, headerIndex, "rfid");
+        String itemName = requiredValue(values, headerIndex, "item_name");
+        String brand = requiredValue(values, headerIndex, "brand");
+        String category = requiredValue(values, headerIndex, "category");
+        String color = optionalValue(values, headerIndex, "color");
+        String imageUrl = optionalValue(values, headerIndex, "image_url");
+        String retailerKey = requiredValue(values, headerIndex, "retailer_key");
+        String retailerName = requiredValue(values, headerIndex, "retailer_name");
+        String storeCode = requiredValue(values, headerIndex, "store_code");
+        String storeName = requiredValue(values, headerIndex, "store_name");
 
-        String normalizedCategory = normalizeCategory(categoryRaw);
+        Double price = parsePrice(requiredValue(values, headerIndex, "price"));
+        Integer stockQuantity = parseStockQuantity(requiredValue(values, headerIndex, "stock_quantity"));
+        Boolean active = parseBooleanFlag(requiredValue(values, headerIndex, "active"), "active");
+        Boolean available = parseBooleanFlag(requiredValue(values, headerIndex, "available"), "available");
 
-        if (!VALID_CATEGORIES.contains(normalizedCategory)) {
-            throw new IllegalArgumentException(
-                    "Invalid category: " + categoryRaw + ". Allowed categories: tops, bottoms, shoes, outerwear."
-            );
+        validateRfid(rfid);
+
+        String normalizedRfid = rfid.trim().toUpperCase(Locale.ROOT);
+
+        if (!seenRfidsInFile.add(normalizedRfid)) {
+            throw new IllegalArgumentException("Duplicate RFID in CSV: " + rfid);
         }
 
-        double price = parsePrice(priceRaw);
+        validateCategory(category);
+        validateRetailerMatchesUpload(retailerKey, selectedRetailerKey);
+        validateStoreMatchesUpload(storeCode, selectedStoreCode);
 
-        if (price < 0) {
-            throw new IllegalArgumentException("price cannot be negative.");
-        }
+        boolean finalAvailable = Boolean.TRUE.equals(active)
+                && Boolean.TRUE.equals(available)
+                && stockQuantity > 0;
 
-        int stockQuantity = parseStock(stockRaw);
+        Product product = productRepository.findById(rfid.trim()).orElse(new Product());
 
-        if (stockQuantity < 0) {
-            throw new IllegalArgumentException("stock_quantity cannot be negative.");
-        }
-
-        String cleanImageUrl = normalizeImageUrl(imageUrl);
-
-        if (!isBlank(cleanImageUrl)) {
-            validateImageUrl(cleanImageUrl);
-        }
-
-        Product product = productRepository.findById(rfid).orElseGet(Product::new);
-
-        product.setRfid(rfid);
-        product.setItemName(itemName);
-        product.setBrand(isBlank(brand) ? defaultRetailerName(retailerKey) : brand.trim());
-        product.setCategory(capitalizeCategory(normalizedCategory));
-        product.setColor(isBlank(color) ? "Neutral" : color.trim());
+        product.setRfid(rfid.trim());
+        product.setItemName(itemName.trim());
+        product.setBrand(brand.trim());
+        product.setCategory(normalizeDisplayCategory(category));
+        product.setColor(color.isBlank() ? "Neutral" : color.trim());
         product.setPrice(price);
-        product.setImageUrl(cleanImageUrl);
-        product.setRetailerKey(retailerKey.trim());
-        product.setRetailerName(isBlank(retailerName) ? defaultRetailerName(retailerKey) : retailerName.trim());
-        product.setStoreCode(storeCode.trim());
-        product.setStoreName(isBlank(storeName) ? defaultStoreName(storeCode) : storeName.trim());
+        product.setImageUrl(imageUrl.isBlank() ? defaultImageUrl(itemName) : imageUrl.trim());
         product.setStockQuantity(stockQuantity);
-
-        boolean active = parseBooleanDefault(activeRaw, true);
-        boolean available = parseBooleanDefault(availableRaw, stockQuantity > 0);
-
+        product.setRetailerKey(retailerKey.trim());
+        product.setRetailerName(retailerName.trim());
+        product.setStoreCode(storeCode.trim());
+        product.setStoreName(storeName.trim());
         product.setActive(active);
-        product.setAvailable(active && available && stockQuantity > 0);
+        product.setAvailable(finalAvailable);
 
         return product;
     }
 
-    private Map<String, Integer> buildHeaderMap(List<String> headers) {
-        Map<String, Integer> headerMap = new LinkedHashMap<>();
+    private void validateRequiredHeaders(Map<String, Integer> headerIndex) {
+        List<String> missing = REQUIRED_HEADERS.stream()
+                .filter(header -> !headerIndex.containsKey(header))
+                .sorted()
+                .toList();
+
+        if (!missing.isEmpty()) {
+            throw new IllegalArgumentException("CSV is missing required header(s): " + String.join(", ", missing));
+        }
+    }
+
+    private Map<String, Integer> buildHeaderIndex(List<String> headers) {
+        Map<String, Integer> index = new HashMap<>();
 
         for (int i = 0; i < headers.size(); i++) {
-            headerMap.put(normalizeHeader(headers.get(i)), i);
-        }
-
-        return headerMap;
-    }
-
-    private void validateRequiredHeaders(Map<String, Integer> headerMap) {
-        List<String> required = List.of(
-                "rfid",
-                "item_name",
-                "category",
-                "price",
-                "stock_quantity"
-        );
-
-        for (String header : required) {
-            if (!headerMap.containsKey(header)) {
-                throw new IllegalArgumentException("Missing required CSV header: " + header);
+            String normalized = normalizeHeader(headers.get(i));
+            if (!normalized.isBlank()) {
+                index.put(normalized, i);
             }
         }
+
+        return index;
     }
 
-    private String getRequired(
-            List<String> columns,
-            Map<String, Integer> headerMap,
-            String header,
-            int rowNumber
-    ) {
-        String value = getOptional(columns, headerMap, header);
+    private String requiredValue(List<String> values, Map<String, Integer> headerIndex, String header) {
+        String value = optionalValue(values, headerIndex, header);
 
-        if (isBlank(value)) {
-            throw new IllegalArgumentException("Missing required value for '" + header + "'.");
+        if (value.isBlank()) {
+            throw new IllegalArgumentException("Missing required value for column: " + header);
         }
 
-        return value.trim();
+        return value;
     }
 
-    private String getOptional(List<String> columns, Map<String, Integer> headerMap, String header) {
-        Integer index = headerMap.get(normalizeHeader(header));
+    private String optionalValue(List<String> values, Map<String, Integer> headerIndex, String header) {
+        Integer index = headerIndex.get(header);
 
-        if (index == null || index < 0 || index >= columns.size()) {
+        if (index == null || index < 0 || index >= values.size()) {
             return "";
         }
 
-        return columns.get(index);
+        return values.get(index) == null ? "" : values.get(index).trim();
+    }
+
+    private void validateRfid(String rfid) {
+        if (rfid == null || rfid.isBlank()) {
+            throw new IllegalArgumentException("RFID is required.");
+        }
+
+        String cleaned = rfid.trim();
+
+        if (cleaned.length() < 3 || cleaned.length() > 64) {
+            throw new IllegalArgumentException("RFID must be between 3 and 64 characters.");
+        }
+
+        if (!cleaned.matches("^[A-Za-z0-9_-]+$")) {
+            throw new IllegalArgumentException("RFID may only contain letters, numbers, underscores, or hyphens.");
+        }
+    }
+
+    private void validateCategory(String category) {
+        String normalized = category == null ? "" : category.trim().toLowerCase(Locale.ROOT);
+
+        if (!ALLOWED_CATEGORIES.contains(normalized)) {
+            throw new IllegalArgumentException("Invalid category '" + category + "'. Allowed values: Tops, Bottoms, Shoes, Outerwear.");
+        }
+    }
+
+    private void validateRetailerMatchesUpload(String csvRetailerKey, String selectedRetailerKey) {
+        if (!csvRetailerKey.trim().equalsIgnoreCase(selectedRetailerKey.trim())) {
+            throw new IllegalArgumentException(
+                    "CSV retailer_key '" + csvRetailerKey + "' does not match selected retailer '" + selectedRetailerKey + "'."
+            );
+        }
+    }
+
+    private void validateStoreMatchesUpload(String csvStoreCode, String selectedStoreCode) {
+        if (!csvStoreCode.trim().equalsIgnoreCase(selectedStoreCode.trim())) {
+            throw new IllegalArgumentException(
+                    "CSV store_code '" + csvStoreCode + "' does not match selected store '" + selectedStoreCode + "'."
+            );
+        }
+    }
+
+    private Double parsePrice(String rawPrice) {
+        try {
+            double price = Double.parseDouble(rawPrice.trim());
+
+            if (price < 0) {
+                throw new IllegalArgumentException("Price cannot be negative.");
+            }
+
+            return price;
+        } catch (NumberFormatException e) {
+            throw new IllegalArgumentException("Invalid price value: " + rawPrice);
+        }
+    }
+
+    private Integer parseStockQuantity(String rawStockQuantity) {
+        try {
+            int stockQuantity = Integer.parseInt(rawStockQuantity.trim());
+
+            if (stockQuantity < 0) {
+                throw new IllegalArgumentException("Stock quantity cannot be negative.");
+            }
+
+            return stockQuantity;
+        } catch (NumberFormatException e) {
+            throw new IllegalArgumentException("Invalid stock_quantity value: " + rawStockQuantity);
+        }
+    }
+
+    private Boolean parseBooleanFlag(String value, String columnName) {
+        String normalized = value == null ? "" : value.trim().toLowerCase(Locale.ROOT);
+
+        return switch (normalized) {
+            case "true", "yes", "y", "1" -> true;
+            case "false", "no", "n", "0" -> false;
+            default -> throw new IllegalArgumentException(
+                    "Invalid boolean value for " + columnName + ": " + value + ". Use TRUE/FALSE, yes/no, or 1/0."
+            );
+        };
+    }
+
+    private String normalizeDisplayCategory(String category) {
+        String normalized = category == null ? "" : category.trim().toLowerCase(Locale.ROOT);
+
+        return switch (normalized) {
+            case "tops" -> "Tops";
+            case "bottoms" -> "Bottoms";
+            case "shoes" -> "Shoes";
+            case "outerwear" -> "Outerwear";
+            default -> category == null ? "" : category.trim();
+        };
+    }
+
+    private String normalizeHeader(String header) {
+        if (header == null) {
+            return "";
+        }
+
+        return header
+                .trim()
+                .toLowerCase(Locale.ROOT)
+                .replace(" ", "_")
+                .replace("-", "_");
+    }
+
+    private boolean isBlankRow(List<String> values) {
+        if (values == null || values.isEmpty()) {
+            return true;
+        }
+
+        return values.stream().allMatch(value -> value == null || value.trim().isBlank());
+    }
+
+    private String stripBom(String value) {
+        if (value == null) {
+            return "";
+        }
+
+        return value.replace("\uFEFF", "");
+    }
+
+    private String defaultImageUrl(String itemName) {
+        String safeName = itemName == null || itemName.isBlank()
+                ? "inventory-item"
+                : itemName.trim()
+                .toLowerCase(Locale.ROOT)
+                .replaceAll("[^a-z0-9]+", "-")
+                .replaceAll("(^-|-$)", "");
+
+        return "/images/products/" + safeName + ".jpg";
     }
 
     private List<String> parseCsvLine(String line) {
         List<String> values = new ArrayList<>();
+
+        if (line == null) {
+            return values;
+        }
+
         StringBuilder current = new StringBuilder();
-        boolean insideQuotes = false;
+        boolean inQuotes = false;
 
         for (int i = 0; i < line.length(); i++) {
             char ch = line.charAt(i);
 
             if (ch == '"') {
-                if (insideQuotes && i + 1 < line.length() && line.charAt(i + 1) == '"') {
+                if (inQuotes && i + 1 < line.length() && line.charAt(i + 1) == '"') {
                     current.append('"');
                     i++;
                 } else {
-                    insideQuotes = !insideQuotes;
+                    inQuotes = !inQuotes;
                 }
-            } else if (ch == ',' && !insideQuotes) {
+            } else if (ch == ',' && !inQuotes) {
                 values.add(current.toString().trim());
                 current.setLength(0);
             } else {
@@ -243,172 +399,7 @@ public class MerchantInventoryImportService {
         }
 
         values.add(current.toString().trim());
+
         return values;
-    }
-
-    private String normalizeHeader(String value) {
-        return value == null ? "" : value.trim().toLowerCase(Locale.ROOT);
-    }
-
-    private String normalizeCategory(String value) {
-        String normalized = value == null ? "" : value.trim().toLowerCase(Locale.ROOT);
-
-        return switch (normalized) {
-            case "top", "tops", "shirt", "shirts", "tee", "t-shirt", "hoodie", "blouse", "sweater" -> "tops";
-            case "bottom", "bottoms", "pants", "trousers", "jeans", "cargo", "shorts", "skirt" -> "bottoms";
-            case "shoe", "shoes", "sneaker", "sneakers", "boot", "boots", "loafer", "loafers", "heel", "heels", "sandal", "sandals" -> "shoes";
-            case "outerwear", "coat", "jacket", "blazer", "parka", "cardigan", "overshirt" -> "outerwear";
-            default -> normalized;
-        };
-    }
-
-    private String capitalizeCategory(String value) {
-        return switch (value) {
-            case "tops" -> "Tops";
-            case "bottoms" -> "Bottoms";
-            case "shoes" -> "Shoes";
-            case "outerwear" -> "Outerwear";
-            default -> value;
-        };
-    }
-
-    private double parsePrice(String value) {
-        try {
-            return Double.parseDouble(value.trim());
-        } catch (Exception e) {
-            throw new IllegalArgumentException("Invalid price: " + value);
-        }
-    }
-
-    private int parseStock(String value) {
-        try {
-            return Integer.parseInt(value.trim());
-        } catch (Exception e) {
-            throw new IllegalArgumentException("Invalid stock_quantity: " + value);
-        }
-    }
-
-    private boolean parseBooleanDefault(String value, boolean fallback) {
-        if (isBlank(value)) {
-            return fallback;
-        }
-
-        String normalized = value.trim().toLowerCase(Locale.ROOT);
-
-        return normalized.equals("true")
-                || normalized.equals("1")
-                || normalized.equals("yes")
-                || normalized.equals("y");
-    }
-
-    private String normalizeImageUrl(String imageUrl) {
-        if (isBlank(imageUrl)) {
-            return "";
-        }
-
-        return imageUrl.trim();
-    }
-
-    private void validateImageUrl(String imageUrl) {
-        if (isExternalUrl(imageUrl)) {
-            validateExternalUrlFormat(imageUrl);
-            return;
-        }
-
-        if (!imageUrl.startsWith("/")) {
-            throw new IllegalArgumentException(
-                    "image_url must start with '/' for local files or use http/https. Got: " + imageUrl
-            );
-        }
-
-        if (!imageUrl.startsWith("/images/products/")) {
-            throw new IllegalArgumentException(
-                    "Local image_url must start with /images/products/. Got: " + imageUrl
-            );
-        }
-
-        if (imageUrl.contains("..")) {
-            throw new IllegalArgumentException("image_url cannot contain '..'. Got: " + imageUrl);
-        }
-
-        if (!hasSupportedImageExtension(imageUrl)) {
-            throw new IllegalArgumentException(
-                    "image_url must end with .jpg, .jpeg, .png, .webp, or .gif. Got: " + imageUrl
-            );
-        }
-
-        if (!localStaticImageExists(imageUrl)) {
-            throw new IllegalArgumentException(
-                    "Image file not found in src/main/resources/static for path: " + imageUrl
-            );
-        }
-    }
-
-    private boolean isExternalUrl(String imageUrl) {
-        String lower = imageUrl.toLowerCase(Locale.ROOT);
-        return lower.startsWith("http://") || lower.startsWith("https://");
-    }
-
-    private void validateExternalUrlFormat(String imageUrl) {
-        try {
-            URI uri = URI.create(imageUrl);
-
-            if (uri.getHost() == null || uri.getHost().isBlank()) {
-                throw new IllegalArgumentException("Invalid external image_url: " + imageUrl);
-            }
-        } catch (Exception e) {
-            throw new IllegalArgumentException("Invalid external image_url: " + imageUrl);
-        }
-    }
-
-    private boolean hasSupportedImageExtension(String imageUrl) {
-        String lower = imageUrl.toLowerCase(Locale.ROOT);
-
-        return lower.endsWith(".jpg")
-                || lower.endsWith(".jpeg")
-                || lower.endsWith(".png")
-                || lower.endsWith(".webp")
-                || lower.endsWith(".gif");
-    }
-
-    private boolean localStaticImageExists(String imageUrl) {
-        try {
-            String decoded = URLDecoder.decode(imageUrl, StandardCharsets.UTF_8);
-            String classpathLocation = "static" + decoded;
-
-            ClassPathResource resource = new ClassPathResource(classpathLocation);
-
-            return resource.exists() && resource.isReadable();
-        } catch (Exception e) {
-            return false;
-        }
-    }
-
-    private String defaultRetailerName(String retailerKey) {
-        return switch (retailerKey.trim().toUpperCase(Locale.ROOT)) {
-            case "MACY001" -> "Macy's";
-            case "ZARA001" -> "Zara";
-            case "NORD001" -> "Nordstrom";
-            case "NIKE001" -> "Nike";
-            default -> retailerKey.trim();
-        };
-    }
-
-    private String defaultStoreName(String storeCode) {
-        return switch (storeCode.trim().toUpperCase(Locale.ROOT)) {
-            case "MACY-NYC-01" -> "Herald Square";
-            case "MACY-BK-02" -> "Brooklyn";
-            case "ZARA-SOHO-01" -> "SoHo";
-            case "ZARA-5TH-02" -> "5th Avenue";
-            case "NORD-NYC-01" -> "57th Street";
-            case "NORD-WTC-02" -> "World Trade Center";
-            case "NIKE-NYC-01" -> "Nike NYC";
-            case "NIKE-SOHO-02" -> "Nike SoHo";
-            default -> storeCode.trim();
-        };
-    }
-
-    private boolean isBlank(String value) {
-        return value == null || value.trim().isEmpty();
     }
 }

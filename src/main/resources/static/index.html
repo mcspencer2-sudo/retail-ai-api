@@ -2026,6 +2026,128 @@
             margin-bottom: 14px;
         }
 
+        .import-history-card {
+           margin-top: 18px;
+           border-radius: 24px;
+           padding: 18px;
+           background: rgba(255, 255, 255, 0.82);
+           border: 1px solid rgba(15, 23, 42, 0.08);
+           box-shadow: 0 12px 28px rgba(15, 23, 42, 0.05);
+        }
+
+       .import-history-header {
+           display: flex;
+           align-items: center;
+           justify-content: space-between;
+           gap: 14px;
+           flex-wrap: wrap;
+           margin-bottom: 14px;
+       }
+
+      .import-history-title {
+          margin: 0;
+          font-size: 1.02rem;
+          font-weight: 850;
+          color: #111827;
+          letter-spacing: -0.03em;
+      }
+
+      .import-history-subtitle {
+          margin: 4px 0 0;
+          color: #667085;
+          font-size: 0.9rem;
+          font-weight: 600;
+      }
+
+      .import-history-list {
+          display: grid;
+          gap: 10px;
+      }
+
+      .import-history-row {
+         display: flex;
+         align-items: center;
+         justify-content: space-between;
+         gap: 14px;
+         padding: 14px;
+         border-radius: 18px;
+         background: rgba(15, 23, 42, 0.03);
+         border: 1px solid rgba(15, 23, 42, 0.06);
+      }
+
+      .import-history-main {
+         min-width: 0;
+      }
+
+      .import-history-file {
+         font-weight: 850;
+         color: #111827;
+         word-break: break-word;
+      }
+
+     .import-history-meta {
+        margin-top: 4px;
+        color: #667085;
+        font-size: 0.84rem;
+        font-weight: 650;
+      }
+
+     .import-history-stats {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+      }
+
+.import-history-pill {
+    display: inline-flex;
+    align-items: center;
+    padding: 7px 11px;
+    border-radius: 999px;
+    font-size: 0.74rem;
+    font-weight: 850;
+    white-space: nowrap;
+}
+
+.import-history-pill.success {
+    background: rgba(34, 197, 94, 0.12);
+    color: #15803d;
+    border: 1px solid rgba(34, 197, 94, 0.18);
+}
+
+.import-history-pill.error {
+    background: rgba(239, 68, 68, 0.12);
+    color: #b91c1c;
+    border: 1px solid rgba(239, 68, 68, 0.18);
+}
+
+.import-history-pill.neutral {
+    background: rgba(15, 23, 42, 0.06);
+    color: #475467;
+    border: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+.import-history-empty {
+    padding: 18px;
+    border-radius: 18px;
+    text-align: center;
+    color: #667085;
+    font-weight: 700;
+    background: rgba(15, 23, 42, 0.03);
+    border: 1px dashed rgba(15, 23, 42, 0.12);
+}
+
+@media (max-width: 768px) {
+    .import-history-row {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .import-history-stats {
+        justify-content: flex-start;
+    }
+}
+
         .csv-rules-card {
             margin-top: 18px;
             border-radius: 24px;
@@ -2853,6 +2975,24 @@
                 </div>
 
                 <div id="inventoryUploadResult" class="mt-3"></div>
+                <div id="inventoryImportHistory" class="import-history-card">
+                    <div class="import-history-header">
+                        <div>
+                            <h5 class="import-history-title">Recent CSV Imports</h5>
+                            <p class="import-history-subtitle">
+                                Upload history for the selected retailer and store.
+                            </p>
+                        </div>
+
+                        <button id="refreshImportHistoryBtn" class="btn merchant-inline-btn" type="button">
+                            Refresh History
+                        </button>
+                    </div>
+
+                    <div id="inventoryImportHistoryList" class="import-history-list">
+                        <div class="import-history-empty">No recent uploads yet.</div>
+                    </div>
+                </div>
 
                 <div class="csv-rules-card">
                     <div class="csv-rules-header">
@@ -6015,6 +6155,125 @@ async function exportReorderReportCsv() {
     showToast("CSV import template downloaded.", "success");
 }
 
+function formatImportHistoryDate(value) {
+    if (!value) return "Unknown time";
+
+    const date = new Date(value);
+
+    if (Number.isNaN(date.getTime())) {
+        return String(value);
+    }
+
+    return date.toLocaleString();
+}
+
+function renderImportHistory(history) {
+    const list = document.getElementById("inventoryImportHistoryList");
+    if (!list) return;
+
+    if (!Array.isArray(history) || history.length === 0) {
+        list.innerHTML = `
+            <div class="import-history-empty">
+                No recent uploads yet.
+            </div>
+        `;
+        return;
+    }
+
+    list.innerHTML = history.map(log => {
+        const filename = log.originalFilename || "inventory.csv";
+        const createdAt = formatImportHistoryDate(log.createdAt);
+        const retailerKey = log.retailerKey || "Retailer";
+        const storeCode = log.storeCode || "Store";
+        const successCount = Number(log.successCount || 0);
+        const failureCount = Number(log.failureCount || 0);
+        const totalRows = Number(log.totalRows || successCount + failureCount || 0);
+        const status = log.status || "COMPLETED";
+
+        const statusClass =
+            failureCount > 0 || status === "FAILED"  || status === "COMPLETED_WITH_ERRORS"
+                ? "error"
+                : "success";
+
+        return `
+            <div class="import-history-row">
+                <div class="import-history-main">
+                    <div class="import-history-file">${escapeHtml(filename)}</div>
+                    <div class="import-history-meta">
+                        ${escapeHtml(retailerKey)} • ${escapeHtml(storeCode)} • ${escapeHtml(createdAt)}
+                    </div>
+                </div>
+
+                <div class="import-history-stats">
+                    <span class="import-history-pill success">${successCount} imported</span>
+                    <span class="import-history-pill ${failureCount > 0 ? "error" : "neutral"}">${failureCount} failed</span>
+                    <span class="import-history-pill neutral">${totalRows} rows</span>
+                    <span class="import-history-pill ${statusClass}">${escapeHtml(status)}</span>
+                </div>
+            </div>
+        `;
+    }).join("");
+}
+
+async function loadImportHistory() {
+    const retailerKey =
+        document.getElementById("uploadRetailerSelect")?.value ||
+        document.getElementById("inventoryRetailerSelect")?.value ||
+        "";
+
+    const storeCode =
+        document.getElementById("uploadStoreCodeSelect")?.value ||
+        document.getElementById("inventoryStoreCodeSelect")?.value ||
+        "";
+
+    const refreshBtn = document.getElementById("refreshImportHistoryBtn");
+
+    if (!retailerKey || !storeCode) {
+        renderImportHistory([]);
+        return;
+    }
+
+    try {
+        requireToken();
+
+        if (refreshBtn) {
+            refreshBtn.disabled = true;
+            refreshBtn.textContent = "Refreshing...";
+        }
+
+        const params = new URLSearchParams({
+            retailerKey,
+            storeCode
+        });
+
+        const resp = await fetch(`${API.merchant}/import-history?${params.toString()}`, {
+            method: "GET",
+            headers: getAuthHeaders()
+        });
+
+        await assertAuthorizedResponse(resp, "Failed to load import history.");
+
+        const history = await resp.json();
+        renderImportHistory(history);
+    } catch (error) {
+        console.error("Import History Error:", error);
+
+        const list = document.getElementById("inventoryImportHistoryList");
+        if (list) {
+            list.innerHTML = `
+                <div class="import-history-empty">
+                    Unable to load import history.
+                </div>
+            `;
+        }
+    } finally {
+        if (refreshBtn) {
+            refreshBtn.disabled = false;
+            refreshBtn.textContent = "Refresh History";
+        }
+    }
+}
+
     async function uploadInventoryCsv() {
         const retailerKey = document.getElementById("uploadRetailerSelect")?.value || "";
         const storeCode = document.getElementById("uploadStoreCodeSelect")?.value || "";
@@ -6065,7 +6324,7 @@ async function exportReorderReportCsv() {
 
             renderInventoryUploadResult(result);
             setInventoryUploadStatus("Inventory upload completed.", "success");
-            showToast("Inventory upload completed.", "success");
+            await loadImportHistory();
 
             if (fileInput) fileInput.value = "";
 
@@ -6965,13 +7224,17 @@ async function exportReorderReportCsv() {
         document.getElementById("exportLowStockBtn")?.addEventListener("click", exportLowStockInventoryCsv);
         document.getElementById("exportReorderReportBtn")?.addEventListener("click", exportReorderReportCsv);
         document.getElementById("uploadInventoryBtn")?.addEventListener("click", uploadInventoryCsv);
+        document.getElementById("refreshImportHistoryBtn")?.addEventListener("click", loadImportHistory);
         document.getElementById("downloadInventoryTemplateBtn")?.addEventListener("click", downloadInventoryImportTemplate);
         document.getElementById("downloadInventoryTemplateBtnSecondary")?.addEventListener("click", downloadInventoryImportTemplate);
 
-        document.getElementById("uploadRetailerSelect")?.addEventListener("change", event => {
-            const retailerKey = event.target.value || "MACY001";
-            populateUploadStoreOptions(retailerKey);
-        });
+ document.getElementById("uploadRetailerSelect")?.addEventListener("change", event => {
+              const retailerKey = event.target.value || "MACY001";
+              populateUploadStoreOptions(retailerKey);
+              loadImportHistory();
+         });
+
+document.getElementById("uploadStoreCodeSelect")?.addEventListener("change", loadImportHistory);
 
         document.getElementById("loadInventoryBtn")?.addEventListener("click", () => {
             merchantInventoryPage = 0;
@@ -7151,6 +7414,9 @@ async function exportReorderReportCsv() {
     setScanStatus("Ready to scan.", "muted");
     resetScanExperience();
     renderSavedLooksDrawer();
+      if (getToken()) {
+      loadImportHistory();
+    }
     window.quickScan = quickScan;
 </script>
 </body>

@@ -1,5 +1,6 @@
 package com.retailai.controller;
 
+import com.retailai.dto.InventoryImportLogDTO;
 import com.retailai.dto.InventoryImportResultDTO;
 import com.retailai.dto.MerchantInventoryActiveUpdateDTO;
 import com.retailai.dto.MerchantInventoryItemDTO;
@@ -27,6 +28,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/merchant/inventory")
@@ -87,6 +89,26 @@ public class MerchantInventoryController {
         } catch (RuntimeException e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("Inventory upload failed: " + e.getMessage());
+        }
+    }
+
+    @GetMapping("/import-history")
+    public ResponseEntity<?> getImportHistory(
+            @RequestParam(required = false) String retailerKey,
+            @RequestParam(required = false) String storeCode
+    ) {
+        try {
+            List<InventoryImportLogDTO> history = merchantInventoryImportService.getImportHistory(
+                    normalizeOptional(retailerKey),
+                    normalizeOptional(storeCode)
+            );
+
+            return ResponseEntity.ok(history);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Import history load failed: " + e.getMessage());
         }
     }
 

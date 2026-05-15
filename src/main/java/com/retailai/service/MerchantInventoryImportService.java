@@ -1,8 +1,11 @@
 package com.retailai.service;
 
 import com.retailai.dto.InventoryImportErrorDTO;
+import com.retailai.dto.InventoryImportLogDTO;
 import com.retailai.dto.InventoryImportResultDTO;
+import com.retailai.model.InventoryImportLog;
 import com.retailai.model.Product;
+import com.retailai.repository.InventoryImportLogRepository;
 import com.retailai.repository.ProductRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -10,6 +13,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -17,6 +21,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 public class MerchantInventoryImportService {
@@ -46,9 +51,14 @@ public class MerchantInventoryImportService {
     );
 
     private final ProductRepository productRepository;
+    private final InventoryImportLogRepository inventoryImportLogRepository;
 
-    public MerchantInventoryImportService(ProductRepository productRepository) {
+    public MerchantInventoryImportService(
+            ProductRepository productRepository,
+            InventoryImportLogRepository inventoryImportLogRepository
+    ) {
         this.productRepository = productRepository;
+        this.inventoryImportLogRepository = inventoryImportLogRepository;
     }
 
     public InventoryImportResultDTO importCsv(
@@ -73,6 +83,7 @@ public class MerchantInventoryImportService {
 
         int successCount = 0;
         int failureCount = 0;
+        int totalRows = 0;
 
         try (BufferedReader reader = new BufferedReader(
                 new InputStreamReader(file.getInputStream(), StandardCharsets.UTF_8)
@@ -94,7 +105,7 @@ public class MerchantInventoryImportService {
             while ((line = reader.readLine()) != null) {
                 rowNumber++;
 
-                if (line == null || line.isBlank()) {
+                if (line.isBlank()) {
                     continue;
                 }
 
@@ -103,6 +114,8 @@ public class MerchantInventoryImportService {
                 if (isBlankRow(values)) {
                     continue;
                 }
+
+                totalRows++;
 
                 try {
                     Product product = buildProductFromRow(
@@ -122,10 +135,42 @@ public class MerchantInventoryImportService {
                 }
             }
         } catch (IllegalArgumentException e) {
+            saveImportLog(
+                    file,
+                    selectedRetailerKey,
+                    selectedStoreCode,
+                    successCount,
+                    failureCount,
+                    totalRows,
+                    "FAILED"
+            );
+
             throw e;
         } catch (Exception e) {
+            saveImportLog(
+                    file,
+                    selectedRetailerKey,
+                    selectedStoreCode,
+                    successCount,
+                    failureCount,
+                    totalRows,
+                    "FAILED"
+            );
+
             throw new RuntimeException("Could not parse inventory CSV: " + e.getMessage(), e);
         }
+
+        String status = failureCount > 0 ? "COMPLETED_WITH_ERRORS" : "COMPLETED";
+
+        saveImportLog(
+                file,
+                selectedRetailerKey,
+                selectedStoreCode,
+                successCount,
+                failureCount,
+                totalRows,
+                status
+        );
 
         InventoryImportResultDTO result = new InventoryImportResultDTO();
         result.setSuccessCount(successCount);
@@ -133,6 +178,69 @@ public class MerchantInventoryImportService {
         result.setErrors(errors);
 
         return result;
+    }
+
+    public List<InventoryImportLogDTO> getImportHistory(
+            String retailerKey,
+            String storeCode
+    ) {
+        String safeRetailerKey = retailerKey == null ? "" : retailerKey.trim();
+        String safeStoreCode = storeCode == null ? "" : storeCode.trim();
+
+        List<InventoryImportLog> logs;
+
+        if (!safeRetailerKey.isBlank() && !safeStoreCode.isBlank()) {
+            logs = inventoryImportLogRepository.findTop10ByRetailerKeyAndStoreCodeOrderByCreatedAtDesc(
+                    safeRetailerKey,
+                    safeStoreCode
+            );
+        } else if (!safeRetailerKey.isBlank()) {
+            logs = inventoryImportLogRepository.findTop10ByRetailerKeyOrderByCreatedAtDesc(safeRetailerKey);
+        } else {
+            logs = inventoryImportLogRepository.findTop10ByOrderByCreatedAtDesc();
+        }
+
+        return logs.stream()
+                .map(this::toImportLogDto)
+                .collect(Collectors.toList());
+    }
+
+    private void saveImportLog(
+            MultipartFile file,
+            String retailerKey,
+            String storeCode,
+            int successCount,
+            int failureCount,
+            int totalRows,
+            String status
+    ) {
+        InventoryImportLog log = new InventoryImportLog();
+        log.setRetailerKey(retailerKey == null ? "" : retailerKey.trim());
+        log.setStoreCode(storeCode == null ? "" : storeCode.trim());
+        log.setOriginalFilename(file == null || file.getOriginalFilename() == null
+                ? "inventory.csv"
+                : file.getOriginalFilename());
+        log.setSuccessCount(successCount);
+        log.setFailureCount(failureCount);
+        log.setTotalRows(totalRows);
+        log.setStatus(status);
+        log.setCreatedAt(LocalDateTime.now());
+
+        inventoryImportLogRepository.save(log);
+    }
+
+    private InventoryImportLogDTO toImportLogDto(InventoryImportLog log) {
+        return new InventoryImportLogDTO(
+                log.getId(),
+                log.getRetailerKey(),
+                log.getStoreCode(),
+                log.getOriginalFilename(),
+                log.getSuccessCount(),
+                log.getFailureCount(),
+                log.getTotalRows(),
+                log.getStatus(),
+                log.getCreatedAt()
+        );
     }
 
     private Product buildProductFromRow(

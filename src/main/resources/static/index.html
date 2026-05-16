@@ -3763,39 +3763,69 @@
         }
     }
 
-  async function assertAuthorizedResponse(resp, fallbackMessage = "") {
-    if (resp.status === 401 || resp.status === 403) {
-        handleExpiredSession();
-        throw new Error("Your session has expired. Please log in again.");
+ async function assertAuthorizedResponse(response, fallbackMessage = "Request failed.") {
+    if (response.ok) {
+        return;
     }
 
-    if (!resp.ok) {
-        const raw = await resp.text().catch(() => "");
+    if (response.status === 401 || response.status === 403) {
+        clearToken();
+        throw new Error("Your session expired. Please log in again.");
+    }
 
-        let message = raw;
+    let message = fallbackMessage;
 
-        try {
-            const parsed = JSON.parse(raw);
-            message =
-                parsed.message ||
-                parsed.error ||
-                parsed.detail ||
-                raw;
-        } catch (_) {
-            message = raw;
+    try {
+        const contentType = response.headers.get("Content-Type") || "";
+
+        if (contentType.includes("application/json")) {
+            const data = await response.json();
+
+            if (typeof data === "string") {
+                message = data;
+            } else {
+                const backendMessage =
+                    data.message ||
+                    data.detail ||
+                    data.error ||
+                    data.reason ||
+                    "";
+
+                const backendTitle = data.title || "";
+
+                if (backendMessage) {
+                    message = backendMessage;
+                } else if (
+                    response.status === 422 &&
+                    String(backendTitle).toLowerCase().includes("unprocessable")
+                ) {
+                    message = "This item is out of stock and cannot be scanned.";
+                } else if (backendTitle) {
+                    message = backendTitle;
+                } else {
+                    message = fallbackMessage;
+                }
+            }
+        } else {
+            const text = await response.text();
+            message = text || fallbackMessage;
         }
-
-        console.error("API error response:", {
-            status: resp.status,
-            statusText: resp.statusText,
-            body: raw
-        });
-
-        throw new Error(message || fallbackMessage || `Request failed with status ${resp.status}`);
+    } catch (parseError) {
+        message = fallbackMessage;
     }
 
-    return resp;
+    if (
+        response.status === 422 &&
+        (!message ||
+            message === fallbackMessage ||
+            message.toLowerCase().includes("unprocessable"))
+    ) {
+        message = "This item is out of stock and cannot be scanned.";
+    }
+
+    throw new Error(message);
 }
+
     function updateAuthStatus() {
         const status = document.getElementById("authStatus");
         if (!status) return;

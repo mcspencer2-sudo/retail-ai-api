@@ -80,11 +80,40 @@ public class MerchantInventoryController {
                 return ResponseEntity.badRequest().body("Only .csv files are supported.");
             }
 
-            InventoryImportResultDTO result = merchantInventoryImportService.importCsv(
-                    file,
-                    retailerKey.trim(),
-                    storeCode.trim()
+            String safeRetailerKey = retailerKey.trim();
+            String safeStoreCode = storeCode.trim();
+
+            InventoryImportJobDTO job = inventoryImportJobService.createQueuedJob(
+                    originalFilename,
+                    safeRetailerKey,
+                    safeStoreCode
             );
+
+            InventoryImportResultDTO result;
+
+            try {
+                inventoryImportJobService.markRunning(job.getJobId());
+
+                result = merchantInventoryImportService.importCsv(
+                        file,
+                        safeRetailerKey,
+                        safeStoreCode
+                );
+
+                int successCount = result.getSuccessCount();
+                int failureCount = result.getFailureCount();
+                int totalRows = successCount + failureCount;
+
+                inventoryImportJobService.markCompleted(
+                        job.getJobId(),
+                        totalRows,
+                        successCount,
+                        failureCount
+                );
+            } catch (RuntimeException importError) {
+                inventoryImportJobService.markFailed(job.getJobId(), importError.getMessage());
+                throw importError;
+            }
 
             return ResponseEntity.ok(result);
         } catch (IllegalArgumentException e) {
@@ -154,6 +183,7 @@ public class MerchantInventoryController {
                     .body(e.getMessage());
         }
     }
+
     @PostMapping("/seed-demo")
     public ResponseEntity<?> seedDemoInventory() {
         try {

@@ -21,6 +21,8 @@ import java.util.List;
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
+    private static final boolean DEBUG_JWT_FILTER = false;
+
     private final JwtService jwtService;
 
     public JwtAuthenticationFilter(JwtService jwtService) {
@@ -37,19 +39,19 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         final String path = request.getRequestURI();
         final String authHeader = request.getHeader("Authorization");
 
-        System.out.println("=== JWT FILTER START ===");
-        System.out.println("Path: " + path);
-        System.out.println("Authorization header present: " + (authHeader != null));
+        debug("=== JWT FILTER START ===");
+        debug("Path: " + path);
+        debug("Authorization header present: " + (authHeader != null));
 
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            System.out.println("No Bearer token found.");
+            debug("No Bearer token found.");
             filterChain.doFilter(request, response);
             return;
         }
 
         try {
             final String token = authHeader.substring(7).trim();
-            System.out.println("Token present after trim: " + !token.isBlank());
+            debug("Token present after trim: " + !token.isBlank());
 
             if (token.isBlank()) {
                 SecurityContextHolder.clearContext();
@@ -58,7 +60,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             }
 
             boolean valid = jwtService.isTokenValid(token);
-            System.out.println("Token valid: " + valid);
+            debug("Token valid: " + valid);
 
             if (!valid) {
                 SecurityContextHolder.clearContext();
@@ -69,11 +71,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             final String email = jwtService.extractEmail(token);
             final String role = jwtService.extractRole(token);
 
-            System.out.println("Email from token: " + email);
-            System.out.println("Role from token: " + role);
-            System.out.println("Existing auth in context: " + SecurityContextHolder.getContext().getAuthentication());
+            debug("Email from token: " + email);
+            debug("Role from token: " + role);
+            debug("Existing auth in context: " + SecurityContextHolder.getContext().getAuthentication());
 
-            if (email != null && !email.isBlank()
+            if (email != null
+                    && !email.isBlank()
                     && SecurityContextHolder.getContext().getAuthentication() == null) {
 
                 String normalizedRole = role == null ? "" : role.trim().replace("ROLE_", "");
@@ -96,17 +99,26 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 context.setAuthentication(authentication);
                 SecurityContextHolder.setContext(context);
 
-                System.out.println("Authentication set in SecurityContext.");
-                System.out.println("Principal: " + authentication.getPrincipal());
-                System.out.println("Authorities: " + authentication.getAuthorities());
-                System.out.println("isAuthenticated: " + authentication.isAuthenticated());
+                debug("Authentication set in SecurityContext.");
+                debug("Principal: " + authentication.getPrincipal());
+                debug("Authorities: " + authentication.getAuthorities());
+                debug("isAuthenticated: " + authentication.isAuthenticated());
             }
         } catch (Exception ex) {
             SecurityContextHolder.clearContext();
-            System.out.println("JWT authentication failed: " + ex.getMessage());
-            ex.printStackTrace();
+            debug("JWT authentication failed: " + ex.getMessage());
+
+            if (DEBUG_JWT_FILTER) {
+                ex.printStackTrace();
+            }
         }
 
         filterChain.doFilter(request, response);
+    }
+
+    private void debug(String message) {
+        if (DEBUG_JWT_FILTER) {
+            System.out.println(message);
+        }
     }
 }

@@ -11,7 +11,6 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/macy-stylist/saved-looks")
-@CrossOrigin(origins = "*")
 public class SavedLookController {
 
     private final SavedLookService savedLookService;

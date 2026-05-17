@@ -26,7 +26,6 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/v1/macy-stylist")
-@CrossOrigin(origins = "*")
 public class StylistController {
 
     private final InventoryService inventoryService;

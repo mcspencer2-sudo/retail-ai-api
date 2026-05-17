@@ -2993,7 +2993,24 @@
                         <div class="import-history-empty">No recent uploads yet.</div>
                     </div>
                 </div>
+                <div id="inventoryImportJobs" class="import-history-card">
+                    <div class="import-history-header">
+                        <div>
+                            <h5 class="import-history-title">Import Job Status</h5>
+                            <p class="import-history-subtitle">
+                                Backend job records created for CSV uploads.
+                            </p>
+                        </div>
 
+                        <button id="refreshImportJobsBtn" class="btn merchant-inline-btn" type="button">
+                            Refresh Jobs
+                        </button>
+                    </div>
+
+                    <div id="inventoryImportJobsList" class="import-history-list">
+                        <div class="import-history-empty">No import jobs yet.</div>
+                    </div>
+                </div>
                 <div class="csv-rules-card">
                     <div class="csv-rules-header">
                         <div>
@@ -6346,6 +6363,121 @@ async function loadImportHistory() {
     }
 }
 
+function renderImportJobs(jobs) {
+    const list = document.getElementById("inventoryImportJobsList");
+    if (!list) return;
+
+    if (!Array.isArray(jobs) || jobs.length === 0) {
+        list.innerHTML = `
+            <div class="import-history-empty">
+                No import jobs yet.
+            </div>
+        `;
+        return;
+    }
+
+    list.innerHTML = jobs.map(job => {
+        const filename = job.originalFilename || "inventory.csv";
+        const createdAt = formatImportHistoryDate(job.createdAt);
+        const retailerKey = job.retailerKey || "Retailer";
+        const storeCode = job.storeCode || "Store";
+        const status = job.status || "QUEUED";
+        const processedRows = Number(job.processedRows || 0);
+        const totalRows = Number(job.totalRows || 0);
+        const successCount = Number(job.successCount || 0);
+        const failureCount = Number(job.failureCount || 0);
+        const message = job.message || "";
+
+        const statusClass =
+            failureCount > 0 || status === "FAILED" || status === "COMPLETED_WITH_ERRORS"
+                ? "error"
+                : status === "RUNNING" || status === "QUEUED"
+                    ? "neutral"
+                    : "success";
+
+        return `
+            <div class="import-history-row">
+                <div class="import-history-main">
+                    <div class="import-history-file">${escapeHtml(filename)}</div>
+                    <div class="import-history-meta">
+                        ${escapeHtml(retailerKey)} • ${escapeHtml(storeCode)} • ${escapeHtml(createdAt)}
+                    </div>
+                    ${
+                        message
+                            ? `<div class="import-history-meta">${escapeHtml(message)}</div>`
+                            : ""
+                    }
+                </div>
+
+                <div class="import-history-stats">
+                    <span class="import-history-pill neutral">${processedRows}/${totalRows} processed</span>
+                    <span class="import-history-pill success">${successCount} imported</span>
+                    <span class="import-history-pill ${failureCount > 0 ? "error" : "neutral"}">${failureCount} failed</span>
+                    <span class="import-history-pill ${statusClass}">${escapeHtml(status)}</span>
+                </div>
+            </div>
+        `;
+    }).join("");
+}
+
+async function loadImportJobs() {
+    const retailerKey =
+        document.getElementById("uploadRetailerSelect")?.value ||
+        document.getElementById("inventoryRetailerSelect")?.value ||
+        "";
+
+    const storeCode =
+        document.getElementById("uploadStoreCodeSelect")?.value ||
+        document.getElementById("inventoryStoreCodeSelect")?.value ||
+        "";
+
+    const refreshBtn = document.getElementById("refreshImportJobsBtn");
+
+    if (!retailerKey || !storeCode) {
+        renderImportJobs([]);
+        return;
+    }
+
+    try {
+        requireToken();
+
+        if (refreshBtn) {
+            refreshBtn.disabled = true;
+            refreshBtn.textContent = "Refreshing...";
+        }
+
+        const params = new URLSearchParams({
+            retailerKey,
+            storeCode
+        });
+
+        const resp = await fetch(`${API.merchant}/import-jobs?${params.toString()}`, {
+            method: "GET",
+            headers: getAuthHeaders()
+        });
+
+        await assertAuthorizedResponse(resp, "Failed to load import jobs.");
+
+        const jobs = await resp.json();
+        renderImportJobs(jobs);
+    } catch (error) {
+        console.error("Import Jobs Error:", error);
+
+        const list = document.getElementById("inventoryImportJobsList");
+        if (list) {
+            list.innerHTML = `
+                <div class="import-history-empty">
+                    Unable to load import jobs.
+                </div>
+            `;
+        }
+    } finally {
+        if (refreshBtn) {
+            refreshBtn.disabled = false;
+            refreshBtn.textContent = "Refresh Jobs";
+        }
+    }
+}
     async function uploadInventoryCsv() {
         const retailerKey = document.getElementById("uploadRetailerSelect")?.value || "";
         const storeCode = document.getElementById("uploadStoreCodeSelect")?.value || "";
@@ -6397,6 +6529,7 @@ async function loadImportHistory() {
             renderInventoryUploadResult(result);
             setInventoryUploadStatus("Inventory upload completed.", "success");
             await loadImportHistory();
+            await loadImportJobs();
 
             if (fileInput) fileInput.value = "";
 
@@ -7297,6 +7430,7 @@ async function loadImportHistory() {
         document.getElementById("exportReorderReportBtn")?.addEventListener("click", exportReorderReportCsv);
         document.getElementById("uploadInventoryBtn")?.addEventListener("click", uploadInventoryCsv);
         document.getElementById("refreshImportHistoryBtn")?.addEventListener("click", loadImportHistory);
+        document.getElementById("refreshImportJobsBtn")?.addEventListener("click", loadImportJobs);
         document.getElementById("downloadInventoryTemplateBtn")?.addEventListener("click", downloadInventoryImportTemplate);
         document.getElementById("downloadInventoryTemplateBtnSecondary")?.addEventListener("click", downloadInventoryImportTemplate);
 
@@ -7304,9 +7438,13 @@ async function loadImportHistory() {
               const retailerKey = event.target.value || "MACY001";
               populateUploadStoreOptions(retailerKey);
               loadImportHistory();
+              loadImportJobs();
          });
 
-document.getElementById("uploadStoreCodeSelect")?.addEventListener("change", loadImportHistory);
+document.getElementById("uploadStoreCodeSelect")?.addEventListener("change", () => {
+              loadImportHistory();
+              loadImportJobs();
+        });
 
         document.getElementById("loadInventoryBtn")?.addEventListener("click", () => {
             merchantInventoryPage = 0;
@@ -7486,8 +7624,9 @@ document.getElementById("uploadStoreCodeSelect")?.addEventListener("change", loa
     setScanStatus("Ready to scan.", "muted");
     resetScanExperience();
     renderSavedLooksDrawer();
-      if (getToken()) {
-      loadImportHistory();
+    if (getToken()) {
+    loadImportHistory();
+    loadImportJobs();
     }
     window.quickScan = quickScan;
 </script>

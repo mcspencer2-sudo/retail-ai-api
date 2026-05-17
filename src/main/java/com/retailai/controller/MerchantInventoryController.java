@@ -1,5 +1,6 @@
 package com.retailai.controller;
 
+import com.retailai.dto.InventoryImportJobDTO;
 import com.retailai.dto.InventoryImportLogDTO;
 import com.retailai.dto.InventoryImportResultDTO;
 import com.retailai.dto.MerchantInventoryActiveUpdateDTO;
@@ -7,6 +8,7 @@ import com.retailai.dto.MerchantInventoryItemDTO;
 import com.retailai.dto.MerchantInventoryPageDTO;
 import com.retailai.dto.MerchantInventoryStockUpdateDTO;
 import com.retailai.service.DemoInventorySeedService;
+import com.retailai.service.InventoryImportJobService;
 import com.retailai.service.InventoryService;
 import com.retailai.service.MerchantInventoryImportService;
 import org.springframework.http.HttpHeaders;
@@ -39,15 +41,18 @@ public class MerchantInventoryController {
     private final MerchantInventoryImportService merchantInventoryImportService;
     private final InventoryService inventoryService;
     private final DemoInventorySeedService demoInventorySeedService;
+    private final InventoryImportJobService inventoryImportJobService;
 
     public MerchantInventoryController(
             MerchantInventoryImportService merchantInventoryImportService,
             InventoryService inventoryService,
-            DemoInventorySeedService demoInventorySeedService
+            DemoInventorySeedService demoInventorySeedService,
+            InventoryImportJobService inventoryImportJobService
     ) {
         this.merchantInventoryImportService = merchantInventoryImportService;
         this.inventoryService = inventoryService;
         this.demoInventorySeedService = demoInventorySeedService;
+        this.inventoryImportJobService = inventoryImportJobService;
     }
 
     @PostMapping("/upload")
@@ -110,6 +115,45 @@ public class MerchantInventoryController {
         }
     }
 
+    @GetMapping("/import-jobs")
+    public ResponseEntity<?> getImportJobs(
+            @RequestParam(required = false) String retailerKey,
+            @RequestParam(required = false) String storeCode
+    ) {
+        try {
+            List<InventoryImportJobDTO> jobs = inventoryImportJobService.getRecentJobs(
+                    normalizeOptional(retailerKey),
+                    normalizeOptional(storeCode)
+            );
+
+            return ResponseEntity.ok(jobs);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Import jobs load failed: " + e.getMessage());
+        }
+    }
+
+    @GetMapping("/import-jobs/{jobId}")
+    public ResponseEntity<?> getImportJob(
+            @PathVariable String jobId
+    ) {
+        try {
+            if (jobId == null || jobId.isBlank()) {
+                return ResponseEntity.badRequest().body("Import job id is required.");
+            }
+
+            InventoryImportJobDTO job = inventoryImportJobService.getJob(jobId.trim());
+
+            return ResponseEntity.ok(job);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(e.getMessage());
+        }
+    }
     @PostMapping("/seed-demo")
     public ResponseEntity<?> seedDemoInventory() {
         try {

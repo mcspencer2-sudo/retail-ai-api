@@ -40,8 +40,12 @@ public class SecurityConfig {
                         .requestMatchers("/", "/index.html", "/css/**", "/js/**", "/images/**").permitAll()
                         .requestMatchers("/api/v1/saas/auth/signup").permitAll()
                         .requestMatchers("/api/v1/saas/auth/login").permitAll()
+
                         .requestMatchers("/api/v1/macy-stylist/admin/**").hasRole("OWNER")
+                        .requestMatchers("/api/v1/merchant/inventory/**").hasRole("OWNER")
+
                         .requestMatchers("/api/v1/macy-stylist/**").authenticated()
+
                         .anyRequest().permitAll()
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);

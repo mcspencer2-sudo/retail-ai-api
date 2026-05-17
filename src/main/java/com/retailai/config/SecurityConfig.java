@@ -50,6 +50,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/merchant/inventory/**").hasRole("OWNER")
 
                         .requestMatchers("/api/v1/macy-stylist/**").authenticated()
+                        .requestMatchers("/api/**").authenticated()
 
                         .anyRequest().permitAll()
                 )

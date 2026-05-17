@@ -13,7 +13,6 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -32,12 +31,6 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/merchant/inventory")
-@CrossOrigin(origins = {
-        "http://localhost:8080",
-        "http://localhost:3000",
-        "http://127.0.0.1:8080",
-        "http://127.0.0.1:3000"
-})
 public class MerchantInventoryController {
 
     private static final DateTimeFormatter EXPORT_TIMESTAMP_FORMATTER =

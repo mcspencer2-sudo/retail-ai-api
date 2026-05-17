@@ -6388,6 +6388,11 @@ function renderImportJobs(jobs) {
         const failureCount = Number(job.failureCount || 0);
         const message = job.message || "";
 
+        const progressPercent =
+            totalRows > 0
+                ? Math.min(100, Math.round((processedRows / totalRows) * 100))
+                : 0;
+
         const statusClass =
             failureCount > 0 || status === "FAILED" || status === "COMPLETED_WITH_ERRORS"
                 ? "error"
@@ -6410,7 +6415,8 @@ function renderImportJobs(jobs) {
                 </div>
 
                 <div class="import-history-stats">
-                    <span class="import-history-pill neutral">${processedRows}/${totalRows} processed</span>
+                    <span class="import-history-pill neutral">${progressPercent}% processed</span>
+                    <span class="import-history-pill neutral">${processedRows}/${totalRows} rows</span>
                     <span class="import-history-pill success">${successCount} imported</span>
                     <span class="import-history-pill ${failureCount > 0 ? "error" : "neutral"}">${failureCount} failed</span>
                     <span class="import-history-pill ${statusClass}">${escapeHtml(status)}</span>

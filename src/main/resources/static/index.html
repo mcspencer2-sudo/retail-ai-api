@@ -3821,28 +3821,13 @@ function isOwnerUser() {
 
             if (typeof data === "string") {
                 message = data;
-            } else {
-                const backendMessage =
+            } else if (data && typeof data === "object") {
+                message =
                     data.message ||
                     data.detail ||
+                    data.title ||
                     data.error ||
-                    data.reason ||
-                    "";
-
-                const backendTitle = data.title || "";
-
-                if (backendMessage) {
-                    message = backendMessage;
-                } else if (
-                    response.status === 422 &&
-                    String(backendTitle).toLowerCase().includes("unprocessable")
-                ) {
-                    message = "This item is out of stock and cannot be scanned.";
-                } else if (backendTitle) {
-                    message = backendTitle;
-                } else {
-                    message = fallbackMessage;
-                }
+                    fallbackMessage;
             }
         } else {
             const text = await response.text();
@@ -3852,16 +3837,35 @@ function isOwnerUser() {
         message = fallbackMessage;
     }
 
-    if (
-        response.status === 422 &&
-        (!message ||
-            message === fallbackMessage ||
-            message.toLowerCase().includes("unprocessable"))
-    ) {
-        message = "This item is out of stock and cannot be scanned.";
+    message = cleanApiErrorMessage(message);
+
+    if (response.status === 422 && (!message || message === fallbackMessage)) {
+        message = "This item is not currently available in inventory.";
     }
 
     throw new Error(message);
+}
+
+function cleanApiErrorMessage(message) {
+    const text = String(message || "").trim();
+
+    if (!text) {
+        return "Request failed.";
+    }
+
+    const quotedMatch = text.match(/"([^"]+)"/);
+    if (quotedMatch && quotedMatch[1]) {
+        return quotedMatch[1];
+    }
+
+    return text
+        .replace(/^422\s+UNPROCESSABLE_ENTITY\s*/i, "")
+        .replace(/^400\s+BAD_REQUEST\s*/i, "")
+        .replace(/^401\s+UNAUTHORIZED\s*/i, "")
+        .replace(/^403\s+FORBIDDEN\s*/i, "")
+        .replace(/^404\s+NOT_FOUND\s*/i, "")
+        .replace(/^500\s+INTERNAL_SERVER_ERROR\s*/i, "")
+        .trim();
 }
 
     function updateAuthStatus() {

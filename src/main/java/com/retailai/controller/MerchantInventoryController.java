@@ -7,6 +7,7 @@ import com.retailai.dto.MerchantInventoryActiveUpdateDTO;
 import com.retailai.dto.MerchantInventoryItemDTO;
 import com.retailai.dto.MerchantInventoryPageDTO;
 import com.retailai.dto.MerchantInventoryStockUpdateDTO;
+import com.retailai.service.BulkInventoryImportService;
 import com.retailai.service.DemoInventorySeedService;
 import com.retailai.service.InventoryImportJobService;
 import com.retailai.service.InventoryService;
@@ -42,17 +43,20 @@ public class MerchantInventoryController {
     private final InventoryService inventoryService;
     private final DemoInventorySeedService demoInventorySeedService;
     private final InventoryImportJobService inventoryImportJobService;
+    private final BulkInventoryImportService bulkInventoryImportService;
 
     public MerchantInventoryController(
             MerchantInventoryImportService merchantInventoryImportService,
             InventoryService inventoryService,
             DemoInventorySeedService demoInventorySeedService,
-            InventoryImportJobService inventoryImportJobService
+            InventoryImportJobService inventoryImportJobService,
+            BulkInventoryImportService bulkInventoryImportService
     ) {
         this.merchantInventoryImportService = merchantInventoryImportService;
         this.inventoryService = inventoryService;
         this.demoInventorySeedService = demoInventorySeedService;
         this.inventoryImportJobService = inventoryImportJobService;
+        this.bulkInventoryImportService = bulkInventoryImportService;
     }
 
     @PostMapping("/upload")
@@ -121,6 +125,56 @@ public class MerchantInventoryController {
         } catch (RuntimeException e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("Inventory upload failed: " + e.getMessage());
+        }
+    }
+
+    @PostMapping("/upload/bulk")
+    public ResponseEntity<?> uploadInventoryBulk(
+            @RequestParam("file") MultipartFile file,
+            @RequestParam("retailerKey") String retailerKey,
+            @RequestParam("storeCode") String storeCode
+    ) {
+        try {
+            if (file == null || file.isEmpty()) {
+                return ResponseEntity.badRequest().body("CSV file is required.");
+            }
+
+            if (retailerKey == null || retailerKey.isBlank()) {
+                return ResponseEntity.badRequest().body("Retailer key is required.");
+            }
+
+            if (storeCode == null || storeCode.isBlank()) {
+                return ResponseEntity.badRequest().body("Store code is required.");
+            }
+
+            String originalFilename = file.getOriginalFilename();
+
+            if (originalFilename == null || !originalFilename.toLowerCase().endsWith(".csv")) {
+                return ResponseEntity.badRequest().body("Only .csv files are supported.");
+            }
+
+            String safeRetailerKey = retailerKey.trim();
+            String safeStoreCode = storeCode.trim();
+
+            InventoryImportJobDTO job = inventoryImportJobService.createQueuedJob(
+                    originalFilename,
+                    safeRetailerKey,
+                    safeStoreCode
+            );
+
+            bulkInventoryImportService.startBulkImport(
+                    job.getJobId(),
+                    file,
+                    safeRetailerKey,
+                    safeStoreCode
+            );
+
+            return ResponseEntity.accepted().body(job);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Bulk inventory upload failed: " + e.getMessage());
         }
     }
 
@@ -321,7 +375,7 @@ public class MerchantInventoryController {
             return ResponseEntity.badRequest().body(e.getMessage());
         } catch (RuntimeException e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Reorder report export failed: " + e.getMessage());
+                    .body("Reorder report failed: " + e.getMessage());
         }
     }
 

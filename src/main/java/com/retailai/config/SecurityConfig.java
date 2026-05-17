@@ -42,7 +42,7 @@ public class SecurityConfig {
                                 response.sendError(HttpServletResponse.SC_FORBIDDEN, "Forbidden"))
                 )
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/", "/index.html", "/css/**", "/js/**", "/images/**").permitAll()
+                        .requestMatchers("/", "/index.html", "/css/**", "/js/**", "/images/**", "/health").permitAll()
                         .requestMatchers("/api/v1/saas/auth/signup").permitAll()
                         .requestMatchers("/api/v1/saas/auth/login").permitAll()
 

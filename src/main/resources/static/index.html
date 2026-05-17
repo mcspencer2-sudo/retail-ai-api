@@ -2925,8 +2925,10 @@
                 </div>
 
                 <div class="merchant-dashboard-note mb-3">
-                    <span>📦</span>
-                    <span>Upload a CSV to create or refresh store inventory before scanning or styling.</span>
+                    <span>⚙️</span>
+                    <span>
+                        Bulk Mode is prepared for larger enterprise imports. Current uploads process immediately and create job records.
+                    </span>
                 </div>
 
                 <div class="row g-3 align-items-end">
@@ -2955,6 +2957,19 @@
                                 accept=".csv,text/csv"
                                 class="form-control auth-input"
                         />
+                    </div>
+
+                    <div class="col-md-2">
+                        <label class="form-label fw-bold small text-muted">Mode</label>
+                        <button
+                                id="bulkModePlaceholderBtn"
+                                class="btn merchant-admin-btn secondary w-100"
+                                type="button"
+                                disabled
+                                title="Async bulk imports are coming next."
+                        >
+                            Bulk Ready
+                        </button>
                     </div>
 
                     <div class="col-md-2">

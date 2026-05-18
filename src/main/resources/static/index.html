@@ -3396,8 +3396,44 @@
     </div>
 </div>
 
-<div id="toastShell" class="toast-shell"></div>
+<div
+        class="modal fade"
+        id="importJobDetailsModal"
+        tabindex="-1"
+        aria-labelledby="importJobDetailsModalLabel"
+        aria-hidden="true"
+>
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content" style="border-radius: 24px; border: none; overflow: hidden;">
+            <div class="modal-header" style="border-bottom: 1px solid rgba(15,23,42,0.08);">
+                <div>
+                    <div class="section-kicker">Import Job Details</div>
+                    <h5 class="modal-title fw-bold" id="importJobDetailsModalLabel">
+                        CSV Import Job
+                    </h5>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
 
+            <div class="modal-body">
+                <div id="importJobDetailsModalBody">
+                    <div class="text-muted fw-semibold">Loading job details...</div>
+                </div>
+            </div>
+
+            <div class="modal-footer" style="border-top: 1px solid rgba(15,23,42,0.08);">
+                <button type="button" class="btn merchant-inline-btn" data-bs-dismiss="modal">
+                    Close
+                </button>
+                <button type="button" class="btn merchant-inline-btn primary" id="refreshImportJobDetailsBtn">
+                    Refresh Details
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="toastShell" class="toast-shell"></div>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
 <script>
@@ -6453,13 +6489,38 @@ async function showImportJobDetails(jobId) {
         return;
     }
 
+    const modalEl = document.getElementById("importJobDetailsModal");
+    const bodyEl = document.getElementById("importJobDetailsModalBody");
+    const refreshBtn = document.getElementById("refreshImportJobDetailsBtn");
+
+    if (!modalEl || !bodyEl) {
+        showToast("Import job details modal is missing.", "error");
+        return;
+    }
+
+    modalEl.dataset.jobId = jobId;
+
+    bodyEl.innerHTML = `
+        <div class="text-muted fw-semibold">
+            Loading job details...
+        </div>
+    `;
+
+    const modal =
+        bootstrap.Modal.getInstance(modalEl) ||
+        new bootstrap.Modal(modalEl);
+
+    modal.show();
+
+    if (refreshBtn) {
+        refreshBtn.onclick = () => showImportJobDetails(jobId);
+    }
+
     try {
         requireToken();
 
         const response = await fetch(`${API.merchant}/import-jobs/${encodeURIComponent(jobId)}`, {
-            headers: {
-                Authorization: `Bearer ${getToken()}`
-            }
+            headers: getAuthHeaders()
         });
 
         await assertAuthorizedResponse(response, "Unable to load import job details.");
@@ -6476,30 +6537,90 @@ async function showImportJobDetails(jobId) {
         const successCount = Number(job.successCount || 0);
         const failureCount = Number(job.failureCount || 0);
         const message = job.message || "No message.";
+        const progressPercent =
+            totalRows > 0
+                ? Math.min(100, Math.round((processedRows / totalRows) * 100))
+                : 0;
 
-        const details = [
-            `Job ID: ${job.jobId || "N/A"}`,
-            `Mode: ${mode}`,
-            `Status: ${status}`,
-            `File: ${filename}`,
-            `Retailer: ${retailerKey}`,
-            `Store: ${storeCode}`,
-            `Rows: ${processedRows}/${totalRows}`,
-            `Imported: ${successCount}`,
-            `Failed: ${failureCount}`,
-            `Created: ${formatImportHistoryDate(job.createdAt)}`,
-            `Started: ${formatImportHistoryDate(job.startedAt)}`,
-            `Completed: ${formatImportHistoryDate(job.completedAt)}`,
-            `Message: ${message}`
-        ].join("\n");
+        const modeClass = mode === "BULK" ? "success" : "neutral";
+        const statusClass =
+            failureCount > 0 || status === "FAILED" || status === "COMPLETED_WITH_ERRORS"
+                ? "error"
+                : status === "RUNNING" || status === "QUEUED"
+                    ? "neutral"
+                    : "success";
 
-        window.alert(details);
+        bodyEl.innerHTML = `
+            <div class="d-flex gap-2 flex-wrap mb-3">
+                <span class="import-history-pill ${modeClass}">${escapeHtml(mode)}</span>
+                <span class="import-history-pill ${statusClass}">${escapeHtml(status)}</span>
+                <span class="import-history-pill neutral">${progressPercent}% processed</span>
+            </div>
+
+            <div class="csv-rules-grid">
+                <div class="csv-rule-box">
+                    <div class="csv-rule-label">Job ID</div>
+                    <div class="fw-bold text-break">${escapeHtml(job.jobId || "N/A")}</div>
+                </div>
+
+                <div class="csv-rule-box">
+                    <div class="csv-rule-label">File</div>
+                    <div class="fw-bold text-break">${escapeHtml(filename)}</div>
+                </div>
+
+                <div class="csv-rule-box">
+                    <div class="csv-rule-label">Location</div>
+                    <div class="fw-bold text-break">${escapeHtml(retailerKey)} • ${escapeHtml(storeCode)}</div>
+                </div>
+
+                <div class="csv-rule-box">
+                    <div class="csv-rule-label">Rows</div>
+                    <div class="fw-bold">${processedRows}/${totalRows}</div>
+                </div>
+
+                <div class="csv-rule-box">
+                    <div class="csv-rule-label">Imported</div>
+                    <div class="fw-bold text-success">${successCount}</div>
+                </div>
+
+                <div class="csv-rule-box">
+                    <div class="csv-rule-label">Failed</div>
+                    <div class="fw-bold ${failureCount > 0 ? "text-danger" : "text-muted"}">${failureCount}</div>
+                </div>
+
+                <div class="csv-rule-box">
+                    <div class="csv-rule-label">Created</div>
+                    <div class="fw-bold text-break">${escapeHtml(formatImportHistoryDate(job.createdAt))}</div>
+                </div>
+
+                <div class="csv-rule-box">
+                    <div class="csv-rule-label">Started</div>
+                    <div class="fw-bold text-break">${escapeHtml(formatImportHistoryDate(job.startedAt))}</div>
+                </div>
+
+                <div class="csv-rule-box">
+                    <div class="csv-rule-label">Completed</div>
+                    <div class="fw-bold text-break">${escapeHtml(formatImportHistoryDate(job.completedAt))}</div>
+                </div>
+            </div>
+
+            <div class="csv-bad-example mt-3" style="background: rgba(15,23,42,0.03); border-color: rgba(15,23,42,0.08); color: #475467;">
+                <strong style="color:#111827;">Message:</strong>
+                ${escapeHtml(message)}
+            </div>
+        `;
     } catch (error) {
         console.error("Import Job Detail Error:", error);
+
+        bodyEl.innerHTML = `
+            <div class="import-history-empty">
+                Unable to load import job details.
+            </div>
+        `;
+
         showToast(error.message || "Unable to load import job details.", "error");
     }
 }
-
 async function loadImportJobs() {
     const retailerKey =
         document.getElementById("uploadRetailerSelect")?.value ||

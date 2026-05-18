@@ -6302,7 +6302,7 @@ function renderImportHistory(history) {
                 : "success";
 
         return `
-            <div class="import-history-row">
+            <div class="import-history-row"
                 <div class="import-history-main">
                     <div class="import-history-file">${escapeHtml(filename)}</div>
                     <div class="import-history-meta">
@@ -6421,7 +6421,7 @@ function renderImportJobs(jobs) {
         const modeClass = mode === "BULK" ? "success" : "neutral";
 
         return `
-            <div class="import-history-row">
+            <div class="import-history-row" role="button" tabindex="0" onclick="showImportJobDetails('${escapeHtml(job.jobId || "")}')">
                 <div class="import-history-main">
                     <div class="import-history-file">${escapeHtml(filename)}</div>
                     <div class="import-history-meta">
@@ -6445,6 +6445,59 @@ function renderImportJobs(jobs) {
             </div>
         `;
     }).join("");
+}
+
+async function showImportJobDetails(jobId) {
+    if (!jobId) {
+        showToast("Import job id is missing.", "error");
+        return;
+    }
+
+    try {
+        requireToken();
+
+        const response = await fetch(`${API.merchant}/import-jobs/${encodeURIComponent(jobId)}`, {
+            headers: {
+                Authorization: `Bearer ${getToken()}`
+            }
+        });
+
+        await assertAuthorizedResponse(response, "Unable to load import job details.");
+
+        const job = await response.json();
+
+        const mode = String(job.mode || "STANDARD").toUpperCase();
+        const status = String(job.status || "QUEUED").toUpperCase();
+        const filename = job.originalFilename || "inventory.csv";
+        const retailerKey = job.retailerKey || "Retailer";
+        const storeCode = job.storeCode || "Store";
+        const totalRows = Number(job.totalRows || 0);
+        const processedRows = Number(job.processedRows || 0);
+        const successCount = Number(job.successCount || 0);
+        const failureCount = Number(job.failureCount || 0);
+        const message = job.message || "No message.";
+
+        const details = [
+            `Job ID: ${job.jobId || "N/A"}`,
+            `Mode: ${mode}`,
+            `Status: ${status}`,
+            `File: ${filename}`,
+            `Retailer: ${retailerKey}`,
+            `Store: ${storeCode}`,
+            `Rows: ${processedRows}/${totalRows}`,
+            `Imported: ${successCount}`,
+            `Failed: ${failureCount}`,
+            `Created: ${formatImportHistoryDate(job.createdAt)}`,
+            `Started: ${formatImportHistoryDate(job.startedAt)}`,
+            `Completed: ${formatImportHistoryDate(job.completedAt)}`,
+            `Message: ${message}`
+        ].join("\n");
+
+        window.alert(details);
+    } catch (error) {
+        console.error("Import Job Detail Error:", error);
+        showToast(error.message || "Unable to load import job details.", "error");
+    }
 }
 
 async function loadImportJobs() {

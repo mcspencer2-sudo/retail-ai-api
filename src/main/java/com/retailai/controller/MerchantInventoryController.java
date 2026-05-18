@@ -238,6 +238,26 @@ public class MerchantInventoryController {
         }
     }
 
+    @PostMapping("/import-jobs/{jobId}/cancel")
+    public ResponseEntity<?> cancelImportJob(
+            @PathVariable String jobId
+    ) {
+        try {
+            if (jobId == null || jobId.isBlank()) {
+                return ResponseEntity.badRequest().body("Import job id is required.");
+            }
+
+            InventoryImportJobDTO job = inventoryImportJobService.markCancelled(jobId.trim());
+
+            return ResponseEntity.ok(job);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(e.getMessage());
+        }
+    }
+
     @PostMapping("/seed-demo")
     public ResponseEntity<?> seedDemoInventory() {
         try {

@@ -168,6 +168,26 @@ public class InventoryImportJobService {
         return toDto(saved);
     }
 
+    public InventoryImportJobDTO markCancelled(String jobId) {
+        InventoryImportJob job = findJob(jobId);
+
+        String status = job.getStatus();
+
+        if (InventoryImportJobStatus.COMPLETED.equals(status)
+                || InventoryImportJobStatus.COMPLETED_WITH_ERRORS.equals(status)
+                || InventoryImportJobStatus.FAILED.equals(status)
+                || InventoryImportJobStatus.CANCELLED.equals(status)) {
+            throw new IllegalArgumentException("Only queued or running import jobs can be cancelled.");
+        }
+
+        job.setStatus(InventoryImportJobStatus.CANCELLED);
+        job.setCompletedAt(LocalDateTime.now());
+        job.setMessage("Import job was cancelled.");
+
+        InventoryImportJob saved = inventoryImportJobRepository.save(job);
+        return toDto(saved);
+    }
+
     public InventoryImportJobDTO getJob(String jobId) {
         return toDto(findJob(jobId));
     }

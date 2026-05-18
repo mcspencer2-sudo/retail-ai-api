@@ -3457,6 +3457,9 @@
             </div>
 
             <div class="modal-footer" style="border-top: 1px solid rgba(15,23,42,0.08);">
+                <button type="button" class="btn merchant-inline-btn danger" id="cancelImportJobBtn">
+                    Cancel Job
+                </button>
                 <button type="button" class="btn merchant-inline-btn" id="copyImportJobIdBtn">
                     Copy Job ID
                 </button>
@@ -6559,6 +6562,36 @@ function stopImportJobDetailsAutoRefresh() {
     }
 }
 
+async function cancelImportJob(jobId) {
+    if (!jobId) {
+        showToast("No import job id to cancel.", "error");
+        return;
+    }
+
+    const confirmed = window.confirm("Cancel this import job? Completed jobs cannot be cancelled.");
+
+    if (!confirmed) return;
+
+    try {
+        requireToken();
+
+        const response = await fetch(`${API.merchant}/import-jobs/${encodeURIComponent(jobId)}/cancel`, {
+            method: "POST",
+            headers: getAuthHeaders()
+        });
+
+        await assertAuthorizedResponse(response, "Unable to cancel import job.");
+
+        showToast("Import job cancelled.", "success");
+
+        await loadImportJobs();
+        await showImportJobDetails(jobId);
+    } catch (error) {
+        console.error("Cancel Import Job Error:", error);
+        showToast(error.message || "Unable to cancel import job.", "error");
+    }
+}
+
 async function showImportJobDetails(jobId) {
     if (!jobId) {
         showToast("Import job id is missing.", "error");
@@ -6569,6 +6602,7 @@ async function showImportJobDetails(jobId) {
     const bodyEl = document.getElementById("importJobDetailsModalBody");
     const refreshBtn = document.getElementById("refreshImportJobDetailsBtn");
     const copyBtn = document.getElementById("copyImportJobIdBtn");
+    const cancelBtn = document.getElementById("cancelImportJobBtn");
 
     if (!modalEl || !bodyEl) {
         showToast("Import job details modal is missing.", "error");
@@ -6596,6 +6630,10 @@ async function showImportJobDetails(jobId) {
     if (copyBtn) {
         copyBtn.onclick = () => copyImportJobId(jobId);
     }
+
+    if (cancelBtn) {
+        cancelBtn.onclick = () => cancelImportJob(jobId);
+    }
     try {
         requireToken();
 
@@ -6609,6 +6647,11 @@ async function showImportJobDetails(jobId) {
 
         const mode = String(job.mode || "STANDARD").toUpperCase();
         const status = String(job.status || "QUEUED").toUpperCase();
+        const canCancel = status === "QUEUED" || status === "RUNNING";
+
+        if (cancelBtn) {
+           cancelBtn.classList.toggle("d-none", !canCancel);
+       }
         stopImportJobDetailsAutoRefresh();
 
         if (status === "QUEUED" || status === "RUNNING") {

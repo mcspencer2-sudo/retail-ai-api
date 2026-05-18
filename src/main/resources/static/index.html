@@ -6630,11 +6630,15 @@ async function loadImportJobs() {
 
         await loadImportJobs();
 
+        document.getElementById("inventoryImportJobs")?.scrollIntoView({
+            behavior: "smooth",
+            block: "start"
+        });
+
         window.setTimeout(() => {
             loadImportJobs();
             loadMerchantInventory();
         }, 1500);
-
         window.setTimeout(() => {
             loadImportJobs();
             loadMerchantInventory();

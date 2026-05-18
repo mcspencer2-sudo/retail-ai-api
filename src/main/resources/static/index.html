@@ -3457,6 +3457,9 @@
             </div>
 
             <div class="modal-footer" style="border-top: 1px solid rgba(15,23,42,0.08);">
+                <button type="button" class="btn merchant-inline-btn" id="copyImportJobIdBtn">
+                    Copy Job ID
+                </button>
                 <button type="button" class="btn merchant-inline-btn" data-bs-dismiss="modal">
                     Close
                 </button>
@@ -6533,6 +6536,21 @@ function handleImportJobRowKeydown(event, jobId) {
     }
 }
 
+async function copyImportJobId(jobId) {
+    if (!jobId) {
+        showToast("No import job id to copy.", "error");
+        return;
+    }
+
+    try {
+        await navigator.clipboard.writeText(jobId);
+        showToast("Import job id copied.", "success");
+    } catch (error) {
+        console.error("Copy Import Job ID Error:", error);
+        showToast("Unable to copy import job id.", "error");
+    }
+}
+
 async function showImportJobDetails(jobId) {
     if (!jobId) {
         showToast("Import job id is missing.", "error");
@@ -6542,6 +6560,7 @@ async function showImportJobDetails(jobId) {
     const modalEl = document.getElementById("importJobDetailsModal");
     const bodyEl = document.getElementById("importJobDetailsModalBody");
     const refreshBtn = document.getElementById("refreshImportJobDetailsBtn");
+    const copyBtn = document.getElementById("copyImportJobIdBtn");
 
     if (!modalEl || !bodyEl) {
         showToast("Import job details modal is missing.", "error");
@@ -6566,6 +6585,9 @@ async function showImportJobDetails(jobId) {
         refreshBtn.onclick = () => showImportJobDetails(jobId);
     }
 
+    if (copyBtn) {
+        copyBtn.onclick = () => copyImportJobId(jobId);
+    }
     try {
         requireToken();
 

@@ -6492,7 +6492,13 @@ function renderImportJobs(jobs) {
         const modeClass = mode === "BULK" ? "success" : "neutral";
 
         return `
-            <div class="import-history-row" role="button" tabindex="0" onclick="showImportJobDetails('${escapeHtml(job.jobId || "")}')">
+           <div
+               class="import-history-row"
+               role="button"
+               tabindex="0"
+               onclick="showImportJobDetails('${escapeHtml(job.jobId || "")}')"
+               onkeydown="handleImportJobRowKeydown(event, '${escapeHtml(job.jobId || "")}')"
+           >
                 <div class="import-history-main">
                     <div class="import-history-file">${escapeHtml(filename)}</div>
                     <div class="import-history-meta">
@@ -6516,6 +6522,15 @@ function renderImportJobs(jobs) {
             </div>
         `;
     }).join("");
+}
+
+function handleImportJobRowKeydown(event, jobId) {
+    if (!event || !jobId) return;
+
+    if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        showImportJobDetails(jobId);
+    }
 }
 
 async function showImportJobDetails(jobId) {

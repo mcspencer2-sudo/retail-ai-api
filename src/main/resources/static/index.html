@@ -3508,6 +3508,7 @@
     let activityRefreshStarted = false;
     let savedRfids = new Set();
     let merchantInventoryPage = 0;
+    let importJobDetailsRefreshTimer = null;
 
     window.currentLookVariation = 0;
     window.currentLookState = {
@@ -6551,6 +6552,13 @@ async function copyImportJobId(jobId) {
     }
 }
 
+function stopImportJobDetailsAutoRefresh() {
+    if (importJobDetailsRefreshTimer) {
+        window.clearTimeout(importJobDetailsRefreshTimer);
+        importJobDetailsRefreshTimer = null;
+    }
+}
+
 async function showImportJobDetails(jobId) {
     if (!jobId) {
         showToast("Import job id is missing.", "error");
@@ -6601,6 +6609,14 @@ async function showImportJobDetails(jobId) {
 
         const mode = String(job.mode || "STANDARD").toUpperCase();
         const status = String(job.status || "QUEUED").toUpperCase();
+        stopImportJobDetailsAutoRefresh();
+
+        if (status === "QUEUED" || status === "RUNNING") {
+            importJobDetailsRefreshTimer = window.setTimeout(() => {
+               showImportJobDetails(jobId);
+               loadImportJobs();
+           }, 2000);
+       }
         const filename = job.originalFilename || "inventory.csv";
         const retailerKey = job.retailerKey || "Retailer";
         const storeCode = job.storeCode || "Store";
@@ -7944,7 +7960,9 @@ document.getElementById("uploadStoreCodeSelect")?.addEventListener("change", () 
                 loadAllInsights();
             }
         });
-
+        document.getElementById("importJobDetailsModal")?.addEventListener("hidden.bs.modal", () => {
+            stopImportJobDetailsAutoRefresh();
+        });
         document.getElementById("rfidInput")?.addEventListener("keydown", event => {
             if (event.key === "Enter") {
                 event.preventDefault();

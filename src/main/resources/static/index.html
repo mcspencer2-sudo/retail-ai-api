@@ -2962,13 +2962,12 @@
                     <div class="col-md-2">
                         <label class="form-label fw-bold small text-muted">Mode</label>
                         <button
-                                id="bulkModePlaceholderBtn"
+                                id="bulkUploadInventoryBtn"
                                 class="btn merchant-admin-btn secondary w-100"
                                 type="button"
-                                disabled
-                                title="Async bulk imports are coming next."
+                                title="Upload CSV using async bulk import mode."
                         >
-                            Bulk Ready
+                            Bulk Upload
                         </button>
                     </div>
 
@@ -6568,6 +6567,86 @@ async function loadImportJobs() {
         }
     }
 
+  async function uploadInventoryCsvBulk() {
+    const retailerKey = document.getElementById("uploadRetailerSelect")?.value || "";
+    const storeCode = document.getElementById("uploadStoreCodeSelect")?.value || "";
+    const fileInput = document.getElementById("inventoryCsvFile");
+    const bulkUploadBtn = document.getElementById("bulkUploadInventoryBtn");
+    const file = fileInput?.files?.[0];
+
+    if (!retailerKey) {
+        setInventoryUploadStatus("Select a retailer first.", "danger");
+        showToast("Select a retailer first.", "error");
+        return;
+    }
+
+    if (!storeCode) {
+        setInventoryUploadStatus("Select a store first.", "danger");
+        showToast("Select a store first.", "error");
+        return;
+    }
+
+    if (!file) {
+        setInventoryUploadStatus("Choose a CSV file first.", "danger");
+        showToast("Choose a CSV file first.", "error");
+        return;
+    }
+
+    try {
+        requireToken();
+
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("retailerKey", retailerKey);
+        formData.append("storeCode", storeCode);
+
+        setButtonBusy(bulkUploadBtn, "Starting...");
+        setInventoryUploadStatus("Starting async bulk import...", "muted");
+        renderInventoryUploadResult(null);
+
+        const resp = await fetch(`${API.merchant}/upload/bulk`, {
+            method: "POST",
+            headers: {
+                Authorization: `Bearer ${getToken()}`
+            },
+            body: formData
+        });
+
+        await assertAuthorizedResponse(resp, "Bulk inventory upload failed.");
+
+        const job = await resp.json();
+        const jobId = job?.jobId || "";
+
+        setInventoryUploadStatus(
+            jobId
+                ? `Bulk import started. Job ID: ${jobId}`
+                : "Bulk import started.",
+            "success"
+        );
+
+        showToast("Bulk import started.", "success");
+
+        if (fileInput) fileInput.value = "";
+
+        await loadImportJobs();
+
+        window.setTimeout(() => {
+            loadImportJobs();
+            loadMerchantInventory();
+        }, 1500);
+
+        window.setTimeout(() => {
+            loadImportJobs();
+            loadMerchantInventory();
+        }, 3500);
+    } catch (error) {
+        console.error("Bulk Inventory Upload Error:", error);
+        setInventoryUploadStatus(error.message || "Bulk inventory upload failed.", "danger");
+        showToast(error.message || "Bulk inventory upload failed.", "error");
+    } finally {
+        clearButtonBusy(bulkUploadBtn, "Bulk Upload");
+    }
+}
     async function login() {
         const email = document.getElementById("loginEmail")?.value.trim();
         const password = document.getElementById("loginPassword")?.value.trim();
@@ -7453,6 +7532,7 @@ async function loadImportJobs() {
         document.getElementById("exportLowStockBtn")?.addEventListener("click", exportLowStockInventoryCsv);
         document.getElementById("exportReorderReportBtn")?.addEventListener("click", exportReorderReportCsv);
         document.getElementById("uploadInventoryBtn")?.addEventListener("click", uploadInventoryCsv);
+        document.getElementById("bulkUploadInventoryBtn")?.addEventListener("click", uploadInventoryCsvBulk);
         document.getElementById("refreshImportHistoryBtn")?.addEventListener("click", loadImportHistory);
         document.getElementById("refreshImportJobsBtn")?.addEventListener("click", loadImportJobs);
         document.getElementById("downloadInventoryTemplateBtn")?.addEventListener("click", downloadInventoryImportTemplate);

@@ -9,6 +9,7 @@ import com.retailai.model.InventoryImportLog;
 import com.retailai.model.Product;
 import com.retailai.repository.InventoryImportLogRepository;
 import com.retailai.repository.ProductRepository;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -55,6 +56,9 @@ public class MerchantInventoryImportService {
     private final ProductRepository productRepository;
     private final InventoryImportLogRepository inventoryImportLogRepository;
     private final InventoryImportJobService inventoryImportJobService;
+
+    @Value("${retailai.import.row-delay-ms:0}")
+    private long importRowDelayMs;
 
     public MerchantInventoryImportService(
             ProductRepository productRepository,
@@ -122,7 +126,7 @@ public class MerchantInventoryImportService {
 
             while ((line = reader.readLine()) != null) {
                 throwIfCancelled(jobId);
-                sleepBrieflyForBulkCancelTesting(jobId);
+                sleepIfConfigured();
 
                 rowNumber++;
 
@@ -268,13 +272,13 @@ public class MerchantInventoryImportService {
         }
     }
 
-    private void sleepBrieflyForBulkCancelTesting(String jobId) {
-        if (jobId == null || jobId.isBlank()) {
+    private void sleepIfConfigured() {
+        if (importRowDelayMs <= 0) {
             return;
         }
 
         try {
-            Thread.sleep(5);
+            Thread.sleep(importRowDelayMs);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new IllegalStateException("Import job was interrupted.");

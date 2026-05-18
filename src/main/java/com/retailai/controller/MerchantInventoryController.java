@@ -87,7 +87,7 @@ public class MerchantInventoryController {
             String safeRetailerKey = retailerKey.trim();
             String safeStoreCode = storeCode.trim();
 
-            InventoryImportJobDTO job = inventoryImportJobService.createQueuedJob(
+            InventoryImportJobDTO job = inventoryImportJobService.createQueuedStandardJob(
                     originalFilename,
                     safeRetailerKey,
                     safeStoreCode
@@ -156,7 +156,7 @@ public class MerchantInventoryController {
             String safeRetailerKey = retailerKey.trim();
             String safeStoreCode = storeCode.trim();
 
-            InventoryImportJobDTO job = inventoryImportJobService.createQueuedJob(
+            InventoryImportJobDTO job = inventoryImportJobService.createQueuedBulkJob(
                     originalFilename,
                     safeRetailerKey,
                     safeStoreCode

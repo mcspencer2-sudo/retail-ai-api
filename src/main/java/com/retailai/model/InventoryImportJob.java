@@ -6,6 +6,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 
 import java.time.LocalDateTime;
@@ -34,6 +35,9 @@ public class InventoryImportJob {
     @Column(nullable = false)
     private String status;
 
+    @Column(nullable = false)
+    private String mode;
+
     private Integer totalRows;
     private Integer processedRows;
     private Integer successCount;
@@ -52,8 +56,25 @@ public class InventoryImportJob {
             jobId = UUID.randomUUID().toString();
         }
 
+        applyDefaults();
+
+        if (createdAt == null) {
+            createdAt = LocalDateTime.now();
+        }
+    }
+
+    @PreUpdate
+    public void preUpdate() {
+        applyDefaults();
+    }
+
+    private void applyDefaults() {
         if (status == null || status.isBlank()) {
             status = InventoryImportJobStatus.QUEUED;
+        }
+
+        if (mode == null || mode.isBlank()) {
+            mode = "STANDARD";
         }
 
         if (totalRows == null) {
@@ -70,10 +91,6 @@ public class InventoryImportJob {
 
         if (failureCount == null) {
             failureCount = 0;
-        }
-
-        if (createdAt == null) {
-            createdAt = LocalDateTime.now();
         }
     }
 
@@ -115,6 +132,14 @@ public class InventoryImportJob {
 
     public void setStatus(String status) {
         this.status = status;
+    }
+
+    public String getMode() {
+        return mode;
+    }
+
+    public void setMode(String mode) {
+        this.mode = mode;
     }
 
     public Integer getTotalRows() {

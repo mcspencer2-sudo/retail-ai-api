@@ -10,6 +10,7 @@ public class InventoryImportJobDTO {
     private String retailerKey;
     private String storeCode;
     private String status;
+    private String mode;
     private Integer totalRows;
     private Integer processedRows;
     private Integer successCount;
@@ -29,6 +30,7 @@ public class InventoryImportJobDTO {
             String retailerKey,
             String storeCode,
             String status,
+            String mode,
             Integer totalRows,
             Integer processedRows,
             Integer successCount,
@@ -44,6 +46,7 @@ public class InventoryImportJobDTO {
         this.retailerKey = retailerKey;
         this.storeCode = storeCode;
         this.status = status;
+        this.mode = mode;
         this.totalRows = totalRows;
         this.processedRows = processedRows;
         this.successCount = successCount;
@@ -100,6 +103,14 @@ public class InventoryImportJobDTO {
 
     public void setStatus(String status) {
         this.status = status;
+    }
+
+    public String getMode() {
+        return mode;
+    }
+
+    public void setMode(String mode) {
+        this.mode = mode;
     }
 
     public Integer getTotalRows() {

@@ -12,6 +12,9 @@ import java.util.List;
 @Service
 public class InventoryImportJobService {
 
+    private static final String MODE_STANDARD = "STANDARD";
+    private static final String MODE_BULK = "BULK";
+
     private final InventoryImportJobRepository inventoryImportJobRepository;
 
     public InventoryImportJobService(InventoryImportJobRepository inventoryImportJobRepository) {
@@ -22,6 +25,41 @@ public class InventoryImportJobService {
             String originalFilename,
             String retailerKey,
             String storeCode
+    ) {
+        return createQueuedStandardJob(originalFilename, retailerKey, storeCode);
+    }
+
+    public InventoryImportJobDTO createQueuedStandardJob(
+            String originalFilename,
+            String retailerKey,
+            String storeCode
+    ) {
+        return createQueuedJobWithMode(
+                originalFilename,
+                retailerKey,
+                storeCode,
+                MODE_STANDARD
+        );
+    }
+
+    public InventoryImportJobDTO createQueuedBulkJob(
+            String originalFilename,
+            String retailerKey,
+            String storeCode
+    ) {
+        return createQueuedJobWithMode(
+                originalFilename,
+                retailerKey,
+                storeCode,
+                MODE_BULK
+        );
+    }
+
+    private InventoryImportJobDTO createQueuedJobWithMode(
+            String originalFilename,
+            String retailerKey,
+            String storeCode,
+            String mode
     ) {
         if (originalFilename == null || originalFilename.isBlank()) {
             throw new IllegalArgumentException("Original filename is required.");
@@ -40,6 +78,7 @@ public class InventoryImportJobService {
         job.setRetailerKey(retailerKey.trim());
         job.setStoreCode(storeCode.trim());
         job.setStatus(InventoryImportJobStatus.QUEUED);
+        job.setMode(normalizeMode(mode));
         job.setMessage("Import job queued.");
 
         InventoryImportJob saved = inventoryImportJobRepository.save(job);
@@ -88,6 +127,8 @@ public class InventoryImportJobService {
     ) {
         InventoryImportJob job = findJob(jobId);
 
+        int safeTotalRows = safeInt(totalRows);
+        int safeSuccessCount = safeInt(successCount);
         int safeFailureCount = safeInt(failureCount);
 
         job.setStatus(
@@ -96,9 +137,9 @@ public class InventoryImportJobService {
                         : InventoryImportJobStatus.COMPLETED
         );
 
-        job.setTotalRows(safeInt(totalRows));
-        job.setProcessedRows(safeInt(totalRows));
-        job.setSuccessCount(safeInt(successCount));
+        job.setTotalRows(safeTotalRows);
+        job.setProcessedRows(safeTotalRows);
+        job.setSuccessCount(safeSuccessCount);
         job.setFailureCount(safeFailureCount);
         job.setCompletedAt(LocalDateTime.now());
 
@@ -173,6 +214,7 @@ public class InventoryImportJobService {
                 job.getRetailerKey(),
                 job.getStoreCode(),
                 job.getStatus(),
+                normalizeMode(job.getMode()),
                 job.getTotalRows(),
                 job.getProcessedRows(),
                 job.getSuccessCount(),
@@ -182,6 +224,20 @@ public class InventoryImportJobService {
                 job.getStartedAt(),
                 job.getCompletedAt()
         );
+    }
+
+    private String normalizeMode(String mode) {
+        if (mode == null || mode.isBlank()) {
+            return MODE_STANDARD;
+        }
+
+        String safeMode = mode.trim().toUpperCase();
+
+        if (MODE_BULK.equals(safeMode)) {
+            return MODE_BULK;
+        }
+
+        return MODE_STANDARD;
     }
 
     private int safeInt(Integer value) {

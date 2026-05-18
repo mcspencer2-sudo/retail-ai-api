@@ -35,7 +35,7 @@ public class InventoryImportJob {
     @Column(nullable = false)
     private String status;
 
-    @Column(nullable = false)
+    @Column(name = "import_mode", nullable = false)
     private String mode;
 
     private Integer totalRows;

@@ -18,4 +18,5 @@ public interface InventoryImportJobRepository extends JpaRepository<InventoryImp
     List<InventoryImportJob> findTop20ByRetailerKeyOrderByCreatedAtDesc(String retailerKey);
 
     List<InventoryImportJob> findTop20ByOrderByCreatedAtDesc();
+
 }

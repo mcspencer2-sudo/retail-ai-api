@@ -122,6 +122,7 @@ public class MerchantInventoryImportService {
 
             while ((line = reader.readLine()) != null) {
                 throwIfCancelled(jobId);
+                sleepBrieflyForBulkCancelTesting(jobId);
 
                 rowNumber++;
 
@@ -264,6 +265,19 @@ public class MerchantInventoryImportService {
 
         if (InventoryImportJobStatus.CANCELLED.equals(job.getStatus())) {
             throw new IllegalStateException("Import job was cancelled.");
+        }
+    }
+
+    private void sleepBrieflyForBulkCancelTesting(String jobId) {
+        if (jobId == null || jobId.isBlank()) {
+            return;
+        }
+
+        try {
+            Thread.sleep(5);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException("Import job was interrupted.");
         }
     }
 

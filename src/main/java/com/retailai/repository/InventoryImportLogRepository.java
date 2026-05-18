@@ -15,4 +15,5 @@ public interface InventoryImportLogRepository extends JpaRepository<InventoryImp
     List<InventoryImportLog> findTop10ByRetailerKeyOrderByCreatedAtDesc(String retailerKey);
 
     List<InventoryImportLog> findTop10ByOrderByCreatedAtDesc();
+
 }

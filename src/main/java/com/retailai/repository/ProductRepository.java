@@ -24,6 +24,7 @@ public interface ProductRepository extends JpaRepository<Product, String> {
 
     Optional<Product> findByRfidAndRetailerKeyAndStoreCode(String rfid, String retailerKey, String storeCode);
 
+
     List<Product> findByRetailerKeyAndActiveTrueAndAvailableTrueAndStockQuantityGreaterThan(
             String retailerKey,
             Integer stockQuantity

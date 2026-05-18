@@ -1,8 +1,10 @@
 package com.retailai.service;
 
 import com.retailai.dto.InventoryImportErrorDTO;
+import com.retailai.dto.InventoryImportJobDTO;
 import com.retailai.dto.InventoryImportLogDTO;
 import com.retailai.dto.InventoryImportResultDTO;
+import com.retailai.model.InventoryImportJobStatus;
 import com.retailai.model.InventoryImportLog;
 import com.retailai.model.Product;
 import com.retailai.repository.InventoryImportLogRepository;
@@ -52,19 +54,31 @@ public class MerchantInventoryImportService {
 
     private final ProductRepository productRepository;
     private final InventoryImportLogRepository inventoryImportLogRepository;
+    private final InventoryImportJobService inventoryImportJobService;
 
     public MerchantInventoryImportService(
             ProductRepository productRepository,
-            InventoryImportLogRepository inventoryImportLogRepository
+            InventoryImportLogRepository inventoryImportLogRepository,
+            InventoryImportJobService inventoryImportJobService
     ) {
         this.productRepository = productRepository;
         this.inventoryImportLogRepository = inventoryImportLogRepository;
+        this.inventoryImportJobService = inventoryImportJobService;
     }
 
     public InventoryImportResultDTO importCsv(
             MultipartFile file,
             String selectedRetailerKey,
             String selectedStoreCode
+    ) {
+        return importCsv(file, selectedRetailerKey, selectedStoreCode, null);
+    }
+
+    public InventoryImportResultDTO importCsv(
+            MultipartFile file,
+            String selectedRetailerKey,
+            String selectedStoreCode,
+            String jobId
     ) {
         if (file == null || file.isEmpty()) {
             throw new IllegalArgumentException("CSV file is required.");
@@ -78,6 +92,8 @@ public class MerchantInventoryImportService {
             throw new IllegalArgumentException("Store code is required.");
         }
 
+        throwIfCancelled(jobId);
+
         List<InventoryImportErrorDTO> errors = new ArrayList<>();
         Set<String> seenRfidsInFile = new HashSet<>();
 
@@ -88,6 +104,8 @@ public class MerchantInventoryImportService {
         try (BufferedReader reader = new BufferedReader(
                 new InputStreamReader(file.getInputStream(), StandardCharsets.UTF_8)
         )) {
+            throwIfCancelled(jobId);
+
             String headerLine = reader.readLine();
 
             if (headerLine == null || headerLine.isBlank()) {
@@ -103,6 +121,8 @@ public class MerchantInventoryImportService {
             int rowNumber = 1;
 
             while ((line = reader.readLine()) != null) {
+                throwIfCancelled(jobId);
+
                 rowNumber++;
 
                 if (line.isBlank()) {
@@ -127,13 +147,41 @@ public class MerchantInventoryImportService {
                             seenRfidsInFile
                     );
 
+                    throwIfCancelled(jobId);
+
                     productRepository.save(product);
                     successCount++;
+
+                    updateJobProgressIfPresent(
+                            jobId,
+                            totalRows,
+                            successCount,
+                            failureCount
+                    );
                 } catch (IllegalArgumentException rowError) {
                     failureCount++;
                     errors.add(new InventoryImportErrorDTO(rowNumber, rowError.getMessage()));
+
+                    updateJobProgressIfPresent(
+                            jobId,
+                            totalRows,
+                            successCount,
+                            failureCount
+                    );
                 }
             }
+        } catch (IllegalStateException cancelled) {
+            saveImportLog(
+                    file,
+                    selectedRetailerKey,
+                    selectedStoreCode,
+                    successCount,
+                    failureCount,
+                    totalRows,
+                    InventoryImportJobStatus.CANCELLED
+            );
+
+            throw cancelled;
         } catch (IllegalArgumentException e) {
             saveImportLog(
                     file,
@@ -159,6 +207,8 @@ public class MerchantInventoryImportService {
 
             throw new RuntimeException("Could not parse inventory CSV: " + e.getMessage(), e);
         }
+
+        throwIfCancelled(jobId);
 
         String status = failureCount > 0 ? "COMPLETED_WITH_ERRORS" : "COMPLETED";
 
@@ -203,6 +253,38 @@ public class MerchantInventoryImportService {
         return logs.stream()
                 .map(this::toImportLogDto)
                 .collect(Collectors.toList());
+    }
+
+    private void throwIfCancelled(String jobId) {
+        if (jobId == null || jobId.isBlank()) {
+            return;
+        }
+
+        InventoryImportJobDTO job = inventoryImportJobService.getJob(jobId.trim());
+
+        if (InventoryImportJobStatus.CANCELLED.equals(job.getStatus())) {
+            throw new IllegalStateException("Import job was cancelled.");
+        }
+    }
+
+    private void updateJobProgressIfPresent(
+            String jobId,
+            int totalRows,
+            int successCount,
+            int failureCount
+    ) {
+        if (jobId == null || jobId.isBlank()) {
+            return;
+        }
+
+        inventoryImportJobService.updateProgress(
+                jobId.trim(),
+                totalRows,
+                totalRows,
+                successCount,
+                failureCount,
+                "Import job is running."
+        );
     }
 
     private void saveImportLog(

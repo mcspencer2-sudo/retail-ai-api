@@ -1,6 +1,8 @@
 package com.retailai.service;
 
+import com.retailai.dto.InventoryImportJobDTO;
 import com.retailai.dto.InventoryImportResultDTO;
+import com.retailai.model.InventoryImportJobStatus;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -60,7 +62,15 @@ public class BulkInventoryImportService {
             String storeCode
     ) {
         try {
+            if (isCancelled(jobId)) {
+                return;
+            }
+
             inventoryImportJobService.markRunning(jobId);
+
+            if (isCancelled(jobId)) {
+                return;
+            }
 
             MultipartFile safeFile = new InMemoryMultipartFile(
                     "file",
@@ -76,8 +86,13 @@ public class BulkInventoryImportService {
             InventoryImportResultDTO result = merchantInventoryImportService.importCsv(
                     safeFile,
                     retailerKey,
-                    storeCode
+                    storeCode,
+                    jobId
             );
+
+            if (isCancelled(jobId)) {
+                return;
+            }
 
             int successCount = result.getSuccessCount();
             int failureCount = result.getFailureCount();
@@ -90,8 +105,17 @@ public class BulkInventoryImportService {
                     failureCount
             );
         } catch (RuntimeException error) {
+            if (isCancelled(jobId)) {
+                return;
+            }
+
             inventoryImportJobService.markFailed(jobId, error.getMessage());
         }
+    }
+
+    private boolean isCancelled(String jobId) {
+        InventoryImportJobDTO currentJob = inventoryImportJobService.getJob(jobId);
+        return InventoryImportJobStatus.CANCELLED.equals(currentJob.getStatus());
     }
 
     private static final class InMemoryMultipartFile implements MultipartFile {

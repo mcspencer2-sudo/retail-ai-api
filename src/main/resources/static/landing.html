@@ -1,0 +1,727 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Universal Stylist | AI Styling Powered by Store Inventory</title>
+    <link rel="icon" href="data:," />
+
+    <style>
+        :root {
+            --bg: #f5f5f7;
+            --card: rgba(255, 255, 255, 0.82);
+            --card-strong: rgba(255, 255, 255, 0.96);
+            --ink: #0f172a;
+            --muted: #667085;
+            --blue: #0071e3;
+            --blue-dark: #0058b0;
+            --line: rgba(15, 23, 42, 0.08);
+            --shadow: 0 24px 70px rgba(15, 23, 42, 0.08);
+            --radius-xl: 36px;
+            --radius-lg: 28px;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            margin: 0;
+            font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
+            color: var(--ink);
+            background:
+                radial-gradient(circle at top left, rgba(0, 113, 227, 0.08), transparent 26%),
+                radial-gradient(circle at top right, rgba(139, 92, 246, 0.08), transparent 24%),
+                linear-gradient(180deg, #f8fafc 0%, var(--bg) 100%);
+        }
+
+        a {
+            color: inherit;
+            text-decoration: none;
+        }
+
+        .page {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 18px 20px 72px;
+        }
+
+        .nav {
+            position: sticky;
+            top: 14px;
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            padding: 14px 16px;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.84);
+            border: 1px solid rgba(255, 255, 255, 0.96);
+            box-shadow: 0 16px 38px rgba(15, 23, 42, 0.06);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            min-width: 0;
+        }
+
+        .brand-mark {
+            width: 48px;
+            height: 48px;
+            border-radius: 18px;
+            background: linear-gradient(180deg, #111827, #27272a);
+            color: white;
+            display: grid;
+            place-items: center;
+            font-weight: 900;
+            box-shadow: 0 14px 28px rgba(17, 24, 39, 0.18);
+        }
+
+        .brand-text strong {
+            display: block;
+            font-size: 0.98rem;
+            letter-spacing: -0.03em;
+        }
+
+        .brand-text span {
+            display: block;
+            color: var(--muted);
+            font-size: 0.84rem;
+            font-weight: 600;
+        }
+
+        .nav-links {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .nav-link {
+            padding: 10px 13px;
+            border-radius: 999px;
+            color: #475467;
+            font-size: 0.9rem;
+            font-weight: 750;
+        }
+
+        .nav-link:hover {
+            background: rgba(15, 23, 42, 0.05);
+            color: var(--ink);
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 48px;
+            padding: 0 18px;
+            border-radius: 999px;
+            border: 1px solid var(--line);
+            background: var(--card-strong);
+            color: var(--ink);
+            font-weight: 850;
+            cursor: pointer;
+            transition: transform 0.18s ease, box-shadow 0.22s ease, background 0.22s ease;
+        }
+
+        .btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 12px 26px rgba(15, 23, 42, 0.08);
+        }
+
+        .btn.primary {
+            border: none;
+            color: white;
+            background: linear-gradient(180deg, var(--blue), var(--blue-dark));
+            box-shadow: 0 14px 30px rgba(0, 113, 227, 0.22);
+        }
+
+        .hero {
+            padding: 58px 0 34px;
+            text-align: center;
+        }
+
+        .eyebrow {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 9px 15px;
+            margin-bottom: 22px;
+            border-radius: 999px;
+            color: var(--muted);
+            background: rgba(255, 255, 255, 0.9);
+            border: 1px solid var(--line);
+            box-shadow: 0 12px 26px rgba(15, 23, 42, 0.04);
+            font-size: 0.76rem;
+            font-weight: 900;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+        }
+
+        .hero h1 {
+            max-width: 940px;
+            margin: 0 auto 20px;
+            font-size: clamp(3.2rem, 7vw, 6.4rem);
+            line-height: 0.92;
+            letter-spacing: -0.08em;
+            font-weight: 950;
+        }
+
+        .hero p {
+            max-width: 720px;
+            margin: 0 auto 26px;
+            color: var(--muted);
+            font-size: clamp(1.05rem, 2vw, 1.22rem);
+            line-height: 1.58;
+            font-weight: 560;
+        }
+
+        .hero-actions {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-bottom: 28px;
+        }
+
+        .hero-card {
+            max-width: 920px;
+            margin: 0 auto;
+            padding: 18px;
+            border-radius: var(--radius-xl);
+            background: rgba(255, 255, 255, 0.72);
+            border: 1px solid rgba(255, 255, 255, 0.94);
+            box-shadow: var(--shadow);
+            backdrop-filter: blur(20px);
+        }
+
+        .mirror-preview {
+            border-radius: 28px;
+            padding: 22px;
+            background:
+                radial-gradient(circle at top right, rgba(0, 113, 227, 0.16), transparent 30%),
+                linear-gradient(180deg, #111827 0%, #020617 100%);
+            color: white;
+            min-height: 360px;
+            display: grid;
+            grid-template-columns: 1.1fr 0.9fr;
+            gap: 20px;
+            align-items: stretch;
+        }
+
+        .mirror-screen {
+            border-radius: 24px;
+            background:
+                linear-gradient(180deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.04));
+            border: 1px solid rgba(255, 255, 255, 0.13);
+            padding: 22px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            min-height: 315px;
+        }
+
+        .mirror-kicker {
+            color: rgba(255, 255, 255, 0.56);
+            font-size: 0.76rem;
+            font-weight: 900;
+            letter-spacing: 0.13em;
+            text-transform: uppercase;
+        }
+
+        .mirror-title {
+            margin: 14px 0 8px;
+            font-size: clamp(2rem, 4vw, 3.4rem);
+            line-height: 0.95;
+            letter-spacing: -0.06em;
+            font-weight: 920;
+        }
+
+        .mirror-copy {
+            color: rgba(255, 255, 255, 0.72);
+            line-height: 1.65;
+            font-weight: 600;
+        }
+
+        .mirror-pills {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-top: 20px;
+        }
+
+        .mirror-pill {
+            padding: 8px 11px;
+            border-radius: 999px;
+            color: rgba(255, 255, 255, 0.86);
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            font-size: 0.78rem;
+            font-weight: 800;
+        }
+
+        .mirror-side {
+            display: grid;
+            gap: 12px;
+        }
+
+        .mini-card {
+            border-radius: 20px;
+            padding: 16px;
+            background: rgba(255, 255, 255, 0.09);
+            border: 1px solid rgba(255, 255, 255, 0.11);
+        }
+
+        .mini-card strong {
+            display: block;
+            margin-bottom: 6px;
+            font-size: 1rem;
+        }
+
+        .mini-card span {
+            color: rgba(255, 255, 255, 0.68);
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+
+        .section {
+            padding: 54px 0;
+        }
+
+        .section-header {
+            max-width: 800px;
+            margin-bottom: 24px;
+        }
+
+        .section-kicker {
+            margin-bottom: 10px;
+            color: var(--blue);
+            font-size: 0.78rem;
+            font-weight: 900;
+            letter-spacing: 0.13em;
+            text-transform: uppercase;
+        }
+
+        .section h2 {
+            margin: 0 0 12px;
+            font-size: clamp(2.2rem, 4vw, 4rem);
+            line-height: 0.98;
+            letter-spacing: -0.065em;
+            font-weight: 920;
+        }
+
+        .section-text {
+            color: var(--muted);
+            font-size: 1.06rem;
+            line-height: 1.75;
+            font-weight: 560;
+        }
+
+        .grid-3 {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 16px;
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 16px;
+        }
+
+        .card {
+            padding: 22px;
+            border-radius: var(--radius-lg);
+            background: var(--card);
+            border: 1px solid rgba(255, 255, 255, 0.9);
+            box-shadow: 0 16px 42px rgba(15, 23, 42, 0.055);
+            backdrop-filter: blur(18px);
+        }
+
+        .card-icon {
+            width: 44px;
+            height: 44px;
+            display: grid;
+            place-items: center;
+            margin-bottom: 16px;
+            border-radius: 16px;
+            background: rgba(0, 113, 227, 0.09);
+            color: var(--blue);
+            font-weight: 900;
+        }
+
+        .card h3 {
+            margin: 0 0 8px;
+            font-size: 1.18rem;
+            letter-spacing: -0.035em;
+        }
+
+        .card p {
+            margin: 0;
+            color: var(--muted);
+            line-height: 1.65;
+            font-weight: 540;
+        }
+
+        .feature-list {
+            display: grid;
+            gap: 10px;
+            margin-top: 18px;
+        }
+
+        .feature {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            color: #475467;
+            font-weight: 690;
+        }
+
+        .check {
+            flex: 0 0 auto;
+            width: 22px;
+            height: 22px;
+            border-radius: 999px;
+            display: grid;
+            place-items: center;
+            color: white;
+            background: linear-gradient(135deg, #16a34a, #22c55e);
+            font-size: 0.78rem;
+            font-weight: 900;
+        }
+
+        .cta {
+            margin-top: 42px;
+            padding: 34px;
+            border-radius: var(--radius-xl);
+            background:
+                radial-gradient(circle at top right, rgba(0, 113, 227, 0.16), transparent 28%),
+                linear-gradient(180deg, #111827, #020617);
+            color: white;
+            box-shadow: 0 26px 70px rgba(2, 6, 23, 0.28);
+            scroll-margin-top: 120px;
+        }
+
+        .cta h2 {
+            max-width: 780px;
+            margin: 0 0 12px;
+            font-size: clamp(2.2rem, 4vw, 4.2rem);
+            line-height: 0.98;
+            letter-spacing: -0.07em;
+        }
+
+        .cta p {
+            max-width: 760px;
+            color: rgba(255, 255, 255, 0.72);
+            line-height: 1.7;
+            font-size: 1.06rem;
+            margin: 0 0 22px;
+        }
+
+        .cta .btn {
+            background: white;
+            color: #111827;
+        }
+
+        .cta .btn.primary {
+            background: linear-gradient(180deg, var(--blue), var(--blue-dark));
+            color: white;
+        }
+
+        .footer {
+            padding-top: 34px;
+            color: var(--muted);
+            font-weight: 650;
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        @media (max-width: 900px) {
+            .nav {
+                border-radius: 26px;
+                align-items: flex-start;
+                flex-direction: column;
+            }
+
+            .nav-links {
+                width: 100%;
+            }
+
+            .brand-text span {
+                display: none;
+            }
+
+            .hero {
+                padding-top: 54px;
+            }
+
+            .mirror-preview,
+            .grid-3,
+            .grid-2 {
+                grid-template-columns: 1fr;
+            }
+
+            .mirror-preview {
+                min-height: unset;
+            }
+        }
+
+        @media (max-width: 560px) {
+            .page {
+                padding: 14px 12px 44px;
+            }
+
+            .hero {
+                padding: 44px 0 28px;
+            }
+
+            .hero h1 {
+                font-size: 3rem;
+            }
+
+            .btn {
+                width: 100%;
+            }
+
+            .hero-actions,
+            .cta-actions {
+                width: 100%;
+            }
+
+            .nav-link {
+                display: none;
+            }
+
+            .card,
+            .cta {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="page">
+    <nav class="nav">
+        <a href="#" class="brand" aria-label="Universal Stylist home">
+            <div class="brand-mark">US</div>
+            <div class="brand-text">
+                <strong>Universal Stylist</strong>
+                <span>AI Retail Operating System</span>
+            </div>
+        </a>
+
+        <div class="nav-links">
+            <a class="nav-link" href="#shoppers">Shoppers</a>
+            <a class="nav-link" href="#merchants">Merchants</a>
+            <a class="nav-link" href="#smart-mirror">Smart Mirror</a>
+            <a class="btn" href="/index.html">Open App</a>
+            <a class="btn primary" href="#demo">Book a Demo</a>
+        </div>
+    </nav>
+
+    <header class="hero">
+        <div class="eyebrow">AI Styling • Smart Mirrors • Retail Intelligence</div>
+
+        <h1>AI styling powered by real store inventory.</h1>
+
+        <p>
+            Universal Stylist helps retailers turn live inventory into AI styling experiences,
+            smart mirror interactions, and actionable inventory intelligence.
+        </p>
+
+        <div class="hero-actions">
+            <a class="btn primary" href="#demo">Book a Demo</a>
+            <a class="btn" href="#how-it-works">See How It Works</a>
+        </div>
+
+        <div class="hero-card">
+            <div class="mirror-preview">
+                <div class="mirror-screen">
+                    <div>
+                        <div class="mirror-kicker">Live Smart Mirror Experience</div>
+                        <div class="mirror-title">Scan. Style. Save. Sell smarter.</div>
+                        <div class="mirror-copy">
+                            A shopper scans an RFID item and Universal Stylist instantly creates product details,
+                            styling advice, complete outfits, and saveable looks from real inventory.
+                        </div>
+                    </div>
+
+                    <div class="mirror-pills">
+                        <span class="mirror-pill">RFID Scan</span>
+                        <span class="mirror-pill">AI Styling</span>
+                        <span class="mirror-pill">Full Looks</span>
+                        <span class="mirror-pill">Save to Bag</span>
+                    </div>
+                </div>
+
+                <div class="mirror-side">
+                    <div class="mini-card">
+                        <strong>Merchant Inventory</strong>
+                        <span>Upload CSVs, run bulk imports, track jobs, and manage live store inventory.</span>
+                    </div>
+
+                    <div class="mini-card">
+                        <strong>Job Intelligence</strong>
+                        <span>See import mode, status, progress, row counts, errors, and job details.</span>
+                    </div>
+
+                    <div class="mini-card">
+                        <strong>Reorder Signals</strong>
+                        <span>Detect low stock and export reorder reports before products disappear from shelves.</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <section class="section" id="how-it-works">
+            <div class="section-header">
+                <div class="section-kicker">The Problem</div>
+                <h2>Most retail inventory is invisible to the shopper journey.</h2>
+                <p class="section-text">
+                    Customers want personalized discovery. Merchants need visibility into what shoppers scan,
+                    save, and intend to buy. Universal Stylist connects product discovery, styling,
+                    and inventory operations in one platform.
+                </p>
+            </div>
+
+            <div class="grid-3">
+                <div class="card">
+                    <div class="card-icon">01</div>
+                    <h3>Scan an item</h3>
+                    <p>RFID scanning identifies the product, store, brand, category, price, color, and availability.</p>
+                </div>
+
+                <div class="card">
+                    <div class="card-icon">02</div>
+                    <h3>Generate the look</h3>
+                    <p>AI styling builds complete outfits and curated alternatives from real store inventory.</p>
+                </div>
+
+                <div class="card">
+                    <div class="card-icon">03</div>
+                    <h3>Track retail signals</h3>
+                    <p>Merchants manage imports, jobs, stock, low inventory, and reorder reports from one dashboard.</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="section" id="shoppers">
+            <div class="grid-2">
+                <div class="section-header">
+                    <div class="section-kicker">For Shoppers</div>
+                    <h2>Personalized outfits from products already in store.</h2>
+                    <p class="section-text">
+                        Shoppers scan an item and instantly receive product details, styling advice,
+                        outfit recommendations, and curated alternatives based on available inventory.
+                    </p>
+                </div>
+
+                <div class="card">
+                    <h3>Shopper Experience</h3>
+                    <div class="feature-list">
+                        <div class="feature"><span class="check">✓</span><span>RFID item scanning</span></div>
+                        <div class="feature"><span class="check">✓</span><span>AI styling advice</span></div>
+                        <div class="feature"><span class="check">✓</span><span>Complete outfit generation</span></div>
+                        <div class="feature"><span class="check">✓</span><span>Save to bag</span></div>
+                        <div class="feature"><span class="check">✓</span><span>Save full looks</span></div>
+                        <div class="feature"><span class="check">✓</span><span>Discover matching alternatives</span></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="section" id="merchants">
+            <div class="grid-2">
+                <div class="card">
+                    <h3>Merchant Operations</h3>
+                    <div class="feature-list">
+                        <div class="feature"><span class="check">✓</span><span>CSV inventory upload</span></div>
+                        <div class="feature"><span class="check">✓</span><span>Bulk import jobs</span></div>
+                        <div class="feature"><span class="check">✓</span><span>Import progress tracking</span></div>
+                        <div class="feature"><span class="check">✓</span><span>Job details and cancellation</span></div>
+                        <div class="feature"><span class="check">✓</span><span>Stock management</span></div>
+                        <div class="feature"><span class="check">✓</span><span>Low-stock alerts and reorder reports</span></div>
+                    </div>
+                </div>
+
+                <div class="section-header">
+                    <div class="section-kicker">For Merchants</div>
+                    <h2>Turn styling engagement into inventory intelligence.</h2>
+                    <p class="section-text">
+                        Upload inventory, manage stock, track CSV imports, monitor job status,
+                        detect low-stock products, and export reorder reports.
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <section class="section" id="smart-mirror">
+            <div class="section-header">
+                <div class="section-kicker">Smart Mirror Ready</div>
+                <h2>Built for smart mirrors, kiosks, and in-store screens.</h2>
+                <p class="section-text">
+                    Universal Stylist runs as a browser-based smart mirror experience, giving stores
+                    a premium AI-powered styling station without rebuilding their retail system.
+                </p>
+            </div>
+
+            <div class="grid-3">
+                <div class="card">
+                    <div class="card-icon">🪞</div>
+                    <h3>Mirror Mode</h3>
+                    <p>Run the shopper experience full-screen on a smart mirror, kiosk, tablet, or touchscreen display.</p>
+                </div>
+
+                <div class="card">
+                    <div class="card-icon">🧾</div>
+                    <h3>Inventory Powered</h3>
+                    <p>Recommendations come from uploaded inventory, so stores promote products they actually carry.</p>
+                </div>
+
+                <div class="card">
+                    <div class="card-icon">📈</div>
+                    <h3>Retail Analytics</h3>
+                    <p>Every scan, save, and import becomes a signal merchants can use to sell smarter.</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="cta" id="demo">
+            <h2>Turn your inventory into an AI-powered shopping experience.</h2>
+            <p>
+                Use the app preview to explore the platform. When your demo calendar or business email is ready,
+                this section can connect directly to booking requests.
+            </p>
+
+            <div class="hero-actions cta-actions" style="justify-content:flex-start;margin:0;">
+                <a class="btn primary" href="/index.html">Open App</a>
+                <a class="btn" href="#how-it-works">See How It Works</a>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <span>© <span id="year"></span> Universal Stylist</span>
+        <span>AI styling powered by real store inventory.</span>
+    </footer>
+</div>
+
+<script>
+    document.getElementById("year").textContent = new Date().getFullYear();
+</script>
+</body>
+</html>

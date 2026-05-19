@@ -296,6 +296,7 @@
 
         .section {
             padding: 54px 0;
+            scroll-margin-top: 120px;
         }
 
         .section-header {
@@ -348,6 +349,27 @@
             backdrop-filter: blur(18px);
         }
 
+        .card.featured {
+            position: relative;
+            border: 1px solid rgba(0, 113, 227, 0.25);
+            box-shadow: 0 24px 70px rgba(0, 113, 227, 0.12);
+        }
+
+        .plan-badge {
+            position: absolute;
+            top: 18px;
+            right: 18px;
+            padding: 7px 10px;
+            border-radius: 999px;
+            color: var(--blue);
+            background: rgba(0, 113, 227, 0.08);
+            border: 1px solid rgba(0, 113, 227, 0.16);
+            font-size: 0.72rem;
+            font-weight: 900;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
         .card-icon {
             width: 44px;
             height: 44px;
@@ -371,6 +393,22 @@
             color: var(--muted);
             line-height: 1.65;
             font-weight: 540;
+        }
+
+        .price {
+            margin: 10px 0 4px;
+            color: var(--ink);
+            font-size: 2.05rem;
+            line-height: 1;
+            font-weight: 950;
+            letter-spacing: -0.065em;
+        }
+
+        .price span {
+            color: var(--muted);
+            font-size: 1rem;
+            font-weight: 750;
+            letter-spacing: -0.02em;
         }
 
         .feature-list {
@@ -508,6 +546,12 @@
             .cta {
                 padding: 20px;
             }
+
+            .plan-badge {
+                position: static;
+                display: inline-flex;
+                margin-bottom: 14px;
+            }
         }
     </style>
 </head>
@@ -526,6 +570,7 @@
             <a class="nav-link" href="#shoppers">Shoppers</a>
             <a class="nav-link" href="#merchants">Merchants</a>
             <a class="nav-link" href="#smart-mirror">Smart Mirror</a>
+            <a class="nav-link" href="#pricing">Pricing</a>
             <a class="btn" href="/index.html">Open App</a>
             <a class="btn primary" href="#demo">Book a Demo</a>
         </div>
@@ -700,6 +745,67 @@
             </div>
         </section>
 
+        <section class="section" id="pricing">
+            <div class="section-header">
+                <div class="section-kicker">Pricing</div>
+                <h2>Simple plans for stores, pilots, and retail teams.</h2>
+                <p class="section-text">
+                    Start with one store, prove the shopper experience, then expand into smart mirror deployments,
+                    inventory intelligence, and multi-location retail operations.
+                </p>
+            </div>
+
+            <div class="grid-3">
+                <div class="card">
+                    <div class="card-icon">S</div>
+                    <h3>Starter</h3>
+                    <div class="price">$99<span>/mo per store</span></div>
+                    <p>For boutiques testing AI styling with live inventory.</p>
+
+                    <div class="feature-list">
+                        <div class="feature"><span class="check">✓</span><span>CSV inventory upload</span></div>
+                        <div class="feature"><span class="check">✓</span><span>Shopper styling experience</span></div>
+                        <div class="feature"><span class="check">✓</span><span>Basic inventory dashboard</span></div>
+                        <div class="feature"><span class="check">✓</span><span>Saved looks and bag</span></div>
+                        <div class="feature"><span class="check">✓</span><span>Email support</span></div>
+                    </div>
+                </div>
+
+                <div class="card featured">
+                    <div class="plan-badge">Recommended</div>
+                    <div class="card-icon">P</div>
+                    <h3>Pro</h3>
+                    <div class="price">$299<span>/mo per store</span></div>
+                    <p>For active retailers using smart mirror or kiosk experiences.</p>
+
+                    <div class="feature-list">
+                        <div class="feature"><span class="check">✓</span><span>Everything in Starter</span></div>
+                        <div class="feature"><span class="check">✓</span><span>Bulk inventory imports</span></div>
+                        <div class="feature"><span class="check">✓</span><span>Import job tracking</span></div>
+                        <div class="feature"><span class="check">✓</span><span>Low-stock alerts</span></div>
+                        <div class="feature"><span class="check">✓</span><span>Reorder reports</span></div>
+                        <div class="feature"><span class="check">✓</span><span>Smart mirror/kiosk mode</span></div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-icon">E</div>
+                    <h3>Enterprise</h3>
+                    <div class="price">Custom</div>
+                    <p>For multi-store retailers and branded deployments.</p>
+
+                    <div class="feature-list">
+                        <div class="feature"><span class="check">✓</span><span>Multi-location support</span></div>
+                        <div class="feature"><span class="check">✓</span><span>White-label experience</span></div>
+                        <div class="feature"><span class="check">✓</span><span>POS / Shopify integrations</span></div>
+                        <div class="feature"><span class="check">✓</span><span>Advanced analytics</span></div>
+                        <div class="feature"><span class="check">✓</span><span>Dedicated onboarding</span></div>
+                        <div class="feature"><span class="check">✓</span><span>Custom hardware support</span></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
         <section class="cta" id="demo">
             <h2>Turn your inventory into an AI-powered shopping experience.</h2>
             <p>
@@ -709,7 +815,7 @@
 
             <div class="hero-actions cta-actions" style="justify-content:flex-start;margin:0;">
                 <a class="btn primary" href="/index.html">Open App</a>
-                <a class="btn" href="#how-it-works">See How It Works</a>
+                <a class="btn" href="#pricing">View Pricing</a>
             </div>
         </section>
     </main>

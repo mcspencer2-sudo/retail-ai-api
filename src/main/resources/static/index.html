@@ -3049,8 +3049,8 @@
         <h1 class="hero-title">Universal Stylist</h1>
         <p class="hero-subtitle">A luxury smart mirror experience for modern retail.</p>
         <p class="scan-hint">
-            Scan an RFID tag to generate styling advice, build a cross-retailer look, save pieces to your bag,
-            and track trend performance across brands.
+            Scan an RFID tag from your logged-in store to generate styling advice, build a full look,
+            save pieces to your store-scoped bag, and track current-store performance.
         </p>
 
         <div class="row justify-content-center">
@@ -3058,7 +3058,7 @@
                 <div id="scanConsole" class="scanner-frame panel-glass">
                     <div class="scanner-meta">
                         <div class="scanner-label">Live scan console</div>
-                        <div class="scanner-pill">Universal Stylist Engine v16.0</div>
+                        <div class="scanner-pill">Scanning current logged-in store</div>
                     </div>
 
                     <div class="input-group input-group-lg search-shell">
@@ -3099,7 +3099,10 @@
                         </div>
                     </div>
 
-                    <div id="quickScanButtons" class="mt-3 text-center"></div>
+                    <div class="mt-3 text-center">
+                        <div class="small fw-bold text-muted mb-2">Demo Quick Scans</div>
+                        <div id="quickScanButtons"></div>
+                    </div>
 
                     <div class="text-center mt-3">
                         <div id="scanStatus" class="status-message"></div>
@@ -3178,7 +3181,7 @@
                         <div>
                             <h5 class="import-history-title">Recent CSV Imports</h5>
                             <p class="import-history-subtitle">
-                                Upload history for the selected retailer and store.
+                                Upload history for your logged-in store.
                             </p>
                         </div>
 
@@ -3196,7 +3199,7 @@
                         <div>
                             <h5 class="import-history-title">Import Job Status</h5>
                             <p class="import-history-subtitle">
-                                Backend job records created for CSV uploads.
+                                CSV import jobs for your logged-in store.
                             </p>
                         </div>
 
@@ -3277,7 +3280,7 @@
             <div class="scanner-frame panel-glass">
                 <div class="scanner-meta">
                     <div class="scanner-label">Merchant Inventory Dashboard</div>
-                    <div class="scanner-pill">Browse uploaded products by store</div>
+                    <div class="scanner-pill">Inventory locked to logged-in store</div>
                 </div>
 
                 <div class="merchant-dashboard-toolbar">
@@ -3465,8 +3468,8 @@
 >
     <div class="offcanvas-header premium-bag-header">
         <div>
-            <div class="bag-kicker">Personal Style Cart</div>
-            <h4 class="bag-header-title mb-0">My Style Bag 🎒</h4>
+            <div class="bag-kicker">Store-Scoped Style Cart</div>
+            <h4 class="bag-header-title mb-0">Current Store Bag 🎒</h4>
         </div>
         <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
     </div>
@@ -3496,7 +3499,7 @@
                     </div>
                 </div>
 
-                <div class="insights-heading mt-4">Retailer Performance</div>
+                <div class="insights-heading mt-4">Current Store Performance</div>
                 <div id="retailerStats" class="mb-4">
                     <div class="text-light opacity-75 small">Loading retailer stats...</div>
                 </div>
@@ -3530,7 +3533,7 @@
                     <div class="text-light opacity-75 small p-3">Loading recent activity...</div>
                 </div>
 
-                <div class="insights-heading">Global Store Trends</div>
+                <div class="insights-heading">Current Store Trends</div>
                 <div id="trendContent" class="d-grid gap-2">
                     <div class="text-light opacity-75 small">Syncing live analytics...</div>
                 </div>
@@ -3548,7 +3551,7 @@
     <div class="offcanvas-header premium-bag-header">
         <div>
             <div class="bag-kicker">Personal Outfit Archive</div>
-            <h4 class="bag-header-title mb-0">Saved Looks ✨</h4>
+            <h4 class="bag-header-title mb-0">Saved Store Looks ✨</h4>
         </div>
         <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
     </div>
@@ -3731,7 +3734,7 @@ function populateActivityRetailerFilter() {
      .join("");
 
        select.innerHTML = `
-         <option value="ALL">All Retailers</option>
+         <option value="ALL">Current Store Retailers</option>
        ${options}
       `;
      }
@@ -5096,7 +5099,7 @@ function setSavedLooks(looks) {
                 <div class="saved-look-empty">
                     <div class="bag-empty-icon">✨</div>
                     <div class="bag-empty-title">No saved looks yet</div>
-                    <p class="bag-empty-text">Generate a look and tap “Save Look” to store it here.</p>
+                    <p class="bag-empty-text">Generate a look in this store session and tap “Save Look” to store it here.</p>
                 </div>
             `;
             return;
@@ -7660,7 +7663,7 @@ async function loadImportJobs() {
                         <div class="bag-empty-icon">🛍️</div>
                         <div class="bag-empty-title">Your style bag is empty</div>
                         <p class="bag-empty-text">
-                            Scan items you love and save them here to build your cross-retailer look.
+                            Scan items from this store and save them here to build your store-scoped look.
                         </p>
                     </div>
                 `;

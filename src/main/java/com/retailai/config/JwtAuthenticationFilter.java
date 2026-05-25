@@ -5,6 +5,7 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.lang.NonNull;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContext;
@@ -30,10 +31,24 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     }
 
     @Override
+    protected boolean shouldNotFilter(@NonNull HttpServletRequest request) {
+        String path = request.getServletPath();
+        String uri = request.getRequestURI();
+        String method = request.getMethod();
+
+        String safePath = path == null ? "" : path.trim();
+        String safeUri = uri == null ? "" : uri.trim();
+
+        return "OPTIONS".equalsIgnoreCase(method)
+                || isPublicPath(safePath)
+                || isPublicPath(safeUri);
+    }
+
+    @Override
     protected void doFilterInternal(
-            HttpServletRequest request,
-            HttpServletResponse response,
-            FilterChain filterChain
+            @NonNull HttpServletRequest request,
+            @NonNull HttpServletResponse response,
+            @NonNull FilterChain filterChain
     ) throws ServletException, IOException {
 
         final String path = request.getRequestURI();
@@ -45,12 +60,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             debug("No Bearer token found.");
+            SecurityContextHolder.clearContext();
             filterChain.doFilter(request, response);
             return;
         }
 
         try {
             final String token = authHeader.substring(7).trim();
+
             debug("Token present after trim: " + !token.isBlank());
 
             if (token.isBlank()) {
@@ -60,6 +77,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             }
 
             boolean valid = jwtService.isTokenValid(token);
+
             debug("Token valid: " + valid);
 
             if (!valid) {
@@ -68,18 +86,17 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 return;
             }
 
-            final String email = jwtService.extractEmail(token);
-            final String role = jwtService.extractRole(token);
+            final String email = clean(jwtService.extractEmail(token));
+            final String role = clean(jwtService.extractRole(token));
 
             debug("Email from token: " + email);
             debug("Role from token: " + role);
             debug("Existing auth in context: " + SecurityContextHolder.getContext().getAuthentication());
 
-            if (email != null
-                    && !email.isBlank()
+            if (!email.isBlank()
                     && SecurityContextHolder.getContext().getAuthentication() == null) {
 
-                String normalizedRole = role == null ? "" : role.trim().replace("ROLE_", "");
+                String normalizedRole = normalizeRole(role);
 
                 List<SimpleGrantedAuthority> authorities =
                         normalizedRole.isBlank()
@@ -89,7 +106,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 User principal = new User(email, "", authorities);
 
                 UsernamePasswordAuthenticationToken authentication =
-                        new UsernamePasswordAuthenticationToken(principal, null, authorities);
+                        new UsernamePasswordAuthenticationToken(
+                                principal,
+                                null,
+                                authorities
+                        );
 
                 authentication.setDetails(
                         new WebAuthenticationDetailsSource().buildDetails(request)
@@ -106,6 +127,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             }
         } catch (Exception ex) {
             SecurityContextHolder.clearContext();
+
             debug("JWT authentication failed: " + ex.getMessage());
 
             if (DEBUG_JWT_FILTER) {
@@ -114,6 +136,43 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
         filterChain.doFilter(request, response);
+    }
+
+    private boolean isPublicPath(String path) {
+        if (path == null || path.isBlank()) {
+            return true;
+        }
+
+        return path.equals("/")
+                || path.equals("/index.html")
+                || path.equals("/favicon.ico")
+                || path.equals("/retailers.js")
+                || path.equals("/health")
+                || path.equals("/error")
+                || path.startsWith("/h2-console")
+                || path.startsWith("/css/")
+                || path.startsWith("/js/")
+                || path.startsWith("/images/")
+                || path.startsWith("/webjars/")
+                || path.equals("/api/v1/saas/auth/login")
+                || path.equals("/api/v1/saas/auth/signup");
+    }
+
+    private String normalizeRole(String role) {
+        String cleaned = clean(role);
+
+        if (cleaned.isBlank()) {
+            return "";
+        }
+
+        return cleaned
+                .replace("ROLE_", "")
+                .trim()
+                .toUpperCase();
+    }
+
+    private String clean(String value) {
+        return value == null ? "" : value.trim();
     }
 
     private void debug(String message) {

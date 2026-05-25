@@ -15,16 +15,21 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class SaaSAuthService {
 
+    private static final String DEFAULT_PLAN = "STARTER";
+    private static final String OWNER_ROLE = "OWNER";
+
     private final TenantRepository tenantRepository;
     private final StoreRepository storeRepository;
     private final AppUserRepository appUserRepository;
     private final JwtService jwtService;
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
-    public SaaSAuthService(TenantRepository tenantRepository,
-                           StoreRepository storeRepository,
-                           AppUserRepository appUserRepository,
-                           JwtService jwtService) {
+    public SaaSAuthService(
+            TenantRepository tenantRepository,
+            StoreRepository storeRepository,
+            AppUserRepository appUserRepository,
+            JwtService jwtService
+    ) {
         this.tenantRepository = tenantRepository;
         this.storeRepository = storeRepository;
         this.appUserRepository = appUserRepository;
@@ -33,8 +38,12 @@ public class SaaSAuthService {
 
     @Transactional
     public String signup(SignupRequest request) {
+        if (request == null) {
+            throw new RuntimeException("Signup request is required");
+        }
+
         String businessName = safe(request.getBusinessName());
-        String slug = safeLower(request.getSlug());
+        String slug = normalizeSlug(request.getSlug());
         String tenantEmail = safeLower(request.getTenantEmail());
         String storeName = safe(request.getStoreName());
         String location = safe(request.getLocation());
@@ -43,84 +52,64 @@ public class SaaSAuthService {
         String userEmail = safeLower(request.getUserEmail());
         String password = safe(request.getPassword());
 
-        System.out.println("SIGNUP DEBUG");
-        System.out.println("slug = " + slug);
-        System.out.println("tenantEmail = " + tenantEmail);
-        System.out.println("retailerKey = " + retailerKey);
-        System.out.println("userEmail = " + userEmail);
+        validateSignupFields(
+                businessName,
+                slug,
+                tenantEmail,
+                storeName,
+                location,
+                retailerKey,
+                fullName,
+                userEmail,
+                password
+        );
 
-        if (businessName.isBlank()) throw new RuntimeException("Business name is required");
-        if (slug.isBlank()) throw new RuntimeException("Business slug is required");
-        if (tenantEmail.isBlank()) throw new RuntimeException("Business email is required");
-        if (storeName.isBlank()) throw new RuntimeException("Store name is required");
-        if (location.isBlank()) throw new RuntimeException("Location is required");
-        if (retailerKey.isBlank()) throw new RuntimeException("Retailer key is required");
-        if (fullName.isBlank()) throw new RuntimeException("Full name is required");
-        if (userEmail.isBlank()) throw new RuntimeException("User email is required");
-        if (password.isBlank()) throw new RuntimeException("Password is required");
+        validateSignupUniqueness(
+                slug,
+                tenantEmail,
+                retailerKey,
+                storeName,
+                userEmail
+        );
 
-        if (tenantRepository.findBySlug(slug).isPresent()) {
-            throw new RuntimeException("Business slug already exists");
-        }
+        Tenant tenant = createTenant(
+                businessName,
+                slug,
+                tenantEmail
+        );
 
-        if (appUserRepository.findByEmail(userEmail).isPresent()) {
-            throw new RuntimeException("User email already exists");
-        }
+        Store store = createDefaultStore(
+                tenant,
+                retailerKey,
+                storeName,
+                location
+        );
 
-        if (tenantRepository.findAll().stream()
-                .anyMatch(t -> safeLower(t.getEmail()).equals(tenantEmail))) {
-            throw new RuntimeException("Business email already exists");
-        }
+        createOwnerUser(
+                tenant,
+                fullName,
+                userEmail,
+                password
+        );
 
-        if (storeRepository.findAll().stream()
-                .anyMatch(s -> safeUpper(s.getRetailerKey()).equals(retailerKey))) {
-            throw new RuntimeException("Retailer key already exists");
-        }
-
-        System.out.println("About to save tenant...");
-        Tenant tenant = new Tenant();
-        tenant.setBusinessName(businessName);
-        tenant.setSlug(slug);
-        tenant.setEmail(tenantEmail);
-        tenant.setPlan("STARTER");
-        tenant.setActive(true);
-        tenant = tenantRepository.save(tenant);
-
-        System.out.println("Tenant saved with id = " + tenant.getId());
-
-        System.out.println("About to save store...");
-        Store store = new Store();
-        store.setTenantId(tenant.getId());
-        store.setStoreCode(buildStoreCode(retailerKey, storeName));
-        store.setStoreName(storeName);
-        store.setLocation(location);
-        store.setRetailerKey(retailerKey);
-        store.setActive(true);
-        storeRepository.save(store);
-
-        System.out.println("Store saved.");
-
-        System.out.println("About to save user...");
-        AppUser user = new AppUser();
-        user.setTenantId(tenant.getId());
-        user.setFullName(fullName);
-        user.setEmail(userEmail);
-        user.setPasswordHash(passwordEncoder.encode(password));
-        user.setRole("OWNER");
-        user.setActive(true);
-        appUserRepository.save(user);
-
-        System.out.println("User saved.");
-
-        return "Signup successful for " + tenant.getBusinessName();
+        return "Signup successful for " + tenant.getBusinessName()
+                + " using store " + store.getStoreCode();
     }
 
     public String login(LoginRequest request) {
+        if (request == null) {
+            throw new RuntimeException("Login request is required");
+        }
+
         String email = safeLower(request.getEmail());
         String password = safe(request.getPassword());
 
-        if (email.isBlank() || password.isBlank()) {
-            throw new RuntimeException("Email and password are required");
+        if (email.isBlank()) {
+            throw new RuntimeException("Email is required");
+        }
+
+        if (password.isBlank()) {
+            throw new RuntimeException("Password is required");
         }
 
         AppUser user = appUserRepository.findByEmail(email)
@@ -130,12 +119,194 @@ public class SaaSAuthService {
             throw new RuntimeException("User account is inactive");
         }
 
-        boolean matches = passwordEncoder.matches(password, user.getPasswordHash());
-        if (!matches) {
+        boolean passwordMatches = passwordEncoder.matches(
+                password,
+                user.getPasswordHash()
+        );
+
+        if (!passwordMatches) {
             throw new RuntimeException("Invalid password");
         }
 
-        return jwtService.generateToken(user.getEmail(), user.getRole());
+        Long tenantId = user.getTenantId();
+
+        if (tenantId == null) {
+            throw new RuntimeException("User is not assigned to a tenant");
+        }
+
+        Tenant tenant = tenantRepository.findById(tenantId)
+                .orElseThrow(() -> new RuntimeException("Tenant not found for user"));
+
+        if (!tenant.isActive()) {
+            throw new RuntimeException("Tenant account is inactive");
+        }
+
+        Store store = findDefaultStoreForTenant(tenantId);
+
+        if (store == null) {
+            throw new RuntimeException("No active store found for tenant");
+        }
+
+        return jwtService.generateToken(user, tenant, store);
+    }
+
+    private void validateSignupFields(
+            String businessName,
+            String slug,
+            String tenantEmail,
+            String storeName,
+            String location,
+            String retailerKey,
+            String fullName,
+            String userEmail,
+            String password
+    ) {
+        if (businessName.isBlank()) {
+            throw new RuntimeException("Business name is required");
+        }
+
+        if (slug.isBlank()) {
+            throw new RuntimeException("Business slug is required");
+        }
+
+        if (!slug.matches("^[a-z0-9]+(?:-[a-z0-9]+)*$")) {
+            throw new RuntimeException("Business slug can only contain lowercase letters, numbers, and hyphens");
+        }
+
+        if (tenantEmail.isBlank()) {
+            throw new RuntimeException("Business email is required");
+        }
+
+        if (!isValidEmail(tenantEmail)) {
+            throw new RuntimeException("Business email is invalid");
+        }
+
+        if (storeName.isBlank()) {
+            throw new RuntimeException("Store name is required");
+        }
+
+        if (location.isBlank()) {
+            throw new RuntimeException("Location is required");
+        }
+
+        if (retailerKey.isBlank()) {
+            throw new RuntimeException("Retailer key is required");
+        }
+
+        if (!retailerKey.matches("^[A-Z0-9_-]{3,40}$")) {
+            throw new RuntimeException("Retailer key can only contain uppercase letters, numbers, underscores, and hyphens");
+        }
+
+        if (fullName.isBlank()) {
+            throw new RuntimeException("Full name is required");
+        }
+
+        if (userEmail.isBlank()) {
+            throw new RuntimeException("User email is required");
+        }
+
+        if (!isValidEmail(userEmail)) {
+            throw new RuntimeException("User email is invalid");
+        }
+
+        if (password.isBlank()) {
+            throw new RuntimeException("Password is required");
+        }
+
+        if (password.length() < 8) {
+            throw new RuntimeException("Password must be at least 8 characters");
+        }
+    }
+
+    private void validateSignupUniqueness(
+            String slug,
+            String tenantEmail,
+            String retailerKey,
+            String storeName,
+            String userEmail
+    ) {
+        if (tenantRepository.existsBySlug(slug)) {
+            throw new RuntimeException("Business slug already exists");
+        }
+
+        if (tenantRepository.existsByEmail(tenantEmail)) {
+            throw new RuntimeException("Business email already exists");
+        }
+
+        if (appUserRepository.findByEmail(userEmail).isPresent()) {
+            throw new RuntimeException("User email already exists");
+        }
+
+        if (storeRepository.existsByRetailerKey(retailerKey)) {
+            throw new RuntimeException("Retailer key already exists");
+        }
+
+        String defaultStoreCode = buildStoreCode(retailerKey, storeName);
+
+        if (storeRepository.existsByStoreCode(defaultStoreCode)) {
+            throw new RuntimeException("Store code already exists");
+        }
+    }
+
+    private Tenant createTenant(
+            String businessName,
+            String slug,
+            String tenantEmail
+    ) {
+        Tenant tenant = new Tenant();
+
+        tenant.setBusinessName(businessName);
+        tenant.setSlug(slug);
+        tenant.setEmail(tenantEmail);
+        tenant.setPlan(DEFAULT_PLAN);
+        tenant.setActive(true);
+
+        return tenantRepository.save(tenant);
+    }
+
+    private Store createDefaultStore(
+            Tenant tenant,
+            String retailerKey,
+            String storeName,
+            String location
+    ) {
+        Store store = new Store();
+
+        store.setTenantId(tenant.getId());
+        store.setStoreCode(buildStoreCode(retailerKey, storeName));
+        store.setStoreName(storeName);
+        store.setLocation(location);
+        store.setRetailerKey(retailerKey);
+        store.setActive(true);
+
+        return storeRepository.save(store);
+    }
+
+    private AppUser createOwnerUser(
+            Tenant tenant,
+            String fullName,
+            String userEmail,
+            String password
+    ) {
+        AppUser user = new AppUser();
+
+        user.setTenantId(tenant.getId());
+        user.setFullName(fullName);
+        user.setEmail(userEmail);
+        user.setPasswordHash(passwordEncoder.encode(password));
+        user.setRole(OWNER_ROLE);
+        user.setActive(true);
+
+        return appUserRepository.save(user);
+    }
+
+    private Store findDefaultStoreForTenant(Long tenantId) {
+        if (tenantId == null) {
+            return null;
+        }
+
+        return storeRepository.findFirstByTenantIdAndActiveTrue(tenantId)
+                .orElse(null);
     }
 
     private boolean isUserActive(AppUser user) {
@@ -155,6 +326,17 @@ public class SaaSAuthService {
         return safeUpper(retailerKey) + "-" + normalizedName;
     }
 
+    private String normalizeSlug(String value) {
+        return safe(value)
+                .toLowerCase()
+                .replaceAll("[^a-z0-9]+", "-")
+                .replaceAll("^-+|-+$", "");
+    }
+
+    private boolean isValidEmail(String email) {
+        return email != null
+                && email.matches("^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$");
+    }
 
     private String safe(String value) {
         return value == null ? "" : value.trim();

@@ -1,0 +1,1446 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Universal Stylist | Merchant Activity</title>
+  <link rel="icon" href="data:," />
+
+  <style>
+    :root {
+      --bg: #eef4ff;
+      --panel: rgba(255, 255, 255, 0.72);
+      --line: rgba(15, 23, 42, 0.1);
+      --line-strong: rgba(15, 23, 42, 0.16);
+      --text: #07111f;
+      --muted: rgba(51, 65, 85, 0.72);
+      --soft: rgba(15, 23, 42, 0.84);
+      --faint: rgba(100, 116, 139, 0.72);
+      --blue: #0071e3;
+      --blue-dark: #0058b0;
+      --green: #22c55e;
+      --yellow: #f59e0b;
+      --red: #ef4444;
+      --purple: #8b5cf6;
+      --shadow: 0 34px 90px rgba(15, 23, 42, 0.14);
+      --shadow-glow: 0 0 90px rgba(0, 113, 227, 0.12);
+      --radius-xl: 42px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      min-height: 100%;
+      scroll-behavior: smooth;
+    }
+
+    body {
+      min-height: 100%;
+      margin: 0;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 12% 8%, rgba(0, 113, 227, 0.16), transparent 28%),
+        radial-gradient(circle at 88% 8%, rgba(168, 85, 247, 0.13), transparent 28%),
+        radial-gradient(circle at 50% 100%, rgba(34, 197, 94, 0.07), transparent 32%),
+        linear-gradient(180deg, #f8fbff 0%, #eef4ff 48%, #e8eef8 100%);
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background:
+        linear-gradient(rgba(15, 23, 42, 0.028) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(15, 23, 42, 0.024) 1px, transparent 1px);
+      background-size: 48px 48px;
+      mask-image: radial-gradient(circle at 50% 18%, black, transparent 72%);
+      opacity: 0.36;
+      z-index: 0;
+    }
+
+    body::after {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background:
+        radial-gradient(circle at 50% 0%, rgba(255, 255, 255, 0.72), transparent 38%),
+        linear-gradient(180deg, rgba(255, 255, 255, 0.28), transparent 36%);
+      z-index: 0;
+    }
+
+    button,
+    input,
+    select {
+      font: inherit;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    @keyframes pulse {
+      0% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.36);
+      }
+
+      70% {
+        transform: scale(1.08);
+        box-shadow: 0 0 0 16px rgba(34, 197, 94, 0);
+      }
+
+      100% {
+        transform: scale(1);
+      }
+    }
+
+    @keyframes reveal {
+      from {
+        opacity: 0;
+        transform: translateY(18px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .activity-page {
+      position: relative;
+      z-index: 1;
+      width: min(1540px, calc(100% - 56px));
+      margin: 0 auto;
+      padding: 28px 0 80px;
+    }
+
+    .activity-nav,
+    .hero-panel,
+    .insight-panel,
+    .activity-panel,
+    .stat-card {
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.88), rgba(255, 255, 255, 0.64)),
+        rgba(255, 255, 255, 0.72);
+      border: 1px solid rgba(255, 255, 255, 0.92);
+      box-shadow:
+        var(--shadow),
+        inset 0 1px 0 rgba(255, 255, 255, 0.96);
+      backdrop-filter: blur(28px);
+      -webkit-backdrop-filter: blur(28px);
+    }
+
+    .activity-nav {
+      position: sticky;
+      top: 14px;
+      z-index: 20;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      min-height: 76px;
+      margin-bottom: 28px;
+      padding: 12px 16px;
+      border-radius: 34px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 13px;
+      min-width: 0;
+      height: 50px;
+    }
+
+    .brand-mark {
+      width: 50px;
+      height: 50px;
+      min-width: 50px;
+      min-height: 50px;
+      display: grid;
+      place-items: center;
+      border-radius: 19px;
+      background: linear-gradient(180deg, #ffffff, #e8f2ff);
+      color: #07111f;
+      font-weight: 950;
+      line-height: 1;
+      letter-spacing: -0.04em;
+      box-shadow:
+        0 18px 44px rgba(0, 113, 227, 0.12),
+        inset 0 1px 0 rgba(255, 255, 255, 0.95);
+    }
+
+    .brand-copy {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      min-height: 50px;
+    }
+
+    .brand-copy strong {
+      display: block;
+      font-size: 1rem;
+      color: var(--text);
+      line-height: 1.15;
+      letter-spacing: -0.03em;
+    }
+
+    .brand-copy span {
+      display: block;
+      margin-top: 2px;
+      color: var(--muted);
+      font-size: 0.84rem;
+      line-height: 1.15;
+      font-weight: 750;
+    }
+
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .pill,
+    .activity-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      height: 50px;
+      min-height: 50px;
+      padding: 0 22px;
+      border: 1px solid rgba(15, 23, 42, 0.08);
+      border-radius: 999px;
+      color: var(--soft);
+      background: rgba(255, 255, 255, 0.74);
+      font-size: 0.88rem;
+      font-weight: 900;
+      line-height: 1;
+      white-space: nowrap;
+      box-shadow:
+        0 10px 24px rgba(15, 23, 42, 0.05),
+        inset 0 1px 0 rgba(255, 255, 255, 0.92);
+    }
+
+    .pill {
+      gap: 10px;
+      font-weight: 850;
+    }
+
+    .activity-btn {
+      color: var(--text);
+      cursor: pointer;
+      transition:
+        transform 0.18s ease,
+        background 0.2s ease,
+        box-shadow 0.2s ease,
+        border-color 0.2s ease;
+    }
+
+    .activity-btn:hover {
+      transform: translateY(-2px);
+      background: rgba(255, 255, 255, 0.95);
+      border-color: rgba(0, 113, 227, 0.16);
+      box-shadow:
+        0 18px 34px rgba(15, 23, 42, 0.08),
+        inset 0 1px 0 rgba(255, 255, 255, 0.95);
+    }
+
+    .activity-btn.primary {
+      border: 0;
+      color: #ffffff;
+      background: linear-gradient(180deg, var(--blue), var(--blue-dark));
+      box-shadow:
+        0 18px 45px rgba(0, 113, 227, 0.2),
+        inset 0 1px 0 rgba(255, 255, 255, 0.28);
+    }
+
+    .activity-btn.danger {
+      color: #991b1b;
+      background: rgba(254, 226, 226, 0.86);
+      border-color: rgba(239, 68, 68, 0.22);
+    }
+
+    .activity-btn.small {
+      height: 40px;
+      min-height: 40px;
+      padding: 0 13px;
+      font-size: 0.78rem;
+    }
+
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+      background: var(--green);
+      animation: pulse 1.8s infinite;
+      flex: 0 0 auto;
+    }
+
+    .hero-grid {
+      display: grid;
+      grid-template-columns: 1.05fr 0.95fr;
+      gap: 24px;
+      align-items: stretch;
+    }
+
+    .hero-panel,
+    .insight-panel,
+    .activity-panel {
+      border-radius: var(--radius-xl);
+    }
+
+    .hero-panel {
+      min-height: 520px;
+      padding: 34px;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .hero-panel::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(circle at 18% 8%, rgba(255, 255, 255, 0.9), transparent 32%),
+        radial-gradient(circle at 85% 90%, rgba(0, 113, 227, 0.16), transparent 34%);
+      pointer-events: none;
+    }
+
+    .hero-panel > * {
+      position: relative;
+      z-index: 1;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      width: fit-content;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 15px;
+      border: 1px solid rgba(15, 23, 42, 0.08);
+      border-radius: 999px;
+      color: var(--muted);
+      background: rgba(255, 255, 255, 0.68);
+      font-size: 0.78rem;
+      font-weight: 950;
+      letter-spacing: 0.13em;
+      text-transform: uppercase;
+      box-shadow:
+        0 10px 24px rgba(15, 23, 42, 0.04),
+        inset 0 1px 0 rgba(255, 255, 255, 0.92);
+    }
+
+    .hero-title {
+      margin: 28px 0 20px;
+      max-width: 860px;
+      font-size: clamp(4.3rem, 9vw, 8.6rem);
+      line-height: 0.84;
+      letter-spacing: -0.105em;
+      font-weight: 950;
+      color: var(--text);
+      text-shadow: 0 22px 70px rgba(15, 23, 42, 0.08);
+    }
+
+    .hero-copy {
+      max-width: 720px;
+      margin: 0;
+      color: var(--soft);
+      font-size: clamp(1.08rem, 2vw, 1.36rem);
+      line-height: 1.65;
+      font-weight: 720;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 30px;
+    }
+
+    .stat-card {
+      min-height: 112px;
+      padding: 18px;
+      border-radius: 24px;
+    }
+
+    .stat-card strong {
+      display: block;
+      color: var(--text);
+      font-size: 1.65rem;
+      letter-spacing: -0.055em;
+    }
+
+    .stat-card span {
+      display: block;
+      margin-top: 6px;
+      color: var(--muted);
+      font-size: 0.82rem;
+      font-weight: 760;
+      line-height: 1.35;
+    }
+
+    .insight-panel {
+      min-height: 520px;
+      padding: 30px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .insight-panel::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(circle at 82% 12%, rgba(0, 113, 227, 0.12), transparent 36%),
+        radial-gradient(circle at 14% 94%, rgba(139, 92, 246, 0.08), transparent 30%);
+      pointer-events: none;
+    }
+
+    .insight-panel > * {
+      position: relative;
+      z-index: 1;
+    }
+
+    .panel-label {
+      color: var(--blue);
+      font-size: 0.76rem;
+      font-weight: 950;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+    }
+
+    .insight-title {
+      margin: 0;
+      max-width: 650px;
+      color: var(--text);
+      font-size: clamp(2.8rem, 5vw, 5.1rem);
+      line-height: 0.9;
+      letter-spacing: -0.088em;
+      font-weight: 950;
+    }
+
+    .insight-copy {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.72;
+      font-size: 1rem;
+      font-weight: 700;
+    }
+
+    .insight-list {
+      display: grid;
+      gap: 10px;
+      margin-top: auto;
+    }
+
+    .insight-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 14px;
+      border-radius: 22px;
+      border: 1px solid rgba(15, 23, 42, 0.08);
+      background: rgba(255, 255, 255, 0.62);
+      box-shadow:
+        0 10px 24px rgba(15, 23, 42, 0.04),
+        inset 0 1px 0 rgba(255,255,255,0.9);
+    }
+
+    .insight-icon {
+      width: 36px;
+      height: 36px;
+      min-width: 36px;
+      display: grid;
+      place-items: center;
+      border-radius: 14px;
+      background: rgba(224, 242, 254, 0.9);
+      color: #075985;
+      font-weight: 950;
+    }
+
+    .insight-item strong {
+      display: block;
+      color: var(--text);
+      font-size: 0.98rem;
+      letter-spacing: -0.02em;
+    }
+
+    .insight-item span {
+      display: block;
+      margin-top: 3px;
+      color: var(--muted);
+      line-height: 1.45;
+      font-weight: 720;
+      font-size: 0.9rem;
+    }
+
+    .activity-panel {
+      margin-top: 24px;
+      padding: 30px;
+      animation: reveal 0.28s ease-out;
+    }
+
+    .activity-head {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 18px;
+      margin-bottom: 22px;
+    }
+
+    .activity-head h2 {
+      margin: 0;
+      color: var(--text);
+      font-size: clamp(3.3rem, 6vw, 6.4rem);
+      line-height: 0.84;
+      letter-spacing: -0.09em;
+      font-weight: 950;
+    }
+
+    .activity-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .activity-controls {
+      display: grid;
+      grid-template-columns: 1.3fr 0.7fr 0.7fr 0.7fr auto;
+      gap: 10px;
+      margin-bottom: 18px;
+    }
+
+    .activity-input,
+    .activity-select {
+      width: 100%;
+      min-height: 56px;
+      padding: 0 16px;
+      border: 1px solid rgba(15, 23, 42, 0.09);
+      border-radius: 18px;
+      outline: none;
+      color: var(--text);
+      background: rgba(255, 255, 255, 0.76);
+      font-weight: 850;
+      box-shadow:
+        0 10px 24px rgba(15, 23, 42, 0.04),
+        inset 0 1px 0 rgba(255,255,255,0.92);
+    }
+
+    .activity-input::placeholder {
+      color: var(--faint);
+    }
+
+    .activity-input:focus,
+    .activity-select:focus {
+      border-color: rgba(0, 113, 227, 0.34);
+      background: rgba(255, 255, 255, 0.96);
+      box-shadow:
+        0 0 0 5px rgba(0, 113, 227, 0.08),
+        0 14px 28px rgba(15, 23, 42, 0.06);
+    }
+
+    .table-shell {
+      border: 1px solid rgba(15, 23, 42, 0.08);
+      border-radius: 28px;
+      overflow: hidden;
+      background: rgba(255, 255, 255, 0.62);
+      box-shadow:
+        0 16px 38px rgba(15, 23, 42, 0.06),
+        inset 0 1px 0 rgba(255,255,255,0.92);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    thead {
+      background: rgba(248, 250, 252, 0.82);
+    }
+
+    th,
+    td {
+      padding: 16px;
+      text-align: left;
+      vertical-align: middle;
+      border-bottom: 1px solid rgba(15, 23, 42, 0.07);
+    }
+
+    th {
+      color: var(--faint);
+      font-size: 0.72rem;
+      font-weight: 950;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    td {
+      color: var(--soft);
+      font-size: 0.94rem;
+      font-weight: 780;
+    }
+
+    tbody tr:last-child td {
+      border-bottom: 0;
+    }
+
+    .product-cell {
+      display: flex;
+      align-items: center;
+      gap: 13px;
+      min-width: 280px;
+    }
+
+    .product-thumb {
+      width: 64px;
+      height: 76px;
+      border-radius: 18px;
+      object-fit: contain;
+      padding: 7px;
+      background: linear-gradient(180deg, #ffffff, #f1f5f9);
+      border: 1px solid rgba(15, 23, 42, 0.06);
+    }
+
+    .product-name {
+      color: var(--text);
+      font-size: 1rem;
+      font-weight: 950;
+      line-height: 1.15;
+    }
+
+    .product-sub {
+      margin-top: 5px;
+      color: var(--muted);
+      font-size: 0.84rem;
+      font-weight: 760;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      min-height: 34px;
+      padding: 0 12px;
+      border-radius: 999px;
+      font-size: 0.76rem;
+      font-weight: 950;
+      white-space: nowrap;
+      border: 1px solid transparent;
+    }
+
+    .badge.green {
+      color: #166534;
+      background: rgba(220, 252, 231, 0.88);
+      border-color: rgba(34, 197, 94, 0.18);
+    }
+
+    .badge.blue {
+      color: #075985;
+      background: rgba(224, 242, 254, 0.9);
+      border-color: rgba(14, 165, 233, 0.18);
+    }
+
+    .badge.gray {
+      color: #475569;
+      background: rgba(241, 245, 249, 0.9);
+      border-color: rgba(100, 116, 139, 0.14);
+    }
+
+    .row-actions {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 8px;
+      flex-wrap: wrap;
+      min-width: 230px;
+    }
+
+    .empty {
+      padding: 34px;
+      border: 1px dashed var(--line-strong);
+      border-radius: 25px;
+      color: var(--muted);
+      text-align: center;
+      font-weight: 800;
+      background: rgba(255,255,255,0.56);
+    }
+
+    .empty strong {
+      display: block;
+      margin-bottom: 8px;
+      color: var(--text);
+      font-size: 1.12rem;
+      letter-spacing: -0.03em;
+    }
+
+    .toast-shell {
+      position: fixed;
+      right: 20px;
+      bottom: 20px;
+      z-index: 99;
+      display: grid;
+      gap: 10px;
+      width: min(380px, calc(100% - 40px));
+    }
+
+    .toast-card {
+      padding: 15px 16px;
+      border-radius: 19px;
+      color: #ffffff;
+      background: rgba(15, 23, 42, 0.96);
+      border: 1px solid rgba(255,255,255,0.12);
+      box-shadow: 0 24px 54px rgba(15, 23, 42, 0.18);
+      font-weight: 850;
+      animation: reveal 0.18s ease-out;
+    }
+
+    .toast-card.success {
+      background: linear-gradient(135deg, #15803d, #22c55e);
+    }
+
+    .toast-card.error {
+      background: linear-gradient(135deg, #b91c1c, #ef4444);
+    }
+
+    .toast-card.info {
+      background: linear-gradient(135deg, #0f172a, #334155);
+    }
+
+    @media (max-width: 1180px) {
+      .stats-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .activity-controls {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    @media (max-width: 1100px) {
+      .hero-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .hero-panel,
+      .insight-panel {
+        min-height: auto;
+      }
+
+      .table-shell {
+        overflow-x: auto;
+      }
+
+      table {
+        min-width: 1220px;
+      }
+    }
+
+    @media (max-width: 760px) {
+      .activity-page {
+        width: min(100% - 22px, 1480px);
+        padding-top: 12px;
+      }
+
+      .activity-nav {
+        min-height: auto;
+        align-items: stretch;
+        border-radius: 28px;
+        flex-direction: column;
+      }
+
+      .brand {
+        height: 50px;
+      }
+
+      .nav-actions,
+      .activity-actions {
+        width: 100%;
+        display: grid;
+        grid-template-columns: 1fr;
+      }
+
+      .nav-actions .activity-btn,
+      .nav-actions .pill,
+      .activity-actions .activity-btn {
+        width: 100%;
+        height: 54px;
+        min-height: 54px;
+        justify-content: center;
+      }
+
+      .brand-copy span {
+        display: none;
+      }
+
+      .hero-title {
+        font-size: 4.1rem;
+      }
+
+      .insight-title,
+      .activity-head h2 {
+        font-size: 3.15rem;
+      }
+
+      .stats-grid,
+      .activity-controls {
+        grid-template-columns: 1fr;
+      }
+
+      .activity-head {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+    }
+  </style>
+</head>
+
+<body>
+<div class="activity-page">
+  <nav class="activity-nav">
+    <a class="brand" href="/landing.html">
+      <div class="brand-mark">US</div>
+      <div class="brand-copy">
+        <strong>Universal Stylist</strong>
+        <span>Merchant Activity</span>
+      </div>
+    </a>
+
+    <div class="nav-actions">
+      <span class="pill">
+        <span class="dot"></span>
+        <span id="activityStatus">Activity ready</span>
+      </span>
+      <a class="activity-btn" href="/merchant-dashboard.html">Dashboard</a>
+      <a class="activity-btn" href="/merchant-inventory.html">Inventory</a>
+      <a class="activity-btn" href="/mirror.html">Smart Mirror</a>
+      <a class="activity-btn" href="/index.html">Merchant App</a>
+    </div>
+  </nav>
+
+  <section class="hero-grid">
+    <div class="hero-panel">
+      <div>
+        <div class="eyebrow">Mirror Scans • Shopper Intent • Saved Bag Signals</div>
+        <h1 class="hero-title">
+          Track.<br />
+          Learn.<br />
+          Convert.
+        </h1>
+        <p class="hero-copy">
+          See what shoppers scan, which products create intent, and where saved-bag behavior is forming
+          across Universal Stylist smart mirror sessions.
+        </p>
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat-card">
+          <strong id="totalScansStat">0</strong>
+          <span>Total smart mirror scans</span>
+        </div>
+        <div class="stat-card">
+          <strong id="savedScansStat">0</strong>
+          <span>Saved-to-bag scans</span>
+        </div>
+        <div class="stat-card">
+          <strong id="conversionStat">0%</strong>
+          <span>Saved intent conversion</span>
+        </div>
+        <div class="stat-card">
+          <strong id="uniqueItemsStat">0</strong>
+          <span>Unique RFID items scanned</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="insight-panel">
+      <div class="panel-label">Activity Pulse</div>
+      <h2 class="insight-title">Understand shopper behavior from every mirror scan.</h2>
+      <p class="insight-copy">
+        Each scan creates a local activity signal. This lets you see which products, vibes,
+        retailers, and stores are generating attention.
+      </p>
+
+      <div id="insightList" class="insight-list"></div>
+    </div>
+  </section>
+
+  <section class="activity-panel">
+    <div class="activity-head">
+      <div>
+        <div class="panel-label">Scan Timeline</div>
+        <h2>Activity.</h2>
+      </div>
+
+      <div class="activity-actions">
+        <button id="exportBtn" class="activity-btn" type="button">Export CSV</button>
+        <button id="clearActivityBtn" class="activity-btn danger" type="button">Clear Activity</button>
+      </div>
+    </div>
+
+    <div class="activity-controls">
+      <input id="searchInput" class="activity-input" type="search" placeholder="Search item, brand, RFID, retailer, vibe..." />
+
+      <select id="retailerFilter" class="activity-select" aria-label="Filter by retailer">
+        <option value="">All Retailers</option>
+      </select>
+
+      <select id="vibeFilter" class="activity-select" aria-label="Filter by vibe">
+        <option value="">All Vibes</option>
+      </select>
+
+      <select id="savedFilter" class="activity-select" aria-label="Filter by saved status">
+        <option value="">All Activity</option>
+        <option value="saved">Saved to Bag</option>
+        <option value="not-saved">Not Saved</option>
+      </select>
+
+      <button id="clearFiltersBtn" class="activity-btn" type="button">Clear</button>
+    </div>
+
+    <div id="activityContent" class="table-shell"></div>
+  </section>
+</div>
+
+<div id="toastShell" class="toast-shell"></div>
+
+<script src="/retailers.js"></script>
+
+<script>
+  const RETAILER_CONFIG = window.UniversalStylistRetailers || null;
+  const RETAILER_LABELS = RETAILER_CONFIG?.getRetailerLabels?.() || {
+    MACY001: "Macy's",
+    ZARA001: "Zara",
+    NORD001: "Nordstrom",
+    NIKE001: "Nike"
+  };
+
+  let activityRecords = [];
+
+  function escapeHtml(value) {
+    return String(value ?? "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  }
+
+  function safeNumber(value, fallback = 0) {
+    const number = Number(value);
+    return Number.isFinite(number) ? number : fallback;
+  }
+
+  function formatPrice(value) {
+    const number = Number(value);
+    return Number.isFinite(number) ? `$${number.toFixed(2)}` : "$0.00";
+  }
+
+  function safeImageUrl(url, fallback = "https://placehold.co/500x650?text=Scan") {
+    const value = String(url || "").trim();
+
+    if (!value) {
+      return fallback;
+    }
+
+    try {
+      const parsed = new URL(value, window.location.origin);
+
+      if (
+        parsed.protocol === "http:" ||
+        parsed.protocol === "https:" ||
+        parsed.protocol === "data:" ||
+        parsed.protocol === "blob:"
+      ) {
+        return parsed.href;
+      }
+    } catch (_) {
+      return fallback;
+    }
+
+    return fallback;
+  }
+
+  function showToast(message, type = "info") {
+    const shell = document.getElementById("toastShell");
+    if (!shell || !message) return;
+
+    const toast = document.createElement("div");
+    toast.className = `toast-card ${type}`;
+    toast.textContent = message;
+
+    shell.appendChild(toast);
+
+    window.setTimeout(() => {
+      toast.remove();
+    }, 3200);
+  }
+
+  function getLocalScanActivity() {
+    try {
+      const stored = JSON.parse(localStorage.getItem("universalStylistScanActivity") || "[]");
+      return Array.isArray(stored) ? stored : [];
+    } catch (_) {
+      return [];
+    }
+  }
+
+  function saveLocalScanActivity(records) {
+    localStorage.setItem("universalStylistScanActivity", JSON.stringify(records));
+  }
+
+  function getRetailerKeyFromName(name) {
+    if (!name) return "";
+
+    if (RETAILER_CONFIG?.getRetailerKeyFromName) {
+      return RETAILER_CONFIG.getRetailerKeyFromName(name) || "";
+    }
+
+    return Object.entries(RETAILER_LABELS).find(([, label]) => label === name)?.[0] || "";
+  }
+
+  function getRetailerNameFromKey(retailerKey, fallback = "Unknown Retailer") {
+    return RETAILER_LABELS[retailerKey] || fallback || retailerKey || "Unknown Retailer";
+  }
+
+  function normalizeRecord(record) {
+    const suppliedRetailerName = record.retailer || record.retailerName || "";
+    const retailerKey =
+      record.retailerKey ||
+      record.retailerId ||
+      getRetailerKeyFromName(suppliedRetailerName) ||
+      "MACY001";
+
+    const retailerName =
+      suppliedRetailerName ||
+      getRetailerNameFromKey(retailerKey, "Unknown Retailer");
+
+    return {
+      id: String(record.id || crypto.randomUUID()),
+      timestamp: record.timestamp || new Date().toISOString(),
+      source: record.source || "mirror",
+      rfid: record.rfid || "",
+      retailer: retailerName,
+      retailerKey,
+      storeCode: record.storeCode || "",
+      name: record.name || record.itemName || "Scanned Item",
+      brand: record.brand || "Brand",
+      category: record.category || "Category",
+      color: record.color || "",
+      price: safeNumber(record.price),
+      vibe: record.vibe || "Casual",
+      imageUrl: record.imageUrl || "",
+      savedToBag: Boolean(record.savedToBag),
+      savedAt: record.savedAt || ""
+    };
+  }
+
+  function formatDateTime(value) {
+    const date = new Date(value);
+
+    if (Number.isNaN(date.getTime())) {
+      return "Unknown time";
+    }
+
+    return new Intl.DateTimeFormat(undefined, {
+      month: "short",
+      day: "numeric",
+      hour: "numeric",
+      minute: "2-digit"
+    }).format(date);
+  }
+
+  function groupByCount(records, getter) {
+    return records.reduce((acc, record) => {
+      const key = getter(record) || "Unknown";
+      acc[key] = (acc[key] || 0) + 1;
+      return acc;
+    }, {});
+  }
+
+  function getTopLabel(grouped) {
+    return Object.entries(grouped).sort((a, b) => b[1] - a[1])[0]?.[0] || "None";
+  }
+
+  function getUniqueValues(records, getter) {
+    return Array.from(new Set(records.map(getter).filter(Boolean))).sort((a, b) => a.localeCompare(b));
+  }
+
+  function getInventoryHref(record) {
+    const query = record.rfid || record.name || "";
+
+    return query
+      ? `/merchant-inventory.html?search=${encodeURIComponent(query)}`
+      : "/merchant-inventory.html";
+  }
+
+  function getRetailerInventoryHref(retailerKey) {
+    return retailerKey
+      ? `/merchant-inventory.html?retailer=${encodeURIComponent(retailerKey)}`
+      : "/merchant-inventory.html";
+  }
+
+  function getMirrorRetestHref(record) {
+    const params = new URLSearchParams({
+      retailer: record.retailerKey || "MACY001",
+      storeCode: record.storeCode || "",
+      rfid: record.rfid || "",
+      vibe: record.vibe || "Casual",
+      autoScan: "true"
+    });
+
+    return `/mirror.html?${params.toString()}`;
+  }
+
+  function renderFilterOptions() {
+    const retailerFilter = document.getElementById("retailerFilter");
+    const vibeFilter = document.getElementById("vibeFilter");
+
+    const currentRetailer = retailerFilter?.value || "";
+    const currentVibe = vibeFilter?.value || "";
+
+    const retailerKeys = getUniqueValues(activityRecords, record => record.retailerKey);
+    const vibes = getUniqueValues(activityRecords, record => record.vibe);
+
+    if (retailerFilter) {
+      retailerFilter.innerHTML = `
+        <option value="">All Retailers</option>
+        ${retailerKeys.map(key => `
+          <option value="${escapeHtml(key)}">
+            ${escapeHtml(getRetailerNameFromKey(key, key))}
+          </option>
+        `).join("")}
+      `;
+
+      retailerFilter.value = retailerKeys.includes(currentRetailer) ? currentRetailer : "";
+    }
+
+    if (vibeFilter) {
+      vibeFilter.innerHTML = `
+        <option value="">All Vibes</option>
+        ${vibes.map(value => `<option value="${escapeHtml(value)}">${escapeHtml(value)}</option>`).join("")}
+      `;
+
+      vibeFilter.value = vibes.includes(currentVibe) ? currentVibe : "";
+    }
+  }
+
+  function getFilteredRecords() {
+    const search = document.getElementById("searchInput")?.value.trim().toLowerCase() || "";
+    const retailerFilter = document.getElementById("retailerFilter")?.value || "";
+    const vibeFilter = document.getElementById("vibeFilter")?.value || "";
+    const savedFilter = document.getElementById("savedFilter")?.value || "";
+
+    return activityRecords.filter(record => {
+      const haystack = [
+        record.name,
+        record.brand,
+        record.category,
+        record.color,
+        record.rfid,
+        record.retailer,
+        record.retailerKey,
+        record.storeCode,
+        record.vibe,
+        record.source
+      ].join(" ").toLowerCase();
+
+      const matchesSearch = !search || haystack.includes(search);
+      const matchesRetailer = !retailerFilter || record.retailerKey === retailerFilter;
+      const matchesVibe = !vibeFilter || record.vibe === vibeFilter;
+
+      let matchesSaved = true;
+
+      if (savedFilter === "saved") {
+        matchesSaved = record.savedToBag;
+      }
+
+      if (savedFilter === "not-saved") {
+        matchesSaved = !record.savedToBag;
+      }
+
+      return matchesSearch && matchesRetailer && matchesVibe && matchesSaved;
+    });
+  }
+
+  function calculateStats() {
+    const total = activityRecords.length;
+    const saved = activityRecords.filter(record => record.savedToBag).length;
+    const uniqueItems = new Set(activityRecords.map(record => record.rfid).filter(Boolean)).size;
+    const conversion = total ? Math.round((saved / total) * 100) : 0;
+
+    const retailerGroup = groupByCount(activityRecords, record => record.retailer);
+    const vibeGroup = groupByCount(activityRecords, record => record.vibe);
+    const categoryGroup = groupByCount(activityRecords, record => record.category);
+
+    return {
+      total,
+      saved,
+      uniqueItems,
+      conversion,
+      topRetailer: getTopLabel(retailerGroup),
+      topVibe: getTopLabel(vibeGroup),
+      topCategory: getTopLabel(categoryGroup)
+    };
+  }
+
+  function renderStats() {
+    const stats = calculateStats();
+
+    document.getElementById("totalScansStat").textContent = String(stats.total);
+    document.getElementById("savedScansStat").textContent = String(stats.saved);
+    document.getElementById("conversionStat").textContent = `${stats.conversion}%`;
+    document.getElementById("uniqueItemsStat").textContent = String(stats.uniqueItems);
+
+    const status = document.getElementById("activityStatus");
+    if (status) {
+      status.textContent = stats.total ? `${stats.total} scans tracked` : "Activity ready";
+    }
+
+    const insightList = document.getElementById("insightList");
+    if (!insightList) return;
+
+    const insights = [
+      {
+        icon: "CV",
+        title: `${stats.conversion}% saved intent conversion`,
+        copy: stats.conversion >= 30
+          ? "A strong share of scans are turning into saved shopper intent."
+          : "Encourage shoppers to save items after scans to strengthen intent signals."
+      },
+      {
+        icon: "RT",
+        title: `${stats.topRetailer} is leading scans`,
+        copy: "This retailer has the highest observed smart mirror activity."
+      },
+      {
+        icon: "VB",
+        title: `${stats.topVibe} is the top styling vibe`,
+        copy: "This vibe is currently driving the most mirror scan interest."
+      },
+      {
+        icon: "CT",
+        title: `${stats.topCategory} is the top category`,
+        copy: "This category is receiving the most shopper attention from scans."
+      }
+    ];
+
+    insightList.innerHTML = insights.map(item => `
+      <div class="insight-item">
+        <div class="insight-icon">${escapeHtml(item.icon)}</div>
+        <div>
+          <strong>${escapeHtml(item.title)}</strong>
+          <span>${escapeHtml(item.copy)}</span>
+        </div>
+      </div>
+    `).join("");
+  }
+
+  function getSavedBadge(record) {
+    if (record.savedToBag) {
+      return `<span class="badge green">Saved to Bag</span>`;
+    }
+
+    return `<span class="badge gray">Scanned Only</span>`;
+  }
+
+  function renderActivityTable() {
+    const container = document.getElementById("activityContent");
+    if (!container) return;
+
+    renderFilterOptions();
+
+    const records = getFilteredRecords();
+
+    if (!records.length) {
+      container.className = "";
+      container.innerHTML = `
+        <div class="empty">
+          <strong>No activity found.</strong>
+          Scan an item in Smart Mirror Mode or adjust your filters to see activity.
+        </div>
+      `;
+      return;
+    }
+
+    container.className = "table-shell";
+    container.innerHTML = `
+      <table>
+        <thead>
+          <tr>
+            <th>Scanned Item</th>
+            <th>RFID</th>
+            <th>Retailer</th>
+            <th>Store</th>
+            <th>Vibe</th>
+            <th>Price</th>
+            <th>Status</th>
+            <th>Time</th>
+            <th style="text-align: right;">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${records.map(record => `
+            <tr>
+              <td>
+                <div class="product-cell">
+                  <img
+                    class="product-thumb"
+                    src="${safeImageUrl(record.imageUrl)}"
+                    alt="${escapeHtml(record.name)}"
+                    onerror="this.src='https://placehold.co/500x650?text=Scan';"
+                  />
+                  <div>
+                    <div class="product-name">${escapeHtml(record.name)}</div>
+                    <div class="product-sub">
+                      ${escapeHtml(record.brand)} • ${escapeHtml(record.category)}${record.color ? ` • ${escapeHtml(record.color)}` : ""}
+                    </div>
+                  </div>
+                </div>
+              </td>
+              <td><span class="badge blue">${escapeHtml(record.rfid || "No RFID")}</span></td>
+              <td>${escapeHtml(record.retailer)}</td>
+              <td>${escapeHtml(record.storeCode || "No Store")}</td>
+              <td><span class="badge blue">${escapeHtml(record.vibe)}</span></td>
+              <td>${formatPrice(record.price)}</td>
+              <td>${getSavedBadge(record)}</td>
+              <td>${escapeHtml(formatDateTime(record.timestamp))}</td>
+              <td>
+                <div class="row-actions">
+                  <a
+                    class="activity-btn small"
+                    href="${getInventoryHref(record)}"
+                  >
+                    View Item
+                  </a>
+                  <a
+                    class="activity-btn small"
+                    href="${getRetailerInventoryHref(record.retailerKey)}"
+                  >
+                    Retailer
+                  </a>
+                  <a
+                    class="activity-btn small primary"
+                    href="${getMirrorRetestHref(record)}"
+                  >
+                    Re-test
+                  </a>
+                </div>
+              </td>
+            </tr>
+          `).join("")}
+        </tbody>
+      </table>
+    `;
+  }
+
+  function renderActivity() {
+    renderStats();
+    renderActivityTable();
+  }
+
+  function clearFilters() {
+    document.getElementById("searchInput").value = "";
+    document.getElementById("retailerFilter").value = "";
+    document.getElementById("vibeFilter").value = "";
+    document.getElementById("savedFilter").value = "";
+    renderActivity();
+  }
+
+  function clearActivity() {
+    const confirmed = window.confirm("Clear all local smart mirror activity?");
+    if (!confirmed) return;
+
+    activityRecords = [];
+    saveLocalScanActivity(activityRecords);
+    renderActivity();
+    showToast("Activity cleared.", "success");
+  }
+
+  function exportCsv() {
+    const records = getFilteredRecords();
+
+    if (!records.length) {
+      showToast("No activity to export.", "error");
+      return;
+    }
+
+    const columns = [
+      "id",
+      "timestamp",
+      "source",
+      "rfid",
+      "retailer",
+      "retailerKey",
+      "storeCode",
+      "name",
+      "brand",
+      "category",
+      "color",
+      "price",
+      "vibe",
+      "savedToBag",
+      "savedAt",
+      "imageUrl"
+    ];
+
+    const escapeCsv = value => `"${String(value ?? "").replace(/"/g, '""')}"`;
+
+    const rows = [
+      columns.join(","),
+      ...records.map(record => columns.map(column => escapeCsv(record[column])).join(","))
+    ];
+
+    const blob = new Blob([rows.join("\n")], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+
+    link.href = url;
+    link.download = `universal-stylist-activity-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+
+    URL.revokeObjectURL(url);
+    showToast("Activity CSV exported.", "success");
+  }
+
+  function bindEvents() {
+    document.getElementById("searchInput")?.addEventListener("input", renderActivityTable);
+    document.getElementById("retailerFilter")?.addEventListener("change", renderActivityTable);
+    document.getElementById("vibeFilter")?.addEventListener("change", renderActivityTable);
+    document.getElementById("savedFilter")?.addEventListener("change", renderActivityTable);
+    document.getElementById("clearFiltersBtn")?.addEventListener("click", clearFilters);
+    document.getElementById("clearActivityBtn")?.addEventListener("click", clearActivity);
+    document.getElementById("exportBtn")?.addEventListener("click", exportCsv);
+  }
+
+  function init() {
+    bindEvents();
+
+    activityRecords = getLocalScanActivity()
+      .map(normalizeRecord)
+      .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+    renderActivity();
+  }
+
+  init();
+</script>
+</body>
+</html>

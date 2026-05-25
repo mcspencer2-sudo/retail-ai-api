@@ -17,6 +17,7 @@ import com.retailai.model.TrendEvent;
 import com.retailai.repository.BagItemRepository;
 import com.retailai.repository.ProductRepository;
 import com.retailai.repository.TrendEventRepository;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
@@ -41,6 +42,9 @@ public class InventoryService {
     private final BagItemRepository bagItemRepository;
     private final TrendEventRepository trendEventRepository;
     private final AIStylistService aiStylistService;
+
+    @Value("${retailai.demo-scan-mode:true}")
+    private boolean demoScanMode;
 
     public InventoryService(
             ProductRepository productRepository,
@@ -108,12 +112,7 @@ public class InventoryService {
         List<RecommendationItemDTO> filteredSuggestions;
 
         try {
-            filteredSuggestions = generateAlternativeSuggestions(
-                    product,
-                    vibe,
-                    fullOutfit,
-                    0
-            );
+            filteredSuggestions = generateAlternativeSuggestions(product, vibe, fullOutfit, 0);
 
             if (filteredSuggestions.isEmpty()) {
                 filteredSuggestions = removeItemsAlreadyInFullOutfit(suggestions, fullOutfit);
@@ -128,18 +127,83 @@ public class InventoryService {
     }
 
     public String saveToBag(String rfid) {
-        Product product = productRepository.findById(rfid)
+        Product product = productRepository.findById(normalizeRequired(rfid, "RFID is required."))
                 .orElseThrow(() -> new RuntimeException("Product not found"));
 
+        return saveProductToBag(
+                product,
+                "",
+                "",
+                "",
+                "",
+                safe(product.getRetailerKey()),
+                safe(product.getStoreCode())
+        );
+    }
+
+    public String saveToBag(String retailerKey, String storeCode, String rfid) {
+        Product product = loadScannedProductForContext(retailerKey, storeCode, rfid);
+
+        return saveProductToBag(
+                product,
+                "",
+                "",
+                "",
+                "",
+                retailerKey,
+                storeCode
+        );
+    }
+
+    public String saveToBag(
+            String userId,
+            String tenantId,
+            String storeId,
+            String userEmail,
+            String retailerKey,
+            String storeCode,
+            String rfid
+    ) {
+        Product product = loadScannedProductForContext(retailerKey, storeCode, rfid);
+
+        return saveProductToBag(
+                product,
+                userId,
+                tenantId,
+                storeId,
+                userEmail,
+                retailerKey,
+                storeCode
+        );
+    }
+
+    private String saveProductToBag(
+            Product product,
+            String userId,
+            String tenantId,
+            String storeId,
+            String userEmail,
+            String retailerKey,
+            String storeCode
+    ) {
         if (!isProductAvailableForStyling(product)) {
             throw new IllegalStateException("This item is currently unavailable and cannot be saved.");
         }
 
+        String safeUserId = safe(userId);
+        String safeTenantId = safe(tenantId);
+        String safeStoreId = safe(storeId);
+        String safeUserEmail = safe(userEmail);
+        String safeRetailerKey = safe(retailerKey);
+        String safeStoreCode = safe(storeCode);
+        String productRfid = safe(product.getRfid());
+
         boolean alreadySaved = bagItemRepository.findAll().stream()
-                .anyMatch(item -> safe(item.getRfid()).equalsIgnoreCase(rfid));
+                .filter(item -> matchesBagScope(item, safeUserId, safeTenantId, safeStoreCode))
+                .anyMatch(item -> safe(item.getRfid()).equalsIgnoreCase(productRfid));
 
         if (alreadySaved) {
-            return product.getItemName() + " is already in your style bag.";
+            return safe(product.getItemName()) + " is already in your style bag.";
         }
 
         BagItem item = new BagItem();
@@ -147,13 +211,21 @@ public class InventoryService {
         item.setRetailerName(product.getRetailerName());
         item.setItemName(product.getItemName());
         item.setImageUrl(product.getImageUrl());
-        item.setPrice(product.getPrice());
+        item.setPrice(product.getPrice() == null ? 0.0 : product.getPrice());
         item.setCategory(product.getCategory());
+
+        item.setUserId(safeUserId);
+        item.setTenantId(safeTenantId);
+        item.setStoreId(safeStoreId);
+        item.setUserEmail(safeUserEmail);
+        item.setRetailerKey(safeRetailerKey.isBlank() ? safe(product.getRetailerKey()) : safeRetailerKey);
+        item.setStoreCode(safeStoreCode.isBlank() ? safe(product.getStoreCode()) : safeStoreCode);
+        item.setStoreName(safe(product.getStoreName()));
 
         bagItemRepository.save(item);
         saveTrendEvent("SAVE", product);
 
-        return product.getItemName() + " added to your style bag.";
+        return safe(product.getItemName()) + " added to your style bag.";
     }
 
     public LookResponseDTO createFullLook(String rfid, String vibe) {
@@ -284,10 +356,10 @@ public class InventoryService {
 
         Map<String, Product> currentLook = new LinkedHashMap<>();
 
-        Product currentTop = findProductIfValid(currentTopRfid, "tops", rfid);
-        Product currentBottom = findProductIfValid(currentBottomRfid, "bottoms", rfid);
-        Product currentShoes = findProductIfValid(currentShoesRfid, "shoes", rfid);
-        Product currentOuterwear = findProductIfValid(currentOuterwearRfid, "outerwear", rfid);
+        Product currentTop = findProductIfValidForContext(currentTopRfid, "tops", rfid, scannedProduct);
+        Product currentBottom = findProductIfValidForContext(currentBottomRfid, "bottoms", rfid, scannedProduct);
+        Product currentShoes = findProductIfValidForContext(currentShoesRfid, "shoes", rfid, scannedProduct);
+        Product currentOuterwear = findProductIfValidForContext(currentOuterwearRfid, "outerwear", rfid, scannedProduct);
 
         if (currentTop != null) currentLook.put("tops", currentTop);
         if (currentBottom != null) currentLook.put("bottoms", currentBottom);
@@ -295,8 +367,10 @@ public class InventoryService {
         if (currentOuterwear != null) currentLook.put("outerwear", currentOuterwear);
 
         List<Product> baseSuggestions = generateSmartSuggestionProducts(scannedProduct, vibe);
+
         for (Product product : baseSuggestions) {
             String category = normalizeCategory(product.getCategory());
+
             if (targetCategories.contains(category) && !currentLook.containsKey(category)) {
                 currentLook.put(category, product);
             }
@@ -304,6 +378,7 @@ public class InventoryService {
 
         Set<String> excludedRfids = new LinkedHashSet<>();
         excludedRfids.add(safe(scannedProduct.getRfid()));
+
         for (Product product : currentLook.values()) {
             excludedRfids.add(safe(product.getRfid()));
         }
@@ -323,6 +398,7 @@ public class InventoryService {
 
         excludedRfids.clear();
         excludedRfids.add(safe(scannedProduct.getRfid()));
+
         for (Product product : currentLook.values()) {
             excludedRfids.add(safe(product.getRfid()));
         }
@@ -334,6 +410,7 @@ public class InventoryService {
 
             if (!currentLook.containsKey(category)) {
                 Product fallback = findBestCandidateForCategory(scannedProduct, vibe, category, excludedRfids);
+
                 if (fallback != null) {
                     currentLook.put(category, fallback);
                     excludedRfids.add(safe(fallback.getRfid()));
@@ -342,8 +419,10 @@ public class InventoryService {
         }
 
         List<RecommendationItemDTO> currentLookItems = new ArrayList<>();
+
         for (String category : orderedCategories()) {
             Product product = currentLook.get(category);
+
             if (product != null && targetCategories.contains(category)) {
                 currentLookItems.add(toRecommendationDto(scannedProduct, product, vibe));
             }
@@ -386,12 +465,20 @@ public class InventoryService {
     }
 
     public BagSummaryResponse getBagSummary() {
-        List<BagItem> items = bagItemRepository.findAll();
+        return buildBagSummary(bagItemRepository.findAll());
+    }
 
+    public BagSummaryResponse getBagSummary(String userId, String tenantId, String storeCode) {
+        List<BagItem> scopedItems = bagItemRepository.findAll().stream()
+                .filter(item -> matchesBagScope(item, userId, tenantId, storeCode))
+                .collect(Collectors.toList());
+
+        return buildBagSummary(scopedItems);
+    }
+
+    private BagSummaryResponse buildBagSummary(List<BagItem> items) {
         double subtotal = items.stream()
-                .map(BagItem::getPrice)
-                .filter(price -> price != null)
-                .mapToDouble(Double::doubleValue)
+                .mapToDouble(BagItem::getPrice)
                 .sum();
 
         double tax = subtotal * 0.0825;
@@ -401,8 +488,28 @@ public class InventoryService {
     }
 
     public String removeBagItem(Long id) {
+        if (id == null) {
+            throw new IllegalArgumentException("Bag item id is required.");
+        }
+
         if (!bagItemRepository.existsById(id)) {
             throw new RuntimeException("Bag item not found: " + id);
+        }
+
+        bagItemRepository.deleteById(id);
+        return "Item removed from bag.";
+    }
+
+    public String removeBagItem(Long id, String userId, String tenantId, String storeCode) {
+        if (id == null) {
+            throw new IllegalArgumentException("Bag item id is required.");
+        }
+
+        BagItem item = bagItemRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Bag item not found: " + id));
+
+        if (!matchesBagScope(item, userId, tenantId, storeCode)) {
+            throw new SecurityException("You do not have permission to remove this bag item.");
         }
 
         bagItemRepository.deleteById(id);
@@ -414,8 +521,23 @@ public class InventoryService {
         return "Bag cleared.";
     }
 
+    public String clearBag(String userId, String tenantId, String storeCode) {
+        List<BagItem> scopedItems = bagItemRepository.findAll().stream()
+                .filter(item -> matchesBagScope(item, userId, tenantId, storeCode))
+                .collect(Collectors.toList());
+
+        bagItemRepository.deleteAll(scopedItems);
+        return "Bag cleared.";
+    }
+
     public List<TrendDTO> getTrends() {
+        return getTrends(null, null);
+    }
+
+    public List<TrendDTO> getTrends(String retailerKey, String storeCode) {
         Map<String, Long> grouped = trendEventRepository.findAll().stream()
+                .filter(event -> matchesTrendRetailer(event, retailerKey))
+                .filter(event -> matchesTrendStore(event, storeCode))
                 .filter(event -> "SAVE".equalsIgnoreCase(event.getEventType()))
                 .collect(Collectors.groupingBy(
                         e -> safe(e.getRetailerName()) + "||" + safe(e.getItemName()),
@@ -427,6 +549,7 @@ public class InventoryService {
                     String[] parts = entry.getKey().split("\\|\\|", 2);
                     String store = parts.length > 0 ? parts[0] : "Retailer";
                     String item = parts.length > 1 ? parts[1] : "Product";
+
                     return new TrendDTO(store, item, entry.getValue().intValue());
                 })
                 .sorted(Comparator.comparingInt(TrendDTO::getCount).reversed())
@@ -435,7 +558,14 @@ public class InventoryService {
     }
 
     public AnalyticsSummaryDTO getAnalyticsSummary() {
-        List<TrendEvent> events = trendEventRepository.findAll();
+        return getAnalyticsSummary(null, null);
+    }
+
+    public AnalyticsSummaryDTO getAnalyticsSummary(String retailerKey, String storeCode) {
+        List<TrendEvent> events = trendEventRepository.findAll().stream()
+                .filter(event -> matchesTrendRetailer(event, retailerKey))
+                .filter(event -> matchesTrendStore(event, storeCode))
+                .collect(Collectors.toList());
 
         long totalScans = events.stream()
                 .filter(e -> "SCAN".equalsIgnoreCase(e.getEventType()))
@@ -445,27 +575,32 @@ public class InventoryService {
                 .filter(e -> "SAVE".equalsIgnoreCase(e.getEventType()))
                 .count();
 
-        double conversionRate = totalScans == 0 ? 0.0 : ((double) totalSaves / totalScans) * 100.0;
+        double conversionRate = totalScans == 0
+                ? 0.0
+                : ((double) totalSaves / totalScans) * 100.0;
 
         String topRetailer = events.stream()
-                .collect(Collectors.groupingBy(TrendEvent::getRetailerName, Collectors.counting()))
+                .collect(Collectors.groupingBy(e -> safe(e.getRetailerName()), Collectors.counting()))
                 .entrySet().stream()
+                .filter(entry -> !entry.getKey().isBlank())
                 .max(Map.Entry.comparingByValue())
                 .map(Map.Entry::getKey)
                 .orElse("N/A");
 
         String topScannedItem = events.stream()
                 .filter(e -> "SCAN".equalsIgnoreCase(e.getEventType()))
-                .collect(Collectors.groupingBy(TrendEvent::getItemName, Collectors.counting()))
+                .collect(Collectors.groupingBy(e -> safe(e.getItemName()), Collectors.counting()))
                 .entrySet().stream()
+                .filter(entry -> !entry.getKey().isBlank())
                 .max(Map.Entry.comparingByValue())
                 .map(Map.Entry::getKey)
                 .orElse("N/A");
 
         String topSavedItem = events.stream()
                 .filter(e -> "SAVE".equalsIgnoreCase(e.getEventType()))
-                .collect(Collectors.groupingBy(TrendEvent::getItemName, Collectors.counting()))
+                .collect(Collectors.groupingBy(e -> safe(e.getItemName()), Collectors.counting()))
                 .entrySet().stream()
+                .filter(entry -> !entry.getKey().isBlank())
                 .max(Map.Entry.comparingByValue())
                 .map(Map.Entry::getKey)
                 .orElse("N/A");
@@ -480,11 +615,18 @@ public class InventoryService {
         );
     }
 
-    public List<ActivityDTO> getRecentActivity(String eventType, String retailer) {
+    public List<ActivityDTO> getRecentActivity(String eventType, String retailerKey, String storeCode) {
+        String safeEventType = safe(eventType);
+
         return trendEventRepository.findAll().stream()
-                .sorted(Comparator.comparing(TrendEvent::getCreatedAt).reversed())
-                .filter(e -> "ALL".equalsIgnoreCase(eventType) || safe(e.getEventType()).equalsIgnoreCase(eventType))
-                .filter(e -> "ALL".equalsIgnoreCase(retailer) || safe(e.getRetailerName()).equalsIgnoreCase(retailer))
+                .filter(event -> matchesTrendRetailer(event, retailerKey))
+                .filter(event -> matchesTrendStore(event, storeCode))
+                .sorted(Comparator.comparing(
+                        TrendEvent::getCreatedAt,
+                        Comparator.nullsLast(Comparator.naturalOrder())
+                ).reversed())
+                .filter(e -> "ALL".equalsIgnoreCase(safeEventType)
+                        || safe(e.getEventType()).equalsIgnoreCase(safeEventType))
                 .limit(20)
                 .map(event -> new ActivityDTO(
                         safe(event.getEventType()),
@@ -497,25 +639,37 @@ public class InventoryService {
     }
 
     public List<RetailerStatsDTO> getRetailerStats() {
-        List<TrendEvent> events = trendEventRepository.findAll();
+        return getRetailerStats(null, null);
+    }
+
+    public List<RetailerStatsDTO> getRetailerStats(String retailerKey, String storeCode) {
+        List<TrendEvent> events = trendEventRepository.findAll().stream()
+                .filter(event -> matchesTrendRetailer(event, retailerKey))
+                .filter(event -> matchesTrendStore(event, storeCode))
+                .collect(Collectors.toList());
 
         Map<String, Long> scansByRetailer = events.stream()
                 .filter(e -> "SCAN".equalsIgnoreCase(e.getEventType()))
-                .collect(Collectors.groupingBy(TrendEvent::getRetailerName, Collectors.counting()));
+                .collect(Collectors.groupingBy(e -> safe(e.getRetailerName()), Collectors.counting()));
 
         Map<String, Long> savesByRetailer = events.stream()
                 .filter(e -> "SAVE".equalsIgnoreCase(e.getEventType()))
-                .collect(Collectors.groupingBy(TrendEvent::getRetailerName, Collectors.counting()));
+                .collect(Collectors.groupingBy(e -> safe(e.getRetailerName()), Collectors.counting()));
 
         Set<String> retailers = new HashSet<>();
         retailers.addAll(scansByRetailer.keySet());
         retailers.addAll(savesByRetailer.keySet());
 
         return retailers.stream()
+                .filter(retailerName -> !safe(retailerName).isBlank())
                 .map(retailerName -> {
                     long scans = scansByRetailer.getOrDefault(retailerName, 0L);
                     long saves = savesByRetailer.getOrDefault(retailerName, 0L);
-                    double conversion = scans == 0 ? 0.0 : ((double) saves / scans) * 100.0;
+
+                    double conversion = scans == 0
+                            ? 0.0
+                            : ((double) saves / scans) * 100.0;
+
                     return new RetailerStatsDTO(retailerName, scans, saves, conversion);
                 })
                 .sorted(Comparator.comparingLong(RetailerStatsDTO::getScans).reversed())
@@ -607,12 +761,7 @@ public class InventoryService {
         int safePage = Math.max(page, 0);
         int safeSize = Math.max(1, Math.min(size, 50));
 
-        List<Product> filtered = findMerchantInventoryProducts(
-                retailerKey,
-                storeCode,
-                query,
-                category
-        );
+        List<Product> filtered = findMerchantInventoryProducts(retailerKey, storeCode, query, category);
 
         int totalItems = filtered.size();
         int totalPages = totalItems == 0 ? 1 : (int) Math.ceil((double) totalItems / safeSize);
@@ -633,21 +782,43 @@ public class InventoryService {
         return response;
     }
 
+    public String cleanupUploadedTestProducts(String retailerKey, String storeCode) {
+        String safeRetailerKey = normalizeRequired(retailerKey, "Retailer key is required.");
+        String safeStoreCode = normalizeRequired(storeCode, "Store code is required.");
+
+        List<Product> products = productRepository.findByRetailerKeyAndStoreCode(
+                safeRetailerKey,
+                safeStoreCode
+        );
+
+        List<Product> productsToDelete = products.stream()
+                .filter(product -> {
+                    String rfid = safe(product.getRfid()).toUpperCase();
+
+                    return rfid.startsWith("RFID-A-")
+                            || rfid.startsWith("RFID-B-");
+                })
+                .collect(Collectors.toList());
+
+        if (productsToDelete.isEmpty()) {
+            return "No uploaded test products found for store " + safeStoreCode + ".";
+        }
+
+        productRepository.deleteAll(productsToDelete);
+
+        return "Deleted " + productsToDelete.size()
+                + " uploaded test product(s) for store " + safeStoreCode + ".";
+    }
+
     public String exportMerchantInventoryCsv(
             String retailerKey,
             String storeCode,
             String query,
             String category
     ) {
-        List<Product> products = findMerchantInventoryProducts(
-                retailerKey,
-                storeCode,
-                query,
-                category
-        );
+        List<Product> products = findMerchantInventoryProducts(retailerKey, storeCode, query, category);
 
         StringBuilder csv = new StringBuilder();
-
         csv.append("rfid,item_name,brand,category,color,price,image_url,stock_quantity,retailer_key,retailer_name,store_code,store_name,active,available,low_stock,out_of_stock,reorder_threshold,suggested_reorder_quantity,inventory_alert\n");
 
         for (Product product : products) {
@@ -667,12 +838,7 @@ public class InventoryService {
     ) {
         int safeThreshold = threshold == null ? DEFAULT_REORDER_THRESHOLD : Math.max(0, threshold);
 
-        List<Product> products = findMerchantInventoryProducts(
-                retailerKey,
-                storeCode,
-                query,
-                category
-        ).stream()
+        List<Product> products = findMerchantInventoryProducts(retailerKey, storeCode, query, category).stream()
                 .filter(product -> {
                     int stockQuantity = product.getStockQuantity() == null ? 0 : product.getStockQuantity();
                     return stockQuantity <= safeThreshold;
@@ -684,7 +850,6 @@ public class InventoryService {
                 .collect(Collectors.toList());
 
         StringBuilder csv = new StringBuilder();
-
         csv.append("rfid,item_name,brand,category,color,price,image_url,stock_quantity,retailer_key,retailer_name,store_code,store_name,active,available,low_stock_threshold\n");
 
         for (Product product : products) {
@@ -716,15 +881,9 @@ public class InventoryService {
             String query,
             String category
     ) {
-        List<Product> products = findMerchantInventoryProducts(
-                retailerKey,
-                storeCode,
-                query,
-                category
-        );
+        List<Product> products = findMerchantInventoryProducts(retailerKey, storeCode, query, category);
 
         StringBuilder csv = new StringBuilder();
-
         csv.append("rfid,item_name,brand,category,color,price,image_url,stock_quantity,retailer_key,retailer_name,store_code,store_name,active,available,reorder_threshold,suggested_reorder_quantity,inventory_alert\n");
 
         for (Product product : products) {
@@ -765,18 +924,15 @@ public class InventoryService {
             String query,
             String category
     ) {
-        String safeRetailerKey = retailerKey == null ? "" : retailerKey.trim();
-        String safeStoreCode = storeCode == null ? "" : storeCode.trim();
-        String safeQuery = query == null ? "" : query.trim().toLowerCase();
-        String safeCategory = category == null ? "" : category.trim().toLowerCase();
+        String safeRetailerKey = safe(retailerKey);
+        String safeStoreCode = safe(storeCode);
+        String safeQuery = safeLower(query);
+        String safeCategory = safeLower(category);
 
         List<Product> baseProducts;
 
         if (!safeRetailerKey.isBlank() && !safeStoreCode.isBlank()) {
-            baseProducts = productRepository.findByRetailerKeyAndStoreCode(
-                    safeRetailerKey,
-                    safeStoreCode
-            );
+            baseProducts = productRepository.findByRetailerKeyAndStoreCode(safeRetailerKey, safeStoreCode);
         } else if (!safeRetailerKey.isBlank()) {
             baseProducts = productRepository.findByRetailerKey(safeRetailerKey);
         } else if (!safeStoreCode.isBlank()) {
@@ -811,29 +967,15 @@ public class InventoryService {
             String retailerKey,
             String storeCode
     ) {
-        Product product = productRepository.findById(rfid)
+        Product product = productRepository.findById(normalizeRequired(rfid, "RFID is required."))
                 .orElseThrow(() -> new RuntimeException("Inventory item not found for RFID: " + rfid));
 
-        if (retailerKey != null && !retailerKey.isBlank()) {
-            String expectedRetailerKey = safe(retailerKey);
-            String actualRetailerKey = safe(product.getRetailerKey());
-
-            if (!actualRetailerKey.isBlank()) {
-                if (!actualRetailerKey.equalsIgnoreCase(expectedRetailerKey)) {
-                    throw new IllegalArgumentException("RFID does not belong to the selected retailer.");
-                }
-            } else {
-                String expectedRetailerName = mapRetailerKeyToName(expectedRetailerKey);
-                if (!safe(product.getRetailerName()).equalsIgnoreCase(expectedRetailerName)) {
-                    throw new IllegalArgumentException("RFID does not belong to the selected retailer.");
-                }
-            }
+        if (!matchesRetailerSelection(product, retailerKey)) {
+            throw new IllegalArgumentException("RFID does not belong to the selected retailer.");
         }
 
-        if (storeCode != null && !storeCode.isBlank()) {
-            if (!safe(product.getStoreCode()).equalsIgnoreCase(safe(storeCode))) {
-                throw new IllegalArgumentException("RFID does not belong to the selected store.");
-            }
+        if (!matchesStoreSelection(product, storeCode)) {
+            throw new IllegalArgumentException("RFID does not belong to the selected store.");
         }
 
         return product;
@@ -850,6 +992,7 @@ public class InventoryService {
         int suggestedReorderQuantity = Math.max(0, idealStockLevel - stockQuantity);
 
         String inventoryAlert;
+
         if (outOfStock) {
             inventoryAlert = "Out of stock — reorder immediately.";
         } else if (lowStock) {
@@ -873,7 +1016,6 @@ public class InventoryService {
         dto.setStoreCode(safe(product.getStoreCode()));
         dto.setAvailable(Boolean.TRUE.equals(product.getAvailable()));
         dto.setActive(Boolean.TRUE.equals(product.getActive()));
-
         dto.setLowStock(lowStock);
         dto.setOutOfStock(outOfStock);
         dto.setReorderThreshold(reorderThreshold);
@@ -916,12 +1058,10 @@ public class InventoryService {
     }
 
     private Product loadScannedProductForContext(String retailerKey, String storeCode, String rfid) {
-        if (rfid == null || rfid.isBlank()) {
-            throw new IllegalArgumentException("RFID is required");
-        }
+        String safeRfid = normalizeRequired(rfid, "RFID is required");
 
-        Product product = productRepository.findById(rfid)
-                .orElseThrow(() -> new RuntimeException("RFID not found: " + rfid));
+        Product product = productRepository.findById(safeRfid)
+                .orElseThrow(() -> new RuntimeException("RFID not found: " + safeRfid));
 
         if (!matchesRetailerSelection(product, retailerKey)) {
             throw new IllegalArgumentException("RFID does not belong to selected retailer");
@@ -950,12 +1090,22 @@ public class InventoryService {
         scanResult.setCategory(safe(scannedProduct.getCategory()));
         scanResult.setColor(safeColor(scannedProduct));
         scanResult.setRetailer(safe(scannedProduct.getRetailerName()));
+        scanResult.setRetailerKey(safe(scannedProduct.getRetailerKey()));
+        scanResult.setStoreCode(safe(scannedProduct.getStoreCode()));
+        scanResult.setStoreName(safe(scannedProduct.getStoreName()));
         scanResult.setPrice(safePrice(scannedProduct.getPrice()));
         scanResult.setMatchScore(calculateMainMatchScore(scannedProduct, vibe));
         scanResult.setImageUrl(safeImage(scannedProduct.getImageUrl()));
-        scanResult.setStylingAdvice(aiStylistService.generateAdvice(scannedProduct, vibe));
+
+        try {
+            scanResult.setStylingAdvice(aiStylistService.generateAdvice(scannedProduct, vibe));
+        } catch (RuntimeException e) {
+            scanResult.setStylingAdvice("This item is a strong styling anchor for the selected vibe.");
+        }
+
         scanResult.setWhyItWorks(generateWhyItWorks(scannedProduct, vibe));
         scanResult.setSuggestions(suggestions);
+
         return scanResult;
     }
 
@@ -973,14 +1123,6 @@ public class InventoryService {
                     categoryValue,
                     0
             );
-
-            if (rawResults.isEmpty()) {
-                rawResults = productRepository.findByRetailerKeyAndCategoryIgnoreCaseAndActiveTrueAndAvailableTrueAndStockQuantityGreaterThan(
-                        retailerKey,
-                        categoryValue,
-                        0
-                );
-            }
         } else if (!retailerKey.isBlank()) {
             rawResults = productRepository.findByRetailerKeyAndCategoryIgnoreCaseAndActiveTrueAndAvailableTrueAndStockQuantityGreaterThan(
                     retailerKey,
@@ -1000,12 +1142,10 @@ public class InventoryService {
             );
         }
 
-        if (rawResults.isEmpty()) {
-            return List.of();
-        }
-
         return rawResults.stream()
                 .filter(this::isProductAvailableForStyling)
+                .filter(product -> matchesRetailerSelection(product, retailerKey))
+                .filter(product -> matchesStoreSelection(product, storeCode))
                 .collect(Collectors.toList());
     }
 
@@ -1017,6 +1157,7 @@ public class InventoryService {
 
         for (String category : targetCategories) {
             List<Product> products = findAvailableProductsForCategory(scannedProduct, category);
+
             for (Product product : products) {
                 deduped.putIfAbsent(safe(product.getRfid()), product);
             }
@@ -1031,7 +1172,7 @@ public class InventoryService {
             case "bottoms" -> "Bottoms";
             case "shoes" -> "Shoes";
             case "outerwear" -> "Outerwear";
-            default -> normalizedCategory;
+            default -> safe(normalizedCategory);
         };
     }
 
@@ -1072,6 +1213,7 @@ public class InventoryService {
             }
 
             List<Product> candidates = groupedByCategory.getOrDefault(category, List.of());
+
             if (candidates.isEmpty()) {
                 continue;
             }
@@ -1142,6 +1284,7 @@ public class InventoryService {
             }
 
             List<Product> candidates = groupedByCategory.getOrDefault(category, List.of());
+
             if (candidates.isEmpty()) {
                 continue;
             }
@@ -1194,7 +1337,7 @@ public class InventoryService {
         }
 
         if (!safe(candidate.getRetailerName()).equalsIgnoreCase(safe(scannedProduct.getRetailerName()))) {
-            score += 10;
+            score += demoScanMode ? 10 : 0;
         }
 
         if (safe(candidate.getStoreCode()).equalsIgnoreCase(safe(scannedProduct.getStoreCode()))
@@ -1257,6 +1400,7 @@ public class InventoryService {
         }
 
         String rfid = safe(item.getRfid());
+
         if (!rfid.isBlank()) {
             usedRfids.add(rfid);
         }
@@ -1296,18 +1440,23 @@ public class InventoryService {
                 .orElse(null);
     }
 
-    private Product findProductIfValid(String rfid, String expectedCategory, String scannedRfid) {
+    private Product findProductIfValidForContext(
+            String rfid,
+            String expectedCategory,
+            String scannedRfid,
+            Product scannedProduct
+    ) {
         if (rfid == null || rfid.isBlank()) {
             return null;
         }
 
-        Product product = productRepository.findById(rfid).orElse(null);
+        Product product = productRepository.findById(rfid.trim()).orElse(null);
 
         if (product == null) {
             return null;
         }
 
-        if (safe(product.getRfid()).equalsIgnoreCase(scannedRfid)) {
+        if (safe(product.getRfid()).equalsIgnoreCase(safe(scannedRfid))) {
             return null;
         }
 
@@ -1316,6 +1465,14 @@ public class InventoryService {
         }
 
         if (!normalizeCategory(product.getCategory()).equals(expectedCategory)) {
+            return null;
+        }
+
+        if (!matchesRetailerSelection(product, scannedProduct.getRetailerKey())) {
+            return null;
+        }
+
+        if (!matchesStoreSelection(product, scannedProduct.getStoreCode())) {
             return null;
         }
 
@@ -1376,7 +1533,7 @@ public class InventoryService {
             score += 8;
         }
 
-        if ("casual".equals(vibeLower) && containsAny(candidateName, "shirt", "jeans", "sneaker", "hoodie", "coat", "trouser")) {
+        if ("casual".equals(vibeLower) && containsAny(candidateName, "shirt", "jeans", "sneaker", "hoodie", "coat", "trouser", "tee")) {
             score += 8;
         }
 
@@ -1388,7 +1545,7 @@ public class InventoryService {
             score += 8;
         }
 
-        if ("luxury".equals(vibeLower) && containsAny(candidateName, "tailored", "leather", "premium", "coat", "loafer")) {
+        if ("luxury".equals(vibeLower) && containsAny(candidateName, "tailored", "leather", "premium", "coat", "loafer", "cashmere")) {
             score += 8;
         }
 
@@ -1424,23 +1581,23 @@ public class InventoryService {
         String name = safeLower(candidate.getItemName());
         String vibeLower = safeLower(vibe);
 
-        if ("casual".equals(vibeLower) && containsAny(name, "shirt", "jeans", "sneaker", "hoodie", "coat", "trouser")) {
+        if ("casual".equals(vibeLower) && containsAny(name, "shirt", "jeans", "sneaker", "hoodie", "coat", "trouser", "tee")) {
             score += 10;
         }
 
-        if ("formal".equals(vibeLower) && containsAny(name, "blazer", "shirt", "trouser", "loafer", "dress")) {
+        if ("formal".equals(vibeLower) && containsAny(name, "blazer", "shirt", "trouser", "loafer", "dress", "coat")) {
             score += 10;
         }
 
-        if ("date night".equals(vibeLower) && containsAny(name, "boot", "jacket", "coat", "heel", "dress")) {
+        if ("date night".equals(vibeLower) && containsAny(name, "boot", "jacket", "coat", "heel", "dress", "satin")) {
             score += 10;
         }
 
-        if ("streetwear".equals(vibeLower) && containsAny(name, "hoodie", "cargo", "sneaker", "oversized")) {
+        if ("streetwear".equals(vibeLower) && containsAny(name, "hoodie", "cargo", "sneaker", "oversized", "jacket")) {
             score += 10;
         }
 
-        if ("luxury".equals(vibeLower) && containsAny(name, "leather", "tailored", "premium", "loafer", "coat")) {
+        if ("luxury".equals(vibeLower) && containsAny(name, "leather", "tailored", "premium", "loafer", "coat", "cashmere")) {
             score += 10;
         }
 
@@ -1454,12 +1611,17 @@ public class InventoryService {
         String candidateColor = safeLower(safeColor(candidate));
         String vibeLower = safeLower(vibe);
 
+        if (safe(candidate.getStoreCode()).equalsIgnoreCase(safe(scannedProduct.getStoreCode()))
+                && !safe(candidate.getStoreCode()).isBlank()) {
+            return "This piece is available in the same store context and fits the overall styling direction.";
+        }
+
         if ("outerwear".equals(scannedCategory) && "tops".equals(candidateCategory)) {
             return "This top softens the outer layer and helps balance the overall silhouette.";
         }
 
         if ("outerwear".equals(scannedCategory) && "bottoms".equals(candidateCategory)) {
-            return "These bottoms ground the statement outerwear and keep the look casual and wearable.";
+            return "These bottoms ground the statement outerwear and keep the look wearable.";
         }
 
         if ("tops".equals(candidateCategory) && "casual".equals(vibeLower)) {
@@ -1476,11 +1638,6 @@ public class InventoryService {
 
         if ("shoes".equals(candidateCategory)) {
             return "These shoes reinforce the outfit direction and help complete the full look.";
-        }
-
-        if (safe(candidate.getStoreCode()).equalsIgnoreCase(safe(scannedProduct.getStoreCode()))
-                && !safe(candidate.getStoreCode()).isBlank()) {
-            return "This piece is available in the same store context and fits the overall styling direction.";
         }
 
         if (isNeutral(scannedColor) || isNeutral(candidateColor)) {
@@ -1513,7 +1670,7 @@ public class InventoryService {
             score += 4;
         }
 
-        if ("casual".equals(vibeLower) && containsAny(name, "hoodie", "jean", "sneaker", "tee", "coat", "trouser")) {
+        if ("casual".equals(vibeLower) && containsAny(name, "hoodie", "jean", "sneaker", "tee", "coat", "trouser", "shirt")) {
             score += 4;
         }
 
@@ -1525,7 +1682,7 @@ public class InventoryService {
             score += 4;
         }
 
-        if ("luxury".equals(vibeLower) && containsAny(name, "coat", "tailored", "premium", "leather")) {
+        if ("luxury".equals(vibeLower) && containsAny(name, "coat", "tailored", "premium", "leather", "cashmere")) {
             score += 4;
         }
 
@@ -1555,15 +1712,15 @@ public class InventoryService {
             score += 18;
         }
 
-        if (!candidateRetailer.equals(scannedRetailer)) {
+        if (demoScanMode && !candidateRetailer.equals(scannedRetailer)) {
             score += 20;
         } else {
-            score += 5;
+            score += 8;
         }
 
         if (safe(candidate.getStoreCode()).equalsIgnoreCase(safe(scannedProduct.getStoreCode()))
                 && !safe(candidate.getStoreCode()).isBlank()) {
-            score += 8;
+            score += 12;
         }
 
         double scannedPrice = safePrice(scannedProduct.getPrice());
@@ -1587,7 +1744,7 @@ public class InventoryService {
             score += 12;
         }
 
-        if ("date night".equals(vibeLower) && containsAny(candidateName, "boots", "jacket", "coat", "fitted", "heel", "sleek", "dress")) {
+        if ("date night".equals(vibeLower) && containsAny(candidateName, "boots", "jacket", "coat", "fitted", "heel", "sleek", "dress", "satin")) {
             score += 12;
         }
 
@@ -1595,7 +1752,7 @@ public class InventoryService {
             score += 12;
         }
 
-        if ("luxury".equals(vibeLower) && containsAny(candidateName, "coat", "leather", "tailored", "premium", "heel", "loafer")) {
+        if ("luxury".equals(vibeLower) && containsAny(candidateName, "coat", "leather", "tailored", "premium", "heel", "loafer", "cashmere")) {
             score += 12;
         }
 
@@ -1666,10 +1823,10 @@ public class InventoryService {
         String normalized = safeLower(swapCategory);
 
         return switch (normalized) {
-            case "top", "tops", "shirt", "shirts", "tee", "t-shirt", "hoodie" -> "tops";
-            case "bottom", "bottoms", "pants", "trousers", "jeans", "cargo" -> "bottoms";
-            case "shoe", "shoes", "sneaker", "sneakers", "boot", "boots" -> "shoes";
-            case "outerwear", "coat", "jacket", "blazer" -> "outerwear";
+            case "top", "tops", "shirt", "shirts", "tee", "t-shirt", "hoodie", "sweater", "knit", "blouse" -> "tops";
+            case "bottom", "bottoms", "pants", "trousers", "jeans", "cargo", "shorts", "skirt" -> "bottoms";
+            case "shoe", "shoes", "sneaker", "sneakers", "boot", "boots", "loafer", "loafers", "heel", "heels", "sandal", "sandals" -> "shoes";
+            case "outerwear", "coat", "jacket", "blazer", "parka", "cardigan", "trench" -> "outerwear";
             default -> throw new IllegalArgumentException("Unsupported swap category: " + swapCategory);
         };
     }
@@ -1683,6 +1840,48 @@ public class InventoryService {
                 + ", " + (category.isBlank() ? "silhouette" : category.toLowerCase())
                 + ", and " + (vibeName.isBlank() ? "overall styling direction" : vibeName.toLowerCase() + " styling direction")
                 + " make this piece easy to build around across multiple outfit combinations.";
+    }
+
+    private boolean matchesBagScope(
+            BagItem item,
+            String userId,
+            String tenantId,
+            String storeCode
+    ) {
+        if (item == null) {
+            return false;
+        }
+
+        String safeUserId = safe(userId);
+        String safeTenantId = safe(tenantId);
+        String safeStoreCode = safe(storeCode);
+
+        boolean userMatches = safeUserId.isBlank()
+                || safe(item.getUserId()).equalsIgnoreCase(safeUserId);
+
+        boolean tenantMatches = safeTenantId.isBlank()
+                || safe(item.getTenantId()).equalsIgnoreCase(safeTenantId);
+
+        boolean storeMatches = safeStoreCode.isBlank()
+                || safe(item.getStoreCode()).equalsIgnoreCase(safeStoreCode);
+
+        return userMatches && tenantMatches && storeMatches;
+    }
+
+    private boolean matchesTrendRetailer(TrendEvent event, String retailerKey) {
+        if (retailerKey == null || retailerKey.isBlank() || "ALL".equalsIgnoreCase(retailerKey)) {
+            return true;
+        }
+
+        return safe(event.getRetailerKey()).equalsIgnoreCase(safe(retailerKey));
+    }
+
+    private boolean matchesTrendStore(TrendEvent event, String storeCode) {
+        if (storeCode == null || storeCode.isBlank() || "ALL".equalsIgnoreCase(storeCode)) {
+            return true;
+        }
+
+        return safe(event.getStoreCode()).equalsIgnoreCase(safe(storeCode));
     }
 
     private String csvValue(String value) {
@@ -1726,8 +1925,23 @@ public class InventoryService {
     }
 
     private boolean isNeutral(String color) {
-        return Set.of("black", "white", "grey", "gray", "charcoal", "beige", "cream", "brown", "navy", "neutral")
-                .contains(safeLower(color));
+        return Set.of(
+                "black",
+                "white",
+                "grey",
+                "gray",
+                "charcoal",
+                "beige",
+                "cream",
+                "brown",
+                "navy",
+                "neutral",
+                "camel",
+                "khaki",
+                "tan",
+                "stone",
+                "olive"
+        ).contains(safeLower(color));
     }
 
     private boolean isProductAvailableForStyling(Product product) {
@@ -1765,6 +1979,16 @@ public class InventoryService {
         return safe(product.getStoreCode()).equalsIgnoreCase(safe(storeCode));
     }
 
+    private String normalizeRequired(String value, String message) {
+        String normalized = safe(value);
+
+        if (normalized.isBlank()) {
+            throw new IllegalArgumentException(message);
+        }
+
+        return normalized;
+    }
+
     private String safeLower(String value) {
         return value == null ? "" : value.trim().toLowerCase();
     }
@@ -1773,10 +1997,10 @@ public class InventoryService {
         String normalized = safeLower(category);
 
         return switch (normalized) {
-            case "top", "tops", "shirt", "shirts", "tee", "t-shirt", "hoodie" -> "tops";
-            case "bottom", "bottoms", "pants", "trousers", "jeans", "cargo" -> "bottoms";
-            case "shoe", "shoes", "sneaker", "sneakers", "boot", "boots" -> "shoes";
-            case "outerwear", "coat", "jacket", "blazer" -> "outerwear";
+            case "top", "tops", "shirt", "shirts", "tee", "t-shirt", "hoodie", "sweater", "knit", "blouse" -> "tops";
+            case "bottom", "bottoms", "pants", "trousers", "jeans", "cargo", "shorts", "skirt" -> "bottoms";
+            case "shoe", "shoes", "sneaker", "sneakers", "boot", "boots", "loafer", "loafers", "heel", "heels", "sandal", "sandals" -> "shoes";
+            case "outerwear", "coat", "jacket", "blazer", "parka", "cardigan", "trench" -> "outerwear";
             default -> normalized;
         };
     }
@@ -1818,12 +2042,19 @@ public class InventoryService {
     }
 
     private String mapRetailerKeyToName(String retailerKey) {
-        return switch (retailerKey.toUpperCase()) {
+        if (retailerKey == null || retailerKey.isBlank()) {
+            return "";
+        }
+
+        return switch (retailerKey.trim().toUpperCase()) {
             case "MACY001" -> "Macy's";
             case "ZARA001" -> "Zara";
             case "NORD001" -> "Nordstrom";
             case "NIKE001" -> "Nike";
-            default -> throw new IllegalArgumentException("Unknown retailer key: " + retailerKey);
+            case "WALMART001" -> "Walmart";
+            case "TARGET001" -> "Target";
+            case "MCS001" -> "Universal Stylist App";
+            default -> retailerKey.trim();
         };
     }
 
@@ -1832,6 +2063,8 @@ public class InventoryService {
         event.setEventType(eventType);
         event.setRetailerName(product.getRetailerName());
         event.setItemName(product.getItemName());
+        event.setRetailerKey(product.getRetailerKey());
+        event.setStoreCode(product.getStoreCode());
         event.setCreatedAt(LocalDateTime.now());
 
         trendEventRepository.save(event);

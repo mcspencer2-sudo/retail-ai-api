@@ -1,0 +1,2337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Universal Stylist | Merchant Inventory</title>
+  <link rel="icon" href="data:," />
+
+  <style>
+    :root {
+      --bg: #eef4ff;
+      --panel: rgba(255, 255, 255, 0.72);
+      --line: rgba(15, 23, 42, 0.1);
+      --line-strong: rgba(15, 23, 42, 0.16);
+      --text: #07111f;
+      --muted: rgba(51, 65, 85, 0.72);
+      --soft: rgba(15, 23, 42, 0.84);
+      --faint: rgba(100, 116, 139, 0.72);
+      --blue: #0071e3;
+      --blue-dark: #0058b0;
+      --green: #22c55e;
+      --yellow: #f59e0b;
+      --red: #ef4444;
+      --purple: #8b5cf6;
+      --shadow: 0 34px 90px rgba(15, 23, 42, 0.14);
+      --shadow-glow: 0 0 90px rgba(0, 113, 227, 0.12);
+      --radius-xl: 42px;
+      --radius-lg: 32px;
+      --radius-md: 24px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      min-height: 100%;
+      scroll-behavior: smooth;
+    }
+
+    body {
+      min-height: 100%;
+      margin: 0;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 12% 8%, rgba(0, 113, 227, 0.16), transparent 28%),
+        radial-gradient(circle at 88% 8%, rgba(168, 85, 247, 0.13), transparent 28%),
+        radial-gradient(circle at 50% 100%, rgba(34, 197, 94, 0.07), transparent 32%),
+        linear-gradient(180deg, #f8fbff 0%, #eef4ff 48%, #e8eef8 100%);
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background:
+        linear-gradient(rgba(15, 23, 42, 0.028) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(15, 23, 42, 0.024) 1px, transparent 1px);
+      background-size: 48px 48px;
+      mask-image: radial-gradient(circle at 50% 18%, black, transparent 72%);
+      opacity: 0.36;
+      z-index: 0;
+    }
+
+    body::after {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background:
+        radial-gradient(circle at 50% 0%, rgba(255, 255, 255, 0.72), transparent 38%),
+        linear-gradient(180deg, rgba(255, 255, 255, 0.28), transparent 36%);
+      z-index: 0;
+    }
+
+    button,
+    input,
+    select,
+    textarea {
+      font: inherit;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    @keyframes pulse {
+      0% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.36);
+      }
+
+      70% {
+        transform: scale(1.08);
+        box-shadow: 0 0 0 16px rgba(34, 197, 94, 0);
+      }
+
+      100% {
+        transform: scale(1);
+      }
+    }
+
+    @keyframes reveal {
+      from {
+        opacity: 0;
+        transform: translateY(18px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes sweep {
+      from {
+        transform: translateX(-120%);
+      }
+
+      to {
+        transform: translateX(120%);
+      }
+    }
+
+    @keyframes shimmer {
+      0% {
+        background-position: -200% 0;
+      }
+
+      100% {
+        background-position: 200% 0;
+      }
+    }
+
+    .merchant-page {
+      position: relative;
+      z-index: 1;
+      width: min(1540px, calc(100% - 56px));
+      margin: 0 auto;
+      padding: 28px 0 80px;
+    }
+
+    .merchant-nav,
+    .hero-panel,
+    .tool-panel,
+    .inventory-panel,
+    .modal-card {
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.88), rgba(255, 255, 255, 0.64)),
+        rgba(255, 255, 255, 0.72);
+      border: 1px solid rgba(255, 255, 255, 0.92);
+      box-shadow:
+        var(--shadow),
+        inset 0 1px 0 rgba(255, 255, 255, 0.96);
+      backdrop-filter: blur(28px);
+      -webkit-backdrop-filter: blur(28px);
+    }
+
+    .merchant-nav {
+      position: sticky;
+      top: 14px;
+      z-index: 20;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      min-height: 76px;
+      margin-bottom: 28px;
+      padding: 12px 16px;
+      border-radius: 34px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 13px;
+      min-width: 0;
+      height: 50px;
+    }
+
+    .brand-mark {
+      width: 50px;
+      height: 50px;
+      min-width: 50px;
+      min-height: 50px;
+      display: grid;
+      place-items: center;
+      border-radius: 19px;
+      background: linear-gradient(180deg, #ffffff, #e8f2ff);
+      color: #07111f;
+      font-weight: 950;
+      line-height: 1;
+      letter-spacing: -0.04em;
+      box-shadow:
+        0 18px 44px rgba(0, 113, 227, 0.12),
+        inset 0 1px 0 rgba(255, 255, 255, 0.95);
+    }
+
+    .brand-copy {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      min-height: 50px;
+    }
+
+    .brand-copy strong {
+      display: block;
+      font-size: 1rem;
+      color: var(--text);
+      line-height: 1.15;
+      letter-spacing: -0.03em;
+    }
+
+    .brand-copy span {
+      display: block;
+      margin-top: 2px;
+      color: var(--muted);
+      font-size: 0.84rem;
+      line-height: 1.15;
+      font-weight: 750;
+    }
+
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .pill,
+    .merchant-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      height: 50px;
+      min-height: 50px;
+      padding: 0 22px;
+      border: 1px solid rgba(15, 23, 42, 0.08);
+      border-radius: 999px;
+      color: var(--soft);
+      background: rgba(255, 255, 255, 0.74);
+      font-size: 0.88rem;
+      font-weight: 900;
+      line-height: 1;
+      white-space: nowrap;
+      box-shadow:
+        0 10px 24px rgba(15, 23, 42, 0.05),
+        inset 0 1px 0 rgba(255, 255, 255, 0.92);
+    }
+
+    .pill {
+      gap: 10px;
+      font-weight: 850;
+    }
+
+    .merchant-btn {
+      color: var(--text);
+      cursor: pointer;
+      transition:
+        transform 0.18s ease,
+        background 0.2s ease,
+        box-shadow 0.2s ease,
+        border-color 0.2s ease;
+    }
+
+    .merchant-btn:hover {
+      transform: translateY(-2px);
+      background: rgba(255, 255, 255, 0.95);
+      border-color: rgba(0, 113, 227, 0.16);
+      box-shadow:
+        0 18px 34px rgba(15, 23, 42, 0.08),
+        inset 0 1px 0 rgba(255, 255, 255, 0.95);
+    }
+
+    .merchant-btn.primary {
+      border: 0;
+      color: #ffffff;
+      background: linear-gradient(180deg, var(--blue), var(--blue-dark));
+      box-shadow:
+        0 18px 45px rgba(0, 113, 227, 0.2),
+        inset 0 1px 0 rgba(255, 255, 255, 0.28);
+    }
+
+    .merchant-btn.success {
+      border: 0;
+      color: #ffffff;
+      background: linear-gradient(135deg, #16a34a, #22c55e);
+      box-shadow: 0 18px 38px rgba(34, 197, 94, 0.18);
+    }
+
+    .merchant-btn.danger {
+      color: #991b1b;
+      background: rgba(254, 226, 226, 0.86);
+      border-color: rgba(239, 68, 68, 0.22);
+    }
+
+    .merchant-btn.soft-blue {
+      color: #075985;
+      background: rgba(224, 242, 254, 0.88);
+      border-color: rgba(14, 165, 233, 0.18);
+    }
+
+    .merchant-btn:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+      background: var(--green);
+      animation: pulse 1.8s infinite;
+      flex: 0 0 auto;
+    }
+
+    .dot.error-dot {
+      background: var(--red);
+      animation: none;
+    }
+
+    .hero-grid {
+      display: grid;
+      grid-template-columns: 1.06fr 0.94fr;
+      gap: 24px;
+      align-items: stretch;
+    }
+
+    .hero-panel,
+    .tool-panel,
+    .inventory-panel {
+      border-radius: var(--radius-xl);
+    }
+
+    .hero-panel {
+      min-height: 520px;
+      padding: 34px;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .hero-panel::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(circle at 18% 8%, rgba(255, 255, 255, 0.9), transparent 32%),
+        radial-gradient(circle at 85% 90%, rgba(0, 113, 227, 0.16), transparent 34%);
+      pointer-events: none;
+    }
+
+    .hero-panel > * {
+      position: relative;
+      z-index: 1;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      width: fit-content;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 15px;
+      border: 1px solid rgba(15, 23, 42, 0.08);
+      border-radius: 999px;
+      color: var(--muted);
+      background: rgba(255, 255, 255, 0.68);
+      font-size: 0.78rem;
+      font-weight: 950;
+      letter-spacing: 0.13em;
+      text-transform: uppercase;
+      box-shadow:
+        0 10px 24px rgba(15, 23, 42, 0.04),
+        inset 0 1px 0 rgba(255, 255, 255, 0.92);
+    }
+
+    .hero-title {
+      margin: 28px 0 20px;
+      max-width: 820px;
+      font-size: clamp(4.2rem, 9vw, 8.4rem);
+      line-height: 0.84;
+      letter-spacing: -0.105em;
+      font-weight: 950;
+      color: var(--text);
+      text-shadow: 0 22px 70px rgba(15, 23, 42, 0.08);
+    }
+
+    .hero-copy {
+      max-width: 680px;
+      margin: 0;
+      color: var(--soft);
+      font-size: clamp(1.08rem, 2vw, 1.36rem);
+      line-height: 1.65;
+      font-weight: 720;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 30px;
+    }
+
+    .stat-card {
+      min-height: 110px;
+      padding: 18px;
+      border: 1px solid rgba(15, 23, 42, 0.08);
+      border-radius: 24px;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.84), rgba(255,255,255,0.58));
+      box-shadow:
+        0 12px 28px rgba(15, 23, 42, 0.05),
+        inset 0 1px 0 rgba(255,255,255,0.92);
+    }
+
+    .stat-card strong {
+      display: block;
+      color: var(--text);
+      font-size: 1.65rem;
+      letter-spacing: -0.055em;
+    }
+
+    .stat-card span {
+      display: block;
+      margin-top: 6px;
+      color: var(--muted);
+      font-size: 0.82rem;
+      font-weight: 760;
+      line-height: 1.35;
+    }
+
+    .tool-panel {
+      min-height: 520px;
+      padding: 30px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .tool-panel::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(circle at 82% 12%, rgba(0, 113, 227, 0.12), transparent 36%),
+        radial-gradient(circle at 14% 94%, rgba(139, 92, 246, 0.08), transparent 30%);
+      pointer-events: none;
+    }
+
+    .tool-panel > * {
+      position: relative;
+      z-index: 1;
+    }
+
+    .panel-label {
+      color: var(--blue);
+      font-size: 0.76rem;
+      font-weight: 950;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+    }
+
+    .tool-title {
+      margin: 0;
+      max-width: 650px;
+      color: var(--text);
+      font-size: clamp(2.8rem, 5vw, 5.1rem);
+      line-height: 0.9;
+      letter-spacing: -0.088em;
+      font-weight: 950;
+    }
+
+    .tool-copy {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.72;
+      font-size: 1rem;
+      font-weight: 700;
+    }
+
+    .action-stack {
+      display: grid;
+      gap: 12px;
+      margin-top: auto;
+    }
+
+    .action-stack .merchant-btn {
+      width: 100%;
+      min-height: 64px;
+      height: 64px;
+      border-radius: 24px;
+    }
+
+    .sync-card {
+      padding: 20px;
+      border-radius: 28px;
+      border: 1px solid rgba(0, 113, 227, 0.12);
+      background:
+        radial-gradient(circle at 20% 12%, rgba(255, 255, 255, 0.96), transparent 34%),
+        linear-gradient(135deg, rgba(239, 247, 255, 0.95), rgba(255, 255, 255, 0.56));
+      box-shadow:
+        0 18px 44px rgba(15, 23, 42, 0.06),
+        inset 0 1px 0 rgba(255, 255, 255, 0.94);
+    }
+
+    .sync-card strong {
+      display: block;
+      font-size: 1.18rem;
+      letter-spacing: -0.04em;
+    }
+
+    .sync-card span {
+      display: block;
+      margin-top: 8px;
+      color: var(--muted);
+      line-height: 1.55;
+      font-weight: 720;
+    }
+
+    .readiness-meter {
+      height: 12px;
+      margin-top: 16px;
+      border-radius: 999px;
+      overflow: hidden;
+      background: rgba(148, 163, 184, 0.2);
+      border: 1px solid rgba(15, 23, 42, 0.06);
+    }
+
+    .readiness-fill {
+      width: 0%;
+      height: 100%;
+      border-radius: 999px;
+      background: linear-gradient(90deg, var(--blue), var(--green));
+      transition: width 0.28s ease;
+    }
+
+    .inventory-panel {
+      margin-top: 24px;
+      padding: 30px;
+      animation: reveal 0.28s ease-out;
+    }
+
+    .inventory-head {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 18px;
+      margin-bottom: 22px;
+    }
+
+    .inventory-head h2 {
+      margin: 0;
+      color: var(--text);
+      font-size: clamp(3.3rem, 6vw, 6.4rem);
+      line-height: 0.84;
+      letter-spacing: -0.09em;
+      font-weight: 950;
+    }
+
+    .inventory-controls {
+      display: grid;
+      grid-template-columns: 1.2fr 0.7fr 0.7fr 0.72fr auto;
+      gap: 10px;
+      margin-bottom: 18px;
+    }
+
+    .merchant-input,
+    .merchant-select,
+    .merchant-textarea {
+      width: 100%;
+      min-height: 56px;
+      padding: 0 16px;
+      border: 1px solid rgba(15, 23, 42, 0.09);
+      border-radius: 18px;
+      outline: none;
+      color: var(--text);
+      background: rgba(255, 255, 255, 0.76);
+      font-weight: 850;
+      box-shadow:
+        0 10px 24px rgba(15, 23, 42, 0.04),
+        inset 0 1px 0 rgba(255,255,255,0.92);
+    }
+
+    .merchant-textarea {
+      min-height: 112px;
+      padding: 15px 16px;
+      resize: vertical;
+      line-height: 1.5;
+    }
+
+    .merchant-select option {
+      color: #020617;
+    }
+
+    .merchant-input::placeholder,
+    .merchant-textarea::placeholder {
+      color: var(--faint);
+    }
+
+    .merchant-input:focus,
+    .merchant-select:focus,
+    .merchant-textarea:focus {
+      border-color: rgba(0, 113, 227, 0.34);
+      background: rgba(255, 255, 255, 0.96);
+      box-shadow:
+        0 0 0 5px rgba(0, 113, 227, 0.08),
+        0 14px 28px rgba(15, 23, 42, 0.06);
+    }
+
+    .table-shell {
+      border: 1px solid rgba(15, 23, 42, 0.08);
+      border-radius: 28px;
+      overflow: hidden;
+      background: rgba(255, 255, 255, 0.62);
+      box-shadow:
+        0 16px 38px rgba(15, 23, 42, 0.06),
+        inset 0 1px 0 rgba(255,255,255,0.92);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    thead {
+      background: rgba(248, 250, 252, 0.82);
+    }
+
+    th,
+    td {
+      padding: 16px;
+      text-align: left;
+      vertical-align: middle;
+      border-bottom: 1px solid rgba(15, 23, 42, 0.07);
+    }
+
+    th {
+      color: var(--faint);
+      font-size: 0.72rem;
+      font-weight: 950;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    td {
+      color: var(--soft);
+      font-size: 0.94rem;
+      font-weight: 780;
+    }
+
+    tbody tr:last-child td {
+      border-bottom: 0;
+    }
+
+    .product-cell {
+      display: flex;
+      align-items: center;
+      gap: 13px;
+      min-width: 270px;
+    }
+
+    .product-thumb {
+      width: 64px;
+      height: 76px;
+      border-radius: 18px;
+      object-fit: contain;
+      padding: 7px;
+      background: linear-gradient(180deg, #ffffff, #f1f5f9);
+      border: 1px solid rgba(15, 23, 42, 0.06);
+    }
+
+    .product-name {
+      color: var(--text);
+      font-size: 1rem;
+      font-weight: 950;
+      line-height: 1.15;
+    }
+
+    .product-sub {
+      margin-top: 5px;
+      color: var(--muted);
+      font-size: 0.84rem;
+      font-weight: 760;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      min-height: 34px;
+      padding: 0 12px;
+      border-radius: 999px;
+      font-size: 0.76rem;
+      font-weight: 950;
+      white-space: nowrap;
+      border: 1px solid transparent;
+    }
+
+    .badge.green {
+      color: #166534;
+      background: rgba(220, 252, 231, 0.88);
+      border-color: rgba(34, 197, 94, 0.18);
+    }
+
+    .badge.yellow {
+      color: #92400e;
+      background: rgba(254, 243, 199, 0.9);
+      border-color: rgba(245, 158, 11, 0.18);
+    }
+
+    .badge.red {
+      color: #991b1b;
+      background: rgba(254, 226, 226, 0.9);
+      border-color: rgba(239, 68, 68, 0.18);
+    }
+
+    .badge.blue {
+      color: #075985;
+      background: rgba(224, 242, 254, 0.9);
+      border-color: rgba(14, 165, 233, 0.18);
+    }
+
+    .badge.gray {
+      color: #475569;
+      background: rgba(241, 245, 249, 0.9);
+      border-color: rgba(100, 116, 139, 0.14);
+    }
+
+    .stock-stepper {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .mini-btn {
+      width: 34px;
+      height: 34px;
+      min-width: 34px;
+      border: 1px solid rgba(15, 23, 42, 0.08);
+      border-radius: 13px;
+      background: rgba(255, 255, 255, 0.78);
+      color: var(--text);
+      font-weight: 950;
+      cursor: pointer;
+      box-shadow:
+        0 8px 18px rgba(15, 23, 42, 0.04),
+        inset 0 1px 0 rgba(255,255,255,0.9);
+    }
+
+    .mini-btn:hover {
+      border-color: rgba(0, 113, 227, 0.22);
+      background: rgba(239, 247, 255, 0.96);
+    }
+
+    .stock-value {
+      min-width: 28px;
+      text-align: center;
+      color: var(--text);
+      font-weight: 950;
+    }
+
+    .row-actions {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .row-actions .merchant-btn {
+      height: 40px;
+      min-height: 40px;
+      padding: 0 13px;
+      font-size: 0.78rem;
+    }
+
+    .empty {
+      padding: 34px;
+      border: 1px dashed var(--line-strong);
+      border-radius: 25px;
+      color: var(--muted);
+      text-align: center;
+      font-weight: 800;
+      background: rgba(255,255,255,0.56);
+    }
+
+    .empty strong {
+      display: block;
+      margin-bottom: 8px;
+      color: var(--text);
+      font-size: 1.12rem;
+      letter-spacing: -0.03em;
+    }
+
+    .loading {
+      display: none;
+      padding: 24px;
+      border: 1px solid rgba(15, 23, 42, 0.08);
+      border-radius: 24px;
+      background: rgba(255, 255, 255, 0.64);
+      overflow: hidden;
+      position: relative;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.92);
+    }
+
+    .loading.show {
+      display: block;
+    }
+
+    .loading.show::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(120deg, transparent, rgba(0, 113, 227, 0.16), transparent);
+      animation: sweep 1.3s linear infinite;
+    }
+
+    .loading-line {
+      height: 14px;
+      border-radius: 999px;
+      margin-bottom: 10px;
+      background: linear-gradient(90deg, rgba(226,232,240,0.78) 25%, rgba(255,255,255,0.95) 50%, rgba(226,232,240,0.78) 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.4s linear infinite;
+    }
+
+    .loading-line.short {
+      width: 36%;
+    }
+
+    .loading-line.medium {
+      width: 62%;
+    }
+
+    .loading-line.long {
+      width: 90%;
+    }
+
+    .toast-shell {
+      position: fixed;
+      right: 20px;
+      bottom: 20px;
+      z-index: 99;
+      display: grid;
+      gap: 10px;
+      width: min(380px, calc(100% - 40px));
+    }
+
+    .toast-card {
+      padding: 15px 16px;
+      border-radius: 19px;
+      color: #ffffff;
+      background: rgba(15, 23, 42, 0.96);
+      border: 1px solid rgba(255,255,255,0.12);
+      box-shadow: 0 24px 54px rgba(15, 23, 42, 0.18);
+      font-weight: 850;
+      animation: reveal 0.18s ease-out;
+    }
+
+    .toast-card.success {
+      background: linear-gradient(135deg, #15803d, #22c55e);
+    }
+
+    .toast-card.error {
+      background: linear-gradient(135deg, #b91c1c, #ef4444);
+    }
+
+    .toast-card.info {
+      background: linear-gradient(135deg, #0f172a, #334155);
+    }
+
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 70;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      background: rgba(15, 23, 42, 0.34);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+    }
+
+    .modal-backdrop.show {
+      display: flex;
+      animation: reveal 0.2s ease-out;
+    }
+
+    .modal-card {
+      width: min(940px, 100%);
+      max-height: min(92vh, 920px);
+      overflow: auto;
+      border-radius: 36px;
+      padding: 26px;
+    }
+
+    .modal-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 18px;
+    }
+
+    .modal-head h3 {
+      margin: 0;
+      color: var(--text);
+      font-size: clamp(2.2rem, 4vw, 4rem);
+      line-height: 0.9;
+      letter-spacing: -0.08em;
+      font-weight: 950;
+    }
+
+    .modal-head p {
+      margin: 10px 0 0;
+      color: var(--muted);
+      line-height: 1.55;
+      font-weight: 720;
+    }
+
+    .form-section {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .field-group {
+      display: grid;
+      gap: 7px;
+    }
+
+    .field-group.full {
+      grid-column: 1 / -1;
+    }
+
+    .field-label {
+      color: var(--faint);
+      font-size: 0.72rem;
+      font-weight: 950;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      padding-left: 4px;
+    }
+
+    .modal-actions {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 18px;
+      flex-wrap: wrap;
+    }
+
+    .modal-actions .merchant-btn {
+      min-width: 150px;
+    }
+
+    @media (max-width: 1180px) {
+      .stats-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .inventory-controls {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    @media (max-width: 1100px) {
+      .hero-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .hero-panel,
+      .tool-panel {
+        min-height: auto;
+      }
+
+      .table-shell {
+        overflow-x: auto;
+      }
+
+      table {
+        min-width: 1120px;
+      }
+    }
+
+    @media (max-width: 760px) {
+      .merchant-page {
+        width: min(100% - 22px, 1480px);
+        padding-top: 12px;
+      }
+
+      .merchant-nav {
+        min-height: auto;
+        align-items: stretch;
+        border-radius: 28px;
+        flex-direction: column;
+      }
+
+      .brand {
+        height: 50px;
+      }
+
+      .nav-actions {
+        width: 100%;
+        display: grid;
+        grid-template-columns: 1fr;
+      }
+
+      .nav-actions .merchant-btn,
+      .nav-actions .pill {
+        width: 100%;
+        height: 54px;
+        min-height: 54px;
+        justify-content: center;
+      }
+
+      .brand-copy span {
+        display: none;
+      }
+
+      .hero-title {
+        font-size: 4.1rem;
+      }
+
+      .tool-title,
+      .inventory-head h2 {
+        font-size: 3.15rem;
+      }
+
+      .stats-grid,
+      .inventory-controls,
+      .form-section {
+        grid-template-columns: 1fr;
+      }
+
+      .inventory-head {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .modal-actions {
+        display: grid;
+        grid-template-columns: 1fr;
+      }
+
+      .modal-actions .merchant-btn {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+
+<body>
+<div class="merchant-page">
+  <nav class="merchant-nav">
+    <a class="brand" href="/landing.html">
+      <div class="brand-mark">US</div>
+      <div class="brand-copy">
+        <strong>Universal Stylist</strong>
+        <span>Merchant Inventory</span>
+      </div>
+    </a>
+
+    <div class="nav-actions">
+      <span class="pill">
+        <span id="liveDot" class="dot"></span>
+        <span id="authStatus">Checking session</span>
+      </span>
+
+      <a class="merchant-btn" href="/merchant-dashboard.html">Dashboard</a>
+      <a class="merchant-btn" href="/merchant-activity.html">Activity</a>
+      <a class="merchant-btn" href="/mirror.html">Smart Mirror</a>
+      <a class="merchant-btn" href="/index.html">Merchant App</a>
+    </div>
+  </nav>
+
+  <section class="hero-grid">
+    <div class="hero-panel">
+      <div>
+        <div class="eyebrow">RFID Inventory • Store Sync • Mirror Ready</div>
+        <h1 class="hero-title">
+          Manage.<br />
+          Tag.<br />
+          Style.
+        </h1>
+        <p class="hero-copy">
+          Control product inventory, assign RFID tags, update stock levels, and prepare every item
+          for the Universal Stylist smart mirror experience.
+        </p>
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat-card">
+          <strong id="totalItemsStat">0</strong>
+          <span>Total inventory items</span>
+        </div>
+
+        <div class="stat-card">
+          <strong id="taggedItemsStat">0</strong>
+          <span>RFID-tagged products</span>
+        </div>
+
+        <div class="stat-card">
+          <strong id="mirrorReadyStat">0</strong>
+          <span>Mirror-ready products</span>
+        </div>
+
+        <div class="stat-card">
+          <strong id="lowStockStat">0</strong>
+          <span>Low or empty stock</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="tool-panel">
+      <div class="panel-label">Inventory Console</div>
+      <h2 class="tool-title">Keep every product mirror-ready.</h2>
+      <p class="tool-copy">
+        Add new products, map RFID tags, filter by retailer and store, and keep inventory accurate
+        before customers scan pieces in the smart mirror.
+      </p>
+
+      <div class="sync-card">
+        <strong>Smart Mirror Readiness</strong>
+        <span id="readinessCopy">
+          Add products or load demo inventory to begin mirror readiness tracking.
+        </span>
+        <div class="readiness-meter" aria-hidden="true">
+          <div id="readinessFill" class="readiness-fill"></div>
+        </div>
+      </div>
+
+      <div class="action-stack">
+        <button id="addProductBtn" class="merchant-btn primary" type="button">Add Product</button>
+        <button id="refreshInventoryBtn" class="merchant-btn" type="button">Refresh Inventory</button>
+        <button id="seedDemoBtn" class="merchant-btn success" type="button">Load Demo Inventory</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="inventory-panel">
+    <div class="inventory-head">
+      <div>
+        <div class="panel-label">Product Catalog</div>
+        <h2>Inventory.</h2>
+      </div>
+
+      <button id="exportBtn" class="merchant-btn" type="button">Export CSV</button>
+    </div>
+
+    <div class="inventory-controls">
+      <input
+              id="searchInput"
+              class="merchant-input"
+              type="search"
+              placeholder="Search by name, brand, RFID, category..."
+      />
+
+      <select id="retailerFilter" class="merchant-select" aria-label="Filter by retailer">
+        <option value="">All Retailers</option>
+      </select>
+
+      <select id="stockFilter" class="merchant-select" aria-label="Filter by stock">
+        <option value="">All Stock</option>
+        <option value="in">In Stock</option>
+        <option value="low">Low Stock</option>
+        <option value="out">Out of Stock</option>
+        <option value="untagged">Missing RFID</option>
+        <option value="ready">Mirror Ready</option>
+      </select>
+
+      <select id="storeFilter" class="merchant-select" aria-label="Filter by store">
+        <option value="">All Stores</option>
+      </select>
+
+      <button id="clearFiltersBtn" class="merchant-btn" type="button">Clear</button>
+    </div>
+
+    <div id="inventoryLoading" class="loading">
+      <div class="loading-line short"></div>
+      <div class="loading-line medium"></div>
+      <div class="loading-line long"></div>
+    </div>
+
+    <div id="inventoryContent" class="table-shell">
+      <table>
+        <thead>
+        <tr>
+          <th>Product</th>
+          <th>RFID</th>
+          <th>Retailer</th>
+          <th>Store</th>
+          <th>Stock</th>
+          <th>Price</th>
+          <th>Mirror</th>
+          <th>Status</th>
+          <th style="text-align: right;">Actions</th>
+        </tr>
+        </thead>
+        <tbody id="inventoryTableBody"></tbody>
+      </table>
+    </div>
+  </section>
+</div>
+
+<div id="productModal" class="modal-backdrop" aria-hidden="true">
+  <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="modal-head">
+      <div>
+        <h3 id="modalTitle">Add product.</h3>
+        <p>Products saved here can be used by your smart mirror scan experience.</p>
+      </div>
+
+      <button id="closeModalBtn" class="merchant-btn" type="button">Close</button>
+    </div>
+
+    <form id="productForm">
+      <input id="productIdInput" type="hidden" />
+
+      <div class="form-section">
+        <div class="field-group">
+          <label class="field-label" for="nameInput">Product Name</label>
+          <input id="nameInput" class="merchant-input" type="text" required placeholder="Classic Denim Jacket" />
+        </div>
+
+        <div class="field-group">
+          <label class="field-label" for="brandInput">Brand</label>
+          <input id="brandInput" class="merchant-input" type="text" required placeholder="Universal Brand" />
+        </div>
+
+        <div class="field-group">
+          <label class="field-label" for="categoryInput">Category</label>
+          <input id="categoryInput" class="merchant-input" type="text" required placeholder="Outerwear" />
+        </div>
+
+        <div class="field-group">
+          <label class="field-label" for="colorInput">Color</label>
+          <input id="colorInput" class="merchant-input" type="text" placeholder="Blue" />
+        </div>
+
+        <div class="field-group">
+          <label class="field-label" for="rfidInputModal">RFID Tag</label>
+          <input id="rfidInputModal" class="merchant-input" type="text" placeholder="RFID1001" />
+        </div>
+
+        <div class="field-group">
+          <label class="field-label" for="priceInput">Price</label>
+          <input id="priceInput" class="merchant-input" type="number" min="0" step="0.01" required placeholder="129.00" />
+        </div>
+
+        <div class="field-group">
+          <label class="field-label" for="stockInput">Stock</label>
+          <input id="stockInput" class="merchant-input" type="number" min="0" step="1" required placeholder="12" />
+        </div>
+
+        <div class="field-group">
+          <label class="field-label" for="retailerInput">Retailer</label>
+          <select id="retailerInput" class="merchant-select" required></select>
+        </div>
+
+        <div class="field-group">
+          <label class="field-label" for="storeInput">Store Code</label>
+          <input id="storeInput" class="merchant-input" type="text" required placeholder="MACY-NYC-01" />
+        </div>
+
+        <div class="field-group">
+          <label class="field-label" for="imageInput">Image URL</label>
+          <input id="imageInput" class="merchant-input" type="url" placeholder="https://..." />
+        </div>
+
+        <div class="field-group full">
+          <label class="field-label" for="notesInput">Styling Notes</label>
+          <textarea id="notesInput" class="merchant-textarea" placeholder="Great for casual layering, streetwear, and transitional weather."></textarea>
+        </div>
+      </div>
+
+      <div class="modal-actions">
+        <button id="deleteProductBtn" class="merchant-btn danger" type="button">Delete</button>
+        <button id="cancelProductBtn" class="merchant-btn" type="button">Cancel</button>
+        <button id="saveProductBtn" class="merchant-btn primary" type="submit">Save Product</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div id="toastShell" class="toast-shell"></div>
+
+<script src="/retailers.js"></script>
+
+<script>
+  const API = {
+    inventory: "/api/v1/inventory",
+    stylist: "/api/v1/macy-stylist"
+  };
+
+  const RETAILER_CONFIG = window.UniversalStylistRetailers;
+  if (!RETAILER_CONFIG) {
+    throw new Error("retailers.js did not load. Check that /retailers.js exists and is linked correctly.");
+  }
+  const RETAILER_LABELS = RETAILER_CONFIG.getRetailerLabels();
+  const STORE_OPTIONS = RETAILER_CONFIG.getStoreOptions();
+
+  const DEMO_ITEMS = [
+    {
+      id: "demo-macy-1",
+      name: "Oxford Shirt",
+      brand: "Club Room",
+      category: "Tops",
+      color: "Blue",
+      rfid: "RFID1001",
+      price: 80,
+      stock: 14,
+      retailerKey: "MACY001",
+      retailerName: "Macy's",
+      storeCode: "MACY-NYC-01",
+      imageUrl: "https://placehold.co/500x650/eef2ff/111827?text=Oxford+Shirt",
+      notes: "Classic button-down that works for casual, formal, and smart office looks."
+    },
+    {
+      id: "demo-zara-1",
+      name: "Cropped Poplin Shirt",
+      brand: "Zara",
+      category: "Tops",
+      color: "White",
+      rfid: "RFID2001",
+      price: 49.9,
+      stock: 7,
+      retailerKey: "ZARA001",
+      retailerName: "Zara",
+      storeCode: "ZARA-SOHO-01",
+      imageUrl: "https://placehold.co/500x650/f8fafc/111827?text=Poplin+Shirt",
+      notes: "Easy everyday anchor for relaxed trousers, denim, and clean sneakers."
+    },
+    {
+      id: "demo-nike-1",
+      name: "Dri-FIT Tee",
+      brand: "Nike",
+      category: "Tops",
+      color: "Black",
+      rfid: "RFID3001",
+      price: 35,
+      stock: 3,
+      retailerKey: "NIKE001",
+      retailerName: "Nike",
+      storeCode: "NIKE-NYC-01",
+      imageUrl: "https://placehold.co/500x650/f1f5f9/111827?text=Dri-FIT+Tee",
+      notes: "Performance casual base layer that pairs well with joggers and sneakers."
+    },
+    {
+      id: "demo-nord-1",
+      name: "Cashmere Crewneck",
+      brand: "Theory",
+      category: "Tops",
+      color: "Camel",
+      rfid: "RFID4001",
+      price: 185,
+      stock: 6,
+      retailerKey: "NORD001",
+      retailerName: "Nordstrom",
+      storeCode: "NORD-NYC-01",
+      imageUrl: "https://placehold.co/500x650/e2e8f0/111827?text=Cashmere+Crewneck",
+      notes: "Premium neutral knit that supports polished casual and luxury looks."
+    },
+    {
+      id: "demo-zara-2",
+      name: "Wide Leg Trouser",
+      brand: "Zara",
+      category: "Bottom",
+      color: "Gray",
+      rfid: "RFID2002",
+      price: 69.9,
+      stock: 9,
+      retailerKey: "ZARA001",
+      retailerName: "Zara",
+      storeCode: "ZARA-SOHO-01",
+      imageUrl: "https://placehold.co/500x650/f1f5f9/111827?text=Wide+Leg+Trouser",
+      notes: "Balances cropped tops and adds clean proportions."
+    },
+    {
+      id: "demo-nike-2",
+      name: "Air Max Sneakers",
+      brand: "Nike",
+      category: "Shoes",
+      color: "Olive",
+      rfid: "RFID3002",
+      price: 115,
+      stock: 12,
+      retailerKey: "NIKE001",
+      retailerName: "Nike",
+      storeCode: "NIKE-NYC-01",
+      imageUrl: "https://placehold.co/500x650/f8fafc/111827?text=Air+Max",
+      notes: "Streetwear-friendly sneaker with everyday comfort."
+    },
+    {
+      id: "demo-nord-2",
+      name: "Silk Evening Blouse",
+      brand: "Nordstrom",
+      category: "Tops",
+      color: "Black",
+      rfid: "",
+      price: 158,
+      stock: 0,
+      retailerKey: "NORD001",
+      retailerName: "Nordstrom",
+      storeCode: "NORD-WTC-02",
+      imageUrl: "https://placehold.co/500x650/e2e8f0/111827?text=Blouse",
+      notes: "Needs RFID and restock before mirror readiness."
+    }
+  ];
+
+  let inventoryItems = [];
+  let hasShownLocalInventoryNotice = false;
+
+  function escapeHtml(value) {
+    return String(value ?? "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  }
+
+  function safeNumber(value, fallback = 0) {
+    const number = Number(value);
+    return Number.isFinite(number) ? number : fallback;
+  }
+
+  function formatPrice(value) {
+    const number = Number(value);
+    return Number.isFinite(number) ? `$${number.toFixed(2)}` : "$0.00";
+  }
+
+  function getToken() {
+    return localStorage.getItem("token") || "";
+  }
+
+  function getAuthHeaders(extra = {}) {
+    const token = getToken();
+
+    return {
+      ...extra,
+      ...(token ? { Authorization: `Bearer ${token}` } : {})
+    };
+  }
+
+  function getJsonHeaders() {
+    return getAuthHeaders({
+      "Content-Type": "application/json"
+    });
+  }
+
+  function requireToken() {
+    const token = getToken();
+
+    if (!token) {
+      throw new Error("Please log in from the Merchant App first.");
+    }
+
+    return token;
+  }
+
+  function safeImageUrl(url, fallback = "https://placehold.co/500x650?text=Product") {
+    const value = String(url || "").trim();
+
+    if (!value) return fallback;
+
+    try {
+      const parsed = new URL(value, window.location.origin);
+
+      if (
+        parsed.protocol === "http:" ||
+        parsed.protocol === "https:" ||
+        parsed.protocol === "data:" ||
+        parsed.protocol === "blob:"
+      ) {
+        return parsed.href;
+      }
+    } catch (_) {
+      return fallback;
+    }
+
+    return fallback;
+  }
+
+  function cleanApiErrorMessage(message) {
+    const text = String(message || "").trim();
+    if (!text) return "Request failed.";
+
+    const quotedMatch = text.match(/"([^"]+)"/);
+    if (quotedMatch && quotedMatch[1]) return quotedMatch[1];
+
+    return text
+      .replace(/^422\s+UNPROCESSABLE_ENTITY\s*/i, "")
+      .replace(/^400\s+BAD_REQUEST\s*/i, "")
+      .replace(/^401\s+UNAUTHORIZED\s*/i, "")
+      .replace(/^403\s+FORBIDDEN\s*/i, "")
+      .replace(/^404\s+NOT_FOUND\s*/i, "")
+      .replace(/^500\s+INTERNAL_SERVER_ERROR\s*/i, "")
+      .trim();
+  }
+
+  async function assertAuthorizedResponse(response, fallbackMessage = "Request failed.") {
+    if (response.ok) return;
+
+    if (response.status === 401 || response.status === 403) {
+      throw new Error("Your session expired. Please log in again from the Merchant App.");
+    }
+
+    let message = fallbackMessage;
+
+    try {
+      const contentType = response.headers.get("Content-Type") || "";
+
+      if (contentType.includes("application/json")) {
+        const data = await response.json();
+        message = data?.message || data?.detail || data?.error || fallbackMessage;
+      } else {
+        message = await response.text() || fallbackMessage;
+      }
+    } catch (_) {
+      message = fallbackMessage;
+    }
+
+    throw new Error(cleanApiErrorMessage(message));
+  }
+
+  function showToast(message, type = "info") {
+    const shell = document.getElementById("toastShell");
+    if (!shell || !message) return;
+
+    const toast = document.createElement("div");
+    toast.className = `toast-card ${type}`;
+    toast.textContent = message;
+    shell.appendChild(toast);
+
+    window.setTimeout(() => toast.remove(), 3200);
+  }
+
+  function populateRetailerDropdowns() {
+    const retailerFilter = document.getElementById("retailerFilter");
+    const retailerInput = document.getElementById("retailerInput");
+
+    if (retailerFilter) {
+      const currentValue = retailerFilter.value;
+
+      retailerFilter.innerHTML =
+        RETAILER_CONFIG.buildRetailerOptionsHtml(currentValue, true);
+
+      retailerFilter.value = currentValue || "";
+    }
+
+    if (retailerInput) {
+      const currentValue = retailerInput.value || "MACY001";
+
+      retailerInput.innerHTML =
+        RETAILER_CONFIG.buildRetailerOptionsHtml(currentValue, false);
+
+      retailerInput.value = currentValue;
+    }
+  }
+
+  function normalizeItem(item) {
+    const retailerKey = item.retailerKey || item.retailerId || item.retailer || "MACY001";
+
+    return {
+      id: String(item.id || item.productId || crypto.randomUUID()),
+      name: item.name || item.itemName || "Unnamed Product",
+      brand: item.brand || "Brand",
+      category: item.category || "Item",
+      color: item.color || "",
+      rfid: item.rfid || item.itemRfid || item.productRfid || "",
+      price: safeNumber(item.price),
+      stock: safeNumber(item.stock ?? item.quantity ?? item.inventory ?? item.availableQuantity),
+      retailerKey,
+      retailerName: item.retailerName || RETAILER_LABELS[retailerKey] || retailerKey,
+      storeCode: item.storeCode || item.store || "",
+      imageUrl: item.imageUrl || item.image_url || item.image || item.photoUrl || "",
+      notes: item.notes || item.stylingNotes || item.description || ""
+    };
+  }
+
+  function getLocalInventory() {
+    try {
+      const stored = JSON.parse(localStorage.getItem("merchantInventory") || "[]");
+      return Array.isArray(stored) ? stored.map(normalizeItem) : [];
+    } catch (_) {
+      return [];
+    }
+  }
+
+  function saveLocalInventory() {
+    localStorage.setItem("merchantInventory", JSON.stringify(inventoryItems));
+  }
+
+  function updateAuthStatus() {
+    const authStatus = document.getElementById("authStatus");
+    const liveDot = document.getElementById("liveDot");
+    const loggedIn = !!getToken();
+
+    if (authStatus) {
+      authStatus.textContent = loggedIn ? "Merchant session ready" : "Local inventory mode";
+    }
+
+    if (liveDot) {
+      liveDot.classList.toggle("error-dot", false);
+    }
+  }
+
+  function setInventoryLoading(isLoading) {
+    document.getElementById("inventoryLoading")?.classList.toggle("show", isLoading);
+    document.getElementById("inventoryContent")?.style.setProperty("display", isLoading ? "none" : "");
+  }
+
+  function isMirrorReady(item) {
+    return Boolean(item.rfid && item.imageUrl && item.stock > 0);
+  }
+
+  function getUniqueStores() {
+    const stores = new Set();
+
+    inventoryItems.forEach(item => {
+      if (item.storeCode) stores.add(item.storeCode);
+    });
+
+    Object.values(STORE_OPTIONS).flat().forEach(store => stores.add(store.code));
+
+    return Array.from(stores).sort((a, b) => a.localeCompare(b));
+  }
+
+  function renderStoreFilter() {
+    const storeFilter = document.getElementById("storeFilter");
+    if (!storeFilter) return;
+
+    const currentValue = storeFilter.value;
+    const stores = getUniqueStores();
+
+    storeFilter.innerHTML = `
+      <option value="">All Stores</option>
+      ${stores.map(store => `<option value="${escapeHtml(store)}">${escapeHtml(store)}</option>`).join("")}
+    `;
+
+    storeFilter.value = stores.includes(currentValue) ? currentValue : "";
+  }
+
+  function getFilteredItems() {
+    const search = document.getElementById("searchInput")?.value.trim().toLowerCase() || "";
+    const retailerFilter = document.getElementById("retailerFilter")?.value || "";
+    const stockFilter = document.getElementById("stockFilter")?.value || "";
+    const storeFilter = document.getElementById("storeFilter")?.value || "";
+
+    return inventoryItems.filter(item => {
+      const haystack = [
+        item.name,
+        item.brand,
+        item.category,
+        item.color,
+        item.rfid,
+        item.retailerName,
+        item.retailerKey,
+        item.storeCode,
+        item.notes
+      ].join(" ").toLowerCase();
+
+      const matchesSearch = !search || haystack.includes(search);
+      const matchesRetailer = !retailerFilter || item.retailerKey === retailerFilter;
+      const matchesStore = !storeFilter || item.storeCode === storeFilter;
+
+      let matchesStock = true;
+
+      if (stockFilter === "in") matchesStock = item.stock > 5;
+      if (stockFilter === "low") matchesStock = item.stock > 0 && item.stock <= 5;
+      if (stockFilter === "out") matchesStock = item.stock <= 0;
+      if (stockFilter === "untagged") matchesStock = !item.rfid;
+      if (stockFilter === "ready") matchesStock = isMirrorReady(item);
+
+      return matchesSearch && matchesRetailer && matchesStore && matchesStock;
+    });
+  }
+
+  function getStockBadge(item) {
+    if (item.stock <= 0) return `<span class="badge red">Out of Stock</span>`;
+    if (item.stock <= 5) return `<span class="badge yellow">Low Stock</span>`;
+    return `<span class="badge green">In Stock</span>`;
+  }
+
+  function getRfidBadge(item) {
+    if (!item.rfid) return `<span class="badge red">Missing RFID</span>`;
+    return `<span class="badge blue">${escapeHtml(item.rfid)}</span>`;
+  }
+
+  function getMirrorBadge(item) {
+    if (isMirrorReady(item)) return `<span class="badge green">Mirror Ready</span>`;
+
+    const missing = [];
+    if (!item.rfid) missing.push("RFID");
+    if (!item.imageUrl) missing.push("Image");
+    if (item.stock <= 0) missing.push("Stock");
+
+    return `<span class="badge gray">Needs ${escapeHtml(missing.join(", ") || "Review")}</span>`;
+  }
+
+  function getCopyRfidButton(item) {
+    if (!item.rfid) {
+      return `<button class="merchant-btn" type="button" disabled>Copy RFID</button>`;
+    }
+
+    return `
+      <button class="merchant-btn" type="button" data-copy-rfid="${escapeHtml(item.rfid)}">
+        Copy RFID
+      </button>
+    `;
+  }
+
+  function getTestButton(item) {
+    if (!item.rfid) {
+      return `<button class="merchant-btn soft-blue" type="button" disabled>Test</button>`;
+    }
+
+    return `
+      <button
+        class="merchant-btn soft-blue"
+        type="button"
+        data-test-id="${escapeHtml(item.id)}"
+      >
+        Test
+      </button>
+    `;
+  }
+
+  function updateStats() {
+    const total = inventoryItems.length;
+    const tagged = inventoryItems.filter(item => !!item.rfid).length;
+    const mirrorReady = inventoryItems.filter(isMirrorReady).length;
+    const lowStock = inventoryItems.filter(item => item.stock <= 5).length;
+    const readiness = total ? Math.round((mirrorReady / total) * 100) : 0;
+
+    document.getElementById("totalItemsStat").textContent = String(total);
+    document.getElementById("taggedItemsStat").textContent = String(tagged);
+    document.getElementById("mirrorReadyStat").textContent = String(mirrorReady);
+    document.getElementById("lowStockStat").textContent = String(lowStock);
+
+    const readinessCopy = document.getElementById("readinessCopy");
+    if (readinessCopy) {
+      readinessCopy.textContent = total
+        ? `${readiness}% of your catalog is fully mirror-ready. Mirror-ready products have RFID, imagery, and available stock.`
+        : "Add products or load demo inventory to begin mirror readiness tracking.";
+    }
+
+    const readinessFill = document.getElementById("readinessFill");
+    if (readinessFill) {
+      readinessFill.style.width = `${readiness}%`;
+    }
+  }
+
+  function renderInventory() {
+    const content = document.getElementById("inventoryContent");
+    if (!content) return;
+
+    renderStoreFilter();
+
+    const items = getFilteredItems();
+
+    if (!items.length) {
+      content.className = "";
+      content.innerHTML = `
+        <div class="empty">
+          <strong>No products found.</strong>
+          No inventory items match your current filters. Load demo inventory or add a product to continue.
+        </div>
+      `;
+      updateStats();
+      return;
+    }
+
+    content.className = "table-shell";
+    content.innerHTML = `
+      <table>
+        <thead>
+          <tr>
+            <th>Product</th>
+            <th>RFID</th>
+            <th>Retailer</th>
+            <th>Store</th>
+            <th>Stock</th>
+            <th>Price</th>
+            <th>Mirror</th>
+            <th>Status</th>
+            <th style="text-align: right;">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="inventoryTableBody"></tbody>
+      </table>
+    `;
+
+    const tableBody = document.getElementById("inventoryTableBody");
+
+    tableBody.innerHTML = items.map(item => `
+      <tr>
+        <td>
+          <div class="product-cell">
+            <img
+              class="product-thumb"
+              src="${safeImageUrl(item.imageUrl)}"
+              alt="${escapeHtml(item.name)}"
+              onerror="this.src='https://placehold.co/500x650?text=Product';"
+            />
+            <div>
+              <div class="product-name">${escapeHtml(item.name)}</div>
+              <div class="product-sub">
+                ${escapeHtml(item.brand)} • ${escapeHtml(item.category)}${item.color ? ` • ${escapeHtml(item.color)}` : ""}
+              </div>
+            </div>
+          </div>
+        </td>
+        <td>${getRfidBadge(item)}</td>
+        <td>${escapeHtml(item.retailerName)}</td>
+        <td>${escapeHtml(item.storeCode || "No Store")}</td>
+        <td>
+          <div class="stock-stepper">
+            <button class="mini-btn" type="button" data-stock-down="${escapeHtml(item.id)}" aria-label="Decrease stock">−</button>
+            <span class="stock-value">${escapeHtml(item.stock)}</span>
+            <button class="mini-btn" type="button" data-stock-up="${escapeHtml(item.id)}" aria-label="Increase stock">+</button>
+          </div>
+        </td>
+        <td>${formatPrice(item.price)}</td>
+        <td>${getMirrorBadge(item)}</td>
+        <td>${getStockBadge(item)}</td>
+        <td>
+          <div class="row-actions">
+            ${getTestButton(item)}
+            ${getCopyRfidButton(item)}
+            <button class="merchant-btn" type="button" data-edit-id="${escapeHtml(item.id)}">Edit</button>
+            <button class="merchant-btn danger" type="button" data-delete-id="${escapeHtml(item.id)}">Delete</button>
+          </div>
+        </td>
+      </tr>
+    `).join("");
+
+    tableBody.querySelectorAll("[data-edit-id]").forEach(button => {
+      button.addEventListener("click", () => openProductModal(button.dataset.editId || ""));
+    });
+
+    tableBody.querySelectorAll("[data-delete-id]").forEach(button => {
+      button.addEventListener("click", () => deleteProduct(button.dataset.deleteId || ""));
+    });
+
+    tableBody.querySelectorAll("[data-stock-up]").forEach(button => {
+      button.addEventListener("click", () => updateStock(button.dataset.stockUp || "", 1));
+    });
+
+    tableBody.querySelectorAll("[data-stock-down]").forEach(button => {
+      button.addEventListener("click", () => updateStock(button.dataset.stockDown || "", -1));
+    });
+
+    tableBody.querySelectorAll("[data-copy-rfid]").forEach(button => {
+      button.addEventListener("click", () => copyRfidValue(button.dataset.copyRfid || ""));
+    });
+
+    tableBody.querySelectorAll("[data-test-id]").forEach(button => {
+      button.addEventListener("click", () => {
+        const item = inventoryItems.find(product => product.id === button.dataset.testId);
+        testInMirror(item);
+      });
+    });
+
+    updateStats();
+  }
+
+  function applyInventoryUrlFilters() {
+    const params = new URLSearchParams(window.location.search);
+
+    const search = params.get("search") || "";
+    const retailer = params.get("retailer") || "";
+    const stock = params.get("stock") || "";
+    const store = params.get("store") || "";
+    const filter = params.get("filter") || "";
+    const clearUrl = params.get("clearUrl") !== "false";
+
+    const searchInput = document.getElementById("searchInput");
+    const retailerFilter = document.getElementById("retailerFilter");
+    const stockFilter = document.getElementById("stockFilter");
+    const storeFilter = document.getElementById("storeFilter");
+
+    if (searchInput && search) searchInput.value = search;
+
+    if (retailerFilter && retailer) {
+      const exists = Array.from(retailerFilter.options).some(option => option.value === retailer);
+      if (exists) retailerFilter.value = retailer;
+    }
+
+    if (stockFilter && stock) {
+      const exists = Array.from(stockFilter.options).some(option => option.value === stock);
+      if (exists) stockFilter.value = stock;
+    }
+
+    if (filter === "attention" && stockFilter) {
+      stockFilter.value = "low";
+    }
+
+    if (storeFilter && store) {
+      renderStoreFilter();
+
+      const exists = Array.from(storeFilter.options).some(option => option.value === store);
+      if (exists) storeFilter.value = store;
+    }
+
+    const hasFilterParams = Boolean(search || retailer || stock || store || filter);
+
+    if (hasFilterParams) {
+      renderInventory();
+      showToast("Inventory filters applied.", "info");
+
+      if (clearUrl) {
+        window.history.replaceState({}, document.title, window.location.pathname);
+      }
+    }
+  }
+
+  async function loadInventory() {
+    setInventoryLoading(true);
+
+    try {
+      requireToken();
+
+      const response = await fetch(API.inventory, {
+        headers: getAuthHeaders()
+      });
+
+      await assertAuthorizedResponse(response, "Unable to load inventory.");
+
+      const data = await response.json();
+      const items = Array.isArray(data) ? data : Array.isArray(data.items) ? data.items : [];
+
+      if (items.length) {
+        inventoryItems = items.map(normalizeItem);
+        saveLocalInventory();
+        renderInventory();
+        applyInventoryUrlFilters();
+        showToast("Inventory loaded.", "success");
+      } else {
+        inventoryItems = getLocalInventory();
+
+        if (!inventoryItems.length) {
+          inventoryItems = DEMO_ITEMS.map(normalizeItem);
+          saveLocalInventory();
+        }
+
+        renderInventory();
+        applyInventoryUrlFilters();
+        showToast("No server inventory found. Demo/local inventory is active.", "info");
+      }
+    } catch (error) {
+      console.warn("Inventory API unavailable, using local inventory:", error);
+
+      if (!inventoryItems.length) {
+        inventoryItems = getLocalInventory();
+      }
+
+      renderInventory();
+      applyInventoryUrlFilters();
+
+      if (getToken() && !hasShownLocalInventoryNotice) {
+        hasShownLocalInventoryNotice = true;
+        showToast("Using local inventory until the inventory API is connected.", "info");
+      }
+    } finally {
+      setInventoryLoading(false);
+    }
+  }
+
+  function seedDemoInventory() {
+    inventoryItems = DEMO_ITEMS.map(normalizeItem);
+    saveLocalInventory();
+    renderInventory();
+    showToast("Demo inventory loaded.", "success");
+  }
+
+  function openProductModal(id = "") {
+    populateRetailerDropdowns();
+
+    const modal = document.getElementById("productModal");
+    const title = document.getElementById("modalTitle");
+    const deleteButton = document.getElementById("deleteProductBtn");
+    const item = inventoryItems.find(product => product.id === id);
+    const retailerKey = item?.retailerKey || "MACY001";
+
+    document.getElementById("productIdInput").value = item?.id || "";
+    document.getElementById("nameInput").value = item?.name || "";
+    document.getElementById("brandInput").value = item?.brand || "";
+    document.getElementById("categoryInput").value = item?.category || "";
+    document.getElementById("colorInput").value = item?.color || "";
+    document.getElementById("rfidInputModal").value = item?.rfid || "";
+    document.getElementById("priceInput").value = item?.price ?? "";
+    document.getElementById("stockInput").value = item?.stock ?? "";
+    document.getElementById("retailerInput").value = retailerKey;
+    document.getElementById("storeInput").value =
+      item?.storeCode ||
+      STORE_OPTIONS[retailerKey]?.[0]?.code ||
+      "";
+    document.getElementById("imageInput").value = item?.imageUrl || "";
+    document.getElementById("notesInput").value = item?.notes || "";
+
+    if (title) title.textContent = item ? "Edit product." : "Add product.";
+    if (deleteButton) deleteButton.style.display = item ? "" : "none";
+
+    modal?.classList.add("show");
+    modal?.setAttribute("aria-hidden", "false");
+  }
+
+  function closeProductModal() {
+    const modal = document.getElementById("productModal");
+    modal?.classList.remove("show");
+    modal?.setAttribute("aria-hidden", "true");
+    document.getElementById("productForm")?.reset();
+    document.getElementById("productIdInput").value = "";
+  }
+
+  function getProductPayloadFromForm() {
+    const retailerKey = document.getElementById("retailerInput").value || "MACY001";
+
+    return normalizeItem({
+      id: document.getElementById("productIdInput").value || crypto.randomUUID(),
+      name: document.getElementById("nameInput").value.trim(),
+      brand: document.getElementById("brandInput").value.trim(),
+      category: document.getElementById("categoryInput").value.trim(),
+      color: document.getElementById("colorInput").value.trim(),
+      rfid: document.getElementById("rfidInputModal").value.trim(),
+      price: document.getElementById("priceInput").value,
+      stock: document.getElementById("stockInput").value,
+      retailerKey,
+      retailerName: RETAILER_LABELS[retailerKey] || retailerKey,
+      storeCode: document.getElementById("storeInput").value.trim(),
+      imageUrl: document.getElementById("imageInput").value.trim(),
+      notes: document.getElementById("notesInput").value.trim()
+    });
+  }
+
+  function hasDuplicateRfid(payload) {
+    if (!payload.rfid) return false;
+
+    return inventoryItems.some(item => {
+      return item.id !== payload.id &&
+        item.rfid &&
+        item.rfid.toLowerCase() === payload.rfid.toLowerCase();
+    });
+  }
+
+  async function saveProduct(event) {
+    event.preventDefault();
+
+    const payload = getProductPayloadFromForm();
+
+    if (hasDuplicateRfid(payload)) {
+      showToast("That RFID tag is already assigned to another product.", "error");
+      return;
+    }
+
+    const existingIndex = inventoryItems.findIndex(item => item.id === payload.id);
+    const isEditing = existingIndex >= 0;
+
+    try {
+      if (getToken()) {
+        const endpoint = isEditing ? `${API.inventory}/${encodeURIComponent(payload.id)}` : API.inventory;
+        const method = isEditing ? "PUT" : "POST";
+
+        const response = await fetch(endpoint, {
+          method,
+          headers: getJsonHeaders(),
+          body: JSON.stringify(payload)
+        });
+
+        if (response.status !== 404) {
+          await assertAuthorizedResponse(response, "Unable to save product.");
+        }
+      }
+
+      if (isEditing) {
+        inventoryItems[existingIndex] = payload;
+      } else {
+        inventoryItems.unshift(payload);
+      }
+
+      saveLocalInventory();
+      renderInventory();
+      closeProductModal();
+      showToast(isEditing ? "Product updated." : "Product added.", "success");
+    } catch (error) {
+      console.warn("Saving locally because API save failed:", error);
+
+      if (isEditing) {
+        inventoryItems[existingIndex] = payload;
+      } else {
+        inventoryItems.unshift(payload);
+      }
+
+      saveLocalInventory();
+      renderInventory();
+      closeProductModal();
+      showToast("Saved locally. Connect inventory API for server sync.", "success");
+    }
+  }
+
+  async function deleteProduct(id) {
+    if (!id) return;
+
+    const item = inventoryItems.find(product => product.id === id);
+    const confirmed = window.confirm(`Delete ${item?.name || "this product"}?`);
+    if (!confirmed) return;
+
+    try {
+      if (getToken()) {
+        const response = await fetch(`${API.inventory}/${encodeURIComponent(id)}`, {
+          method: "DELETE",
+          headers: getAuthHeaders()
+        });
+
+        if (response.status !== 404) {
+          await assertAuthorizedResponse(response, "Unable to delete product.");
+        }
+      }
+
+      inventoryItems = inventoryItems.filter(product => product.id !== id);
+      saveLocalInventory();
+      renderInventory();
+      closeProductModal();
+      showToast("Product deleted.", "success");
+    } catch (error) {
+      console.warn("Deleting locally because API delete failed:", error);
+
+      inventoryItems = inventoryItems.filter(product => product.id !== id);
+      saveLocalInventory();
+      renderInventory();
+      closeProductModal();
+      showToast("Deleted locally. Connect inventory API for server sync.", "success");
+    }
+  }
+
+  function deleteCurrentProductFromModal() {
+    const id = document.getElementById("productIdInput").value;
+    deleteProduct(id);
+  }
+
+  function updateStock(id, delta) {
+    const item = inventoryItems.find(product => product.id === id);
+    if (!item) return;
+
+    item.stock = Math.max(0, safeNumber(item.stock) + delta);
+    saveLocalInventory();
+    renderInventory();
+
+    showToast(`${item.name} stock updated to ${item.stock}.`, "success");
+  }
+
+  async function copyRfidValue(rfid) {
+    if (!rfid) {
+      showToast("This product does not have an RFID tag.", "error");
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(rfid);
+      showToast(`Copied ${rfid}.`, "success");
+    } catch (_) {
+      showToast("Unable to copy RFID in this browser.", "error");
+    }
+  }
+
+  function testInMirror(item) {
+    if (!item) {
+      showToast("Product not found.", "error");
+      return;
+    }
+
+    if (!item.rfid) {
+      showToast("Add an RFID tag before testing this item in the smart mirror.", "error");
+      return;
+    }
+
+    const params = new URLSearchParams({
+      retailer: item.retailerKey || "MACY001",
+      storeCode: item.storeCode || "",
+      rfid: item.rfid,
+      vibe: "Casual",
+      autoScan: "true"
+    });
+
+    window.location.href = `/mirror.html?${params.toString()}`;
+  }
+
+  function clearFilters() {
+    document.getElementById("searchInput").value = "";
+    document.getElementById("retailerFilter").value = "";
+    document.getElementById("stockFilter").value = "";
+    document.getElementById("storeFilter").value = "";
+    renderInventory();
+  }
+
+  function exportCsv() {
+    const items = getFilteredItems();
+
+    if (!items.length) {
+      showToast("No inventory to export.", "error");
+      return;
+    }
+
+    const columns = [
+      "id",
+      "name",
+      "brand",
+      "category",
+      "color",
+      "rfid",
+      "price",
+      "stock",
+      "retailerKey",
+      "retailerName",
+      "storeCode",
+      "mirrorReady",
+      "imageUrl",
+      "notes"
+    ];
+
+    const escapeCsv = value => `"${String(value ?? "").replace(/"/g, '""')}"`;
+
+    const rows = [
+      columns.join(","),
+      ...items.map(item => {
+        const row = {
+          ...item,
+          mirrorReady: isMirrorReady(item) ? "Yes" : "No"
+        };
+
+        return columns.map(column => escapeCsv(row[column])).join(",");
+      })
+    ];
+
+    const blob = new Blob([rows.join("\n")], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+
+    link.href = url;
+    link.download = `universal-stylist-inventory-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+
+    URL.revokeObjectURL(url);
+    showToast("CSV exported.", "success");
+  }
+
+  function applyRetailerStoreDefault() {
+  const retailerInput = document.getElementById("retailerInput");
+  const storeInput = document.getElementById("storeInput");
+
+  const retailerKey = retailerInput?.value || "MACY001";
+  const retailerStores = STORE_OPTIONS[retailerKey] || [];
+  const validStoreCodesForRetailer = retailerStores.map(store => store.code);
+  const firstStore = retailerStores[0]?.code || "";
+
+  if (
+    storeInput &&
+    (!storeInput.value || !validStoreCodesForRetailer.includes(storeInput.value))
+  ) {
+    storeInput.value = firstStore;
+  }
+}
+
+  function bindEvents() {
+    document.getElementById("addProductBtn")?.addEventListener("click", () => openProductModal());
+    document.getElementById("refreshInventoryBtn")?.addEventListener("click", loadInventory);
+    document.getElementById("seedDemoBtn")?.addEventListener("click", seedDemoInventory);
+    document.getElementById("exportBtn")?.addEventListener("click", exportCsv);
+    document.getElementById("clearFiltersBtn")?.addEventListener("click", clearFilters);
+
+    document.getElementById("searchInput")?.addEventListener("input", renderInventory);
+    document.getElementById("retailerFilter")?.addEventListener("change", renderInventory);
+    document.getElementById("stockFilter")?.addEventListener("change", renderInventory);
+    document.getElementById("storeFilter")?.addEventListener("change", renderInventory);
+
+    document.getElementById("retailerInput")?.addEventListener("change", applyRetailerStoreDefault);
+
+    document.getElementById("closeModalBtn")?.addEventListener("click", closeProductModal);
+    document.getElementById("cancelProductBtn")?.addEventListener("click", closeProductModal);
+    document.getElementById("deleteProductBtn")?.addEventListener("click", deleteCurrentProductFromModal);
+    document.getElementById("productForm")?.addEventListener("submit", saveProduct);
+
+    document.getElementById("productModal")?.addEventListener("click", event => {
+      if (event.target.id === "productModal") {
+        closeProductModal();
+      }
+    });
+
+    document.addEventListener("keydown", event => {
+      if (event.key === "Escape") {
+        closeProductModal();
+      }
+    });
+  }
+
+  function init() {
+    populateRetailerDropdowns();
+    bindEvents();
+    updateAuthStatus();
+
+    inventoryItems = getLocalInventory();
+
+    if (!inventoryItems.length) {
+      inventoryItems = DEMO_ITEMS.map(normalizeItem);
+      saveLocalInventory();
+      showToast("Demo inventory loaded automatically.", "success");
+    }
+
+    renderInventory();
+    applyInventoryUrlFilters();
+
+    if (getToken()) {
+      loadInventory();
+    }
+  }
+
+  init();
+</script>
+</body>
+</html>

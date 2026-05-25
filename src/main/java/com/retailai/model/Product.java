@@ -26,6 +26,16 @@ public class Product {
     private Boolean inStoreOnly;
     private Boolean available;
 
+    // Styling intelligence fields
+    private String size;
+    private String fit;
+    private String material;
+    private String gender;
+    private String season;
+    private String occasion;
+    private String styleTags;
+    private String pattern;
+
     public Product() {
     }
 
@@ -61,6 +71,56 @@ public class Product {
         this.active = active;
         this.inStoreOnly = inStoreOnly;
         this.available = available;
+    }
+
+    public Product(
+            String rfid,
+            String retailerKey,
+            String retailerName,
+            String storeCode,
+            String storeName,
+            String itemName,
+            String brand,
+            String category,
+            String color,
+            String imageUrl,
+            Double price,
+            Integer stockQuantity,
+            Boolean active,
+            Boolean inStoreOnly,
+            Boolean available,
+            String size,
+            String fit,
+            String material,
+            String gender,
+            String season,
+            String occasion,
+            String styleTags,
+            String pattern
+    ) {
+        this.rfid = rfid;
+        this.retailerKey = retailerKey;
+        this.retailerName = retailerName;
+        this.storeCode = storeCode;
+        this.storeName = storeName;
+        this.itemName = itemName;
+        this.brand = brand;
+        this.category = category;
+        this.color = color;
+        this.imageUrl = imageUrl;
+        this.price = price;
+        this.stockQuantity = stockQuantity;
+        this.active = active;
+        this.inStoreOnly = inStoreOnly;
+        this.available = available;
+        this.size = size;
+        this.fit = fit;
+        this.material = material;
+        this.gender = gender;
+        this.season = season;
+        this.occasion = occasion;
+        this.styleTags = styleTags;
+        this.pattern = pattern;
     }
 
     public String getRfid() {
@@ -181,6 +241,70 @@ public class Product {
 
     public void setAvailable(Boolean available) {
         this.available = available;
+    }
+
+    public String getSize() {
+        return size;
+    }
+
+    public void setSize(String size) {
+        this.size = size;
+    }
+
+    public String getFit() {
+        return fit;
+    }
+
+    public void setFit(String fit) {
+        this.fit = fit;
+    }
+
+    public String getMaterial() {
+        return material;
+    }
+
+    public void setMaterial(String material) {
+        this.material = material;
+    }
+
+    public String getGender() {
+        return gender;
+    }
+
+    public void setGender(String gender) {
+        this.gender = gender;
+    }
+
+    public String getSeason() {
+        return season;
+    }
+
+    public void setSeason(String season) {
+        this.season = season;
+    }
+
+    public String getOccasion() {
+        return occasion;
+    }
+
+    public void setOccasion(String occasion) {
+        this.occasion = occasion;
+    }
+
+    public String getStyleTags() {
+        return styleTags;
+    }
+
+    public void setStyleTags(String styleTags) {
+        this.styleTags = styleTags;
+    }
+
+    public String getPattern() {
+        return pattern;
+    }
+
+    public void setPattern(String pattern) {
+        this.pattern = pattern;
     }
 
     public boolean isAvailableForStyling() {

@@ -12,15 +12,45 @@ public class TrendEvent {
     private Long id;
 
     private String retailerName;
+
+    private String retailerKey;
+
+    private String storeCode;
+
     private String itemName;
+
     private String eventType;
+
     private LocalDateTime createdAt;
 
     public TrendEvent() {
     }
 
-    public TrendEvent(String retailerName, String itemName, String eventType, LocalDateTime createdAt) {
+    public TrendEvent(
+            String retailerName,
+            String itemName,
+            String eventType,
+            LocalDateTime createdAt
+    ) {
         this.retailerName = retailerName;
+        this.retailerKey = "";
+        this.storeCode = "";
+        this.itemName = itemName;
+        this.eventType = eventType;
+        this.createdAt = createdAt;
+    }
+
+    public TrendEvent(
+            String retailerName,
+            String retailerKey,
+            String storeCode,
+            String itemName,
+            String eventType,
+            LocalDateTime createdAt
+    ) {
+        this.retailerName = retailerName;
+        this.retailerKey = retailerKey;
+        this.storeCode = storeCode;
         this.itemName = itemName;
         this.eventType = eventType;
         this.createdAt = createdAt;
@@ -36,6 +66,22 @@ public class TrendEvent {
 
     public void setRetailerName(String retailerName) {
         this.retailerName = retailerName;
+    }
+
+    public String getRetailerKey() {
+        return retailerKey;
+    }
+
+    public void setRetailerKey(String retailerKey) {
+        this.retailerKey = retailerKey;
+    }
+
+    public String getStoreCode() {
+        return storeCode;
+    }
+
+    public void setStoreCode(String storeCode) {
+        this.storeCode = storeCode;
     }
 
     public String getItemName() {

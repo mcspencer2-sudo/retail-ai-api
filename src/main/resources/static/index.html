@@ -51,7 +51,8 @@
             box-sizing: border-box;
         }
 
-        html, body {
+        html,
+        body {
             min-height: 100%;
         }
 
@@ -66,39 +67,91 @@
         }
 
         @keyframes pulseReady {
-            0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.35); }
-            70% { transform: scale(1.14); box-shadow: 0 0 0 10px rgba(34, 197, 94, 0); }
-            100% { transform: scale(1); }
+            0% {
+                transform: scale(1);
+                box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.35);
+            }
+
+            70% {
+                transform: scale(1.14);
+                box-shadow: 0 0 0 10px rgba(34, 197, 94, 0);
+            }
+
+            100% {
+                transform: scale(1);
+            }
         }
 
         @keyframes pulseScanning {
-            0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 183, 3, 0.55); }
-            50% { transform: scale(1.28); box-shadow: 0 0 0 14px rgba(255, 183, 3, 0.08); }
-            100% { transform: scale(1); }
+            0% {
+                transform: scale(1);
+                box-shadow: 0 0 0 0 rgba(255, 183, 3, 0.55);
+            }
+
+            50% {
+                transform: scale(1.28);
+                box-shadow: 0 0 0 14px rgba(255, 183, 3, 0.08);
+            }
+
+            100% {
+                transform: scale(1);
+            }
         }
 
         @keyframes pulseSuccess {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.34); }
-            100% { transform: scale(1); }
+            0% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.34);
+            }
+
+            100% {
+                transform: scale(1);
+            }
         }
 
         @keyframes pulseError {
-            0% { transform: scale(1); }
-            25% { transform: scale(1.2); }
-            50% { transform: scale(0.92); }
-            75% { transform: scale(1.14); }
-            100% { transform: scale(1); }
+            0% {
+                transform: scale(1);
+            }
+
+            25% {
+                transform: scale(1.2);
+            }
+
+            50% {
+                transform: scale(0.92);
+            }
+
+            75% {
+                transform: scale(1.14);
+            }
+
+            100% {
+                transform: scale(1);
+            }
         }
 
         @keyframes shimmer {
-            0% { background-position: -200% 0; }
-            100% { background-position: 200% 0; }
+            0% {
+                background-position: -200% 0;
+            }
+
+            100% {
+                background-position: 200% 0;
+            }
         }
 
         @keyframes sweep {
-            0% { left: -100%; }
-            100% { left: 100%; }
+            0% {
+                left: -100%;
+            }
+
+            100% {
+                left: 100%;
+            }
         }
 
         @keyframes revealUp {
@@ -106,6 +159,7 @@
                 opacity: 0;
                 transform: translateY(16px);
             }
+
             to {
                 opacity: 1;
                 transform: translateY(0);
@@ -113,16 +167,35 @@
         }
 
         @keyframes dots {
-            0% { content: ""; }
-            33% { content: "."; }
-            66% { content: ".."; }
-            100% { content: "..."; }
+            0% {
+                content: "";
+            }
+
+            33% {
+                content: ".";
+            }
+
+            66% {
+                content: "..";
+            }
+
+            100% {
+                content: "...";
+            }
         }
 
         @keyframes pulseButton {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.015); }
-            100% { transform: scale(1); }
+            0% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.015);
+            }
+
+            100% {
+                transform: scale(1);
+            }
         }
 
         .page-shell {
@@ -199,13 +272,13 @@
         .pill-status {
             padding: 10px 15px;
             border-radius: 999px;
-            background: rgba(255,255,255,0.90);
+            background: rgba(255, 255, 255, 0.90);
             border: 1px solid var(--line);
             font-size: 0.88rem;
             font-weight: 750;
             color: var(--ink);
             white-space: nowrap;
-            box-shadow: inset 0 1px 0 rgba(255,255,255,0.65);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.65);
         }
 
         .top-button,
@@ -281,7 +354,7 @@
             font-size: 0.76rem;
             font-weight: 850;
             color: var(--ink-soft);
-            background: rgba(255,255,255,0.88);
+            background: rgba(255, 255, 255, 0.88);
             border: 1px solid var(--line);
             box-shadow: var(--shadow-soft);
             margin-bottom: 20px;
@@ -317,7 +390,7 @@
             position: relative;
             overflow: hidden;
             background: var(--glass);
-            border: 1px solid rgba(255,255,255,0.92);
+            border: 1px solid rgba(255, 255, 255, 0.92);
             box-shadow: var(--shadow-card);
             backdrop-filter: blur(22px);
             -webkit-backdrop-filter: blur(22px);
@@ -365,7 +438,7 @@
             font-size: 0.84rem;
             font-weight: 700;
             color: var(--ink);
-            background: rgba(255,255,255,0.88);
+            background: rgba(255, 255, 255, 0.88);
             border: 1px solid var(--line);
             border-radius: 999px;
             padding: 8px 12px;
@@ -382,7 +455,7 @@
         }
 
         .auth-card {
-            background: rgba(255,255,255,0.94);
+            background: rgba(255, 255, 255, 0.94);
             border: 1px solid var(--line);
             border-radius: 32px;
             padding: 24px;
@@ -404,7 +477,7 @@
             border: 1px solid rgba(15, 23, 42, 0.08);
             box-shadow: none;
             font-weight: 600;
-            background: rgba(255,255,255,0.94);
+            background: rgba(255, 255, 255, 0.94);
         }
 
         .auth-input:focus,
@@ -455,9 +528,11 @@
         }
 
         .search-shell {
+            display: flex;
+            align-items: stretch;
             overflow: hidden;
             border-radius: 30px;
-            background: rgba(255,255,255,0.96);
+            background: rgba(255, 255, 255, 0.96);
             box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.05);
         }
 
@@ -492,6 +567,93 @@
             box-shadow: inset 0 0 0 1px rgba(0, 113, 227, 0.14);
         }
 
+        .secure-store-card {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            min-height: 68px;
+            padding: 12px 18px;
+            background: rgba(255, 255, 255, 0.94);
+            border-right: 1px solid rgba(15, 23, 42, 0.08);
+            min-width: 320px;
+            max-width: 380px;
+            flex: 0 0 360px;
+        }
+
+        .secure-store-icon {
+            width: 38px;
+            height: 38px;
+            border-radius: 14px;
+            background: linear-gradient(180deg, #111827 0%, #1f2937 100%);
+            color: #fff;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 900;
+            flex-shrink: 0;
+        }
+
+        .secure-store-copy {
+            min-width: 0;
+            width: 100%;
+            text-align: center;
+        }
+
+        .secure-store-label {
+            font-size: 0.68rem;
+            font-weight: 850;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: #8b95a7;
+            margin-bottom: 2px;
+        }
+
+        .secure-store-name {
+            font-size: 0.92rem;
+            font-weight: 850;
+            color: #111827;
+            line-height: 1.2;
+            white-space: normal;
+            overflow: visible;
+            text-overflow: unset;
+        }
+
+        .secure-store-code {
+            font-size: 0.76rem;
+            font-weight: 700;
+            color: #667085;
+            white-space: normal;
+            overflow-wrap: anywhere;
+            word-break: break-word;
+            line-height: 1.25;
+        }
+
+        .secure-context-box {
+            padding: 14px 16px;
+            border-radius: 18px;
+            background: rgba(15, 23, 42, 0.035);
+            border: 1px solid rgba(15, 23, 42, 0.07);
+        }
+
+        .secure-context-title {
+            font-size: 0.72rem;
+            font-weight: 850;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: #7b8190;
+            margin-bottom: 4px;
+        }
+
+        .secure-context-value {
+            font-size: 0.95rem;
+            font-weight: 800;
+            color: #111827;
+            overflow-wrap: anywhere;
+            word-break: break-word;
+            line-height: 1.45;
+        }
+
         .scan-button {
             background: linear-gradient(180deg, var(--apple-blue) 0%, var(--apple-blue-dark) 100%);
             color: #fff;
@@ -522,7 +684,7 @@
             gap: 10px;
             min-height: 48px;
             padding: 10px 16px;
-            background: rgba(255,255,255,0.90);
+            background: rgba(255, 255, 255, 0.90);
             border: 1px solid var(--line);
             border-radius: 999px;
             font-weight: 700;
@@ -600,9 +762,17 @@
             margin-bottom: 14px;
         }
 
-        .loading-line.short { width: 28%; }
-        .loading-line.medium { width: 52%; }
-        .loading-line.long { width: 82%; }
+        .loading-line.short {
+            width: 28%;
+        }
+
+        .loading-line.medium {
+            width: 52%;
+        }
+
+        .loading-line.long {
+            width: 82%;
+        }
 
         .scan-result-section {
             width: min(1140px, 92%);
@@ -771,9 +941,9 @@
         .activity-table-shell,
         .chart-shell,
         .look-carousel-card {
-            background: rgba(255,255,255,0.80);
+            background: rgba(255, 255, 255, 0.80);
             border: 1px solid var(--line);
-            box-shadow: inset 0 1px 0 rgba(255,255,255,0.55);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.55);
         }
 
         .result-info-block {
@@ -997,30 +1167,20 @@
             border-radius: 22px;
             text-align: center;
             color: #6b7280;
-            background: rgba(255,255,255,0.55);
-        }
-
-        #suggestionsRow > [class*="col-"] {
-            display: flex;
-        }
-
-        #suggestionsRow .suggestion-card {
-            width: 100%;
+            background: rgba(255, 255, 255, 0.55);
         }
 
         #suggestionsRow {
             justify-content: flex-start;
         }
 
+        #suggestionsRow > [class*="col-"],
         #suggestionsRow > .col-12.col-md-6.col-xl-4 {
             display: flex;
         }
 
-        @media (min-width: 1200px) {
-            #suggestionsRow:has(> :nth-child(1):last-child),
-            #suggestionsRow:has(> :nth-child(2):last-child) {
-                justify-content: center;
-            }
+        #suggestionsRow .suggestion-card {
+            width: 100%;
         }
 
         .suggestion-card {
@@ -1030,7 +1190,7 @@
             border: 1px solid rgba(15, 23, 42, 0.05);
             border-radius: 30px;
             overflow: hidden;
-            background: rgba(255,255,255,0.94);
+            background: rgba(255, 255, 255, 0.94);
             box-shadow: 0 14px 36px rgba(15, 23, 42, 0.05);
             transition: transform 0.22s ease, box-shadow 0.22s ease;
             animation: revealUp 0.45s ease-out;
@@ -1173,7 +1333,7 @@
         .premium-bag-header {
             padding: 24px 24px 18px;
             border-bottom: 1px solid rgba(15, 23, 42, 0.08);
-            background: rgba(255,255,255,0.78);
+            background: rgba(255, 255, 255, 0.78);
             backdrop-filter: blur(14px);
         }
 
@@ -1184,8 +1344,8 @@
         }
 
         .premium-bag-footer {
-            border-top: 1px solid rgba(15,23,42,0.08);
-            background: rgba(255,255,255,0.74);
+            border-top: 1px solid rgba(15, 23, 42, 0.08);
+            background: rgba(255, 255, 255, 0.74);
             backdrop-filter: blur(14px);
         }
 
@@ -1275,7 +1435,7 @@
         }
 
         .total-row.final {
-            border-top: 1px solid rgba(15,23,42,0.08);
+            border-top: 1px solid rgba(15, 23, 42, 0.08);
             padding-top: 14px;
             margin-top: 10px;
             font-size: 1.2rem;
@@ -1534,8 +1694,13 @@
             margin-right: 6px;
         }
 
-        .legend-scan { background: #7CFF7C; }
-        .legend-save { background: #71B7FF; }
+        .legend-scan {
+            background: #7CFF7C;
+        }
+
+        .legend-save {
+            background: #71B7FF;
+        }
 
         .toast-shell {
             position: fixed;
@@ -1556,9 +1721,17 @@
             animation: revealUp 0.2s ease-out;
         }
 
-        .toast-success { background: linear-gradient(135deg, #0f9d58, #35b56f); }
-        .toast-error { background: linear-gradient(135deg, #d7263d, #f04a61); }
-        .toast-info { background: linear-gradient(135deg, #111111, #2d2d2d); }
+        .toast-success {
+            background: linear-gradient(135deg, #0f9d58, #35b56f);
+        }
+
+        .toast-error {
+            background: linear-gradient(135deg, #d7263d, #f04a61);
+        }
+
+        .toast-info {
+            background: linear-gradient(135deg, #111111, #2d2d2d);
+        }
 
         #lookCarouselContainer {
             margin: 22px 0 18px;
@@ -1644,7 +1817,7 @@
         }
 
         .full-outfit-card {
-            background: linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(248,249,251,0.96) 100%);
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(248, 249, 251, 0.96) 100%);
             border: 1px solid rgba(15, 23, 42, 0.05);
             border-radius: 34px;
             padding: 28px;
@@ -1814,7 +1987,7 @@
         }
 
         .anchor-piece-card {
-            background: linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(248,250,252,0.94) 100%);
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(248, 250, 252, 0.94) 100%);
             border: 1px solid rgba(15, 23, 42, 0.06);
             border-radius: 24px;
             padding: 18px;
@@ -2026,163 +2199,7 @@
             margin-bottom: 14px;
         }
 
-        .import-history-card {
-           margin-top: 18px;
-           border-radius: 24px;
-           padding: 18px;
-           background: rgba(255, 255, 255, 0.82);
-           border: 1px solid rgba(15, 23, 42, 0.08);
-           box-shadow: 0 12px 28px rgba(15, 23, 42, 0.05);
-        }
-
-       .import-history-header {
-           display: flex;
-           align-items: center;
-           justify-content: space-between;
-           gap: 14px;
-           flex-wrap: wrap;
-           margin-bottom: 14px;
-       }
-
-      .import-history-title {
-          margin: 0;
-          font-size: 1.02rem;
-          font-weight: 850;
-          color: #111827;
-          letter-spacing: -0.03em;
-      }
-
-      .import-history-subtitle {
-          margin: 4px 0 0;
-          color: #667085;
-          font-size: 0.9rem;
-          font-weight: 600;
-      }
-
-      .import-history-list {
-          display: grid;
-          gap: 10px;
-      }
-
-      .import-history-row {
-         display: flex;
-         align-items: center;
-         justify-content: space-between;
-         gap: 14px;
-         padding: 14px;
-         border-radius: 18px;
-         background: rgba(15, 23, 42, 0.03);
-         border: 1px solid rgba(15, 23, 42, 0.06);
-      }
-
-      .import-history-row[role="button"] {
-         cursor: pointer;
-         transition:
-         transform 0.18s ease,
-         background-color 0.22s ease,
-         border-color 0.22s ease,
-         box-shadow 0.22s ease;
-      }
-
-     .import-history-row[role="button"]:hover {
-        background: rgba(0, 113, 227, 0.055);
-        border-color: rgba(0, 113, 227, 0.16);
-        transform: translateY(-1px);
-        box-shadow: 0 10px 22px rgba(0, 113, 227, 0.06);
-     }
-
-     .import-history-row[role="button"]:focus {
-        outline: none;
-        box-shadow: 0 0 0 4px rgba(0, 113, 227, 0.10);
-     }
-
-     .import-history-row[role="button"] {
-         cursor: pointer;
-      }
-
-      .import-history-row[role="button"]:hover {
-          background: rgba(0, 113, 227, 0.055);
-          border-color: rgba(0, 113, 227, 0.16);
-          transform: translateY(-1px);
-      }
-
-      .import-history-row[role="button"]:focus {
-          outline: none;
-          box-shadow: 0 0 0 4px rgba(0, 113, 227, 0.10);
-      }
-      .import-history-main {
-         min-width: 0;
-      }
-
-      .import-history-file {
-         font-weight: 850;
-         color: #111827;
-         word-break: break-word;
-      }
-
-     .import-history-meta {
-        margin-top: 4px;
-        color: #667085;
-        font-size: 0.84rem;
-        font-weight: 650;
-      }
-
-     .import-history-stats {
-        display: flex;
-        gap: 8px;
-        flex-wrap: wrap;
-        justify-content: flex-end;
-      }
-
-.import-history-pill {
-    display: inline-flex;
-    align-items: center;
-    padding: 7px 11px;
-    border-radius: 999px;
-    font-size: 0.74rem;
-    font-weight: 850;
-    white-space: nowrap;
-}
-
-.import-history-pill.success {
-    background: rgba(34, 197, 94, 0.12);
-    color: #15803d;
-    border: 1px solid rgba(34, 197, 94, 0.18);
-}
-
-.import-history-pill.error {
-    background: rgba(239, 68, 68, 0.12);
-    color: #b91c1c;
-    border: 1px solid rgba(239, 68, 68, 0.18);
-}
-
-.import-history-pill.neutral {
-    background: rgba(15, 23, 42, 0.06);
-    color: #475467;
-    border: 1px solid rgba(15, 23, 42, 0.08);
-}
-
-.import-history-empty {
-    padding: 18px;
-    border-radius: 18px;
-    text-align: center;
-    color: #667085;
-    font-weight: 700;
-    background: rgba(15, 23, 42, 0.03);
-    border: 1px dashed rgba(15, 23, 42, 0.12);
-}
-
-@media (max-width: 768px) {
-    .import-history-row {
-        align-items: flex-start;
-        flex-direction: column;
-    }
-
-    .import-history-stats {
-        justify-content: flex-start;
-    }
-}
-
+        .import-history-card,
         .csv-rules-card {
             margin-top: 18px;
             border-radius: 24px;
@@ -2192,91 +2209,187 @@
             box-shadow: 0 12px 28px rgba(15, 23, 42, 0.05);
         }
 
-       .csv-rules-header {
+        .import-history-header,
+        .csv-rules-header {
             display: flex;
-            justify-content: space-between;
             align-items: center;
+            justify-content: space-between;
             gap: 14px;
             flex-wrap: wrap;
             margin-bottom: 14px;
-       }
+        }
 
-      .csv-rules-title {
+        .import-history-title,
+        .csv-rules-title {
             margin: 0;
             font-size: 1.02rem;
             font-weight: 850;
             color: #111827;
             letter-spacing: -0.03em;
-       }
+        }
 
-      .csv-rules-subtitle {
-           margin: 4px 0 0;
-           color: #667085;
-           font-size: 0.9rem;
-           font-weight: 600;
-       }
+        .import-history-subtitle,
+        .csv-rules-subtitle {
+            margin: 4px 0 0;
+            color: #667085;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
 
-      .csv-rules-grid {
-           display: grid;
-           grid-template-columns: repeat(3, minmax(0, 1fr));
-          gap: 12px;
-      }
+        .import-history-list {
+            display: grid;
+            gap: 10px;
+        }
 
-      .csv-rule-box {
-          border-radius: 18px;
-          padding: 14px;
-          background: rgba(15, 23, 42, 0.03);
-          border: 1px solid rgba(15, 23, 42, 0.06);
-       }
+        .import-history-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 14px;
+            padding: 14px;
+            border-radius: 18px;
+            background: rgba(15, 23, 42, 0.03);
+            border: 1px solid rgba(15, 23, 42, 0.06);
+        }
 
-      .csv-rule-label {
-         font-size: 0.72rem;
-         font-weight: 850;
-         letter-spacing: 0.1em;
-         text-transform: uppercase;
-         color: #7b8190;
-         margin-bottom: 8px;
-      }
+        .import-history-row[role="button"] {
+            cursor: pointer;
+            transition:
+                transform 0.18s ease,
+                background-color 0.22s ease,
+                border-color 0.22s ease,
+                box-shadow 0.22s ease;
+        }
 
-      .csv-rule-list {
-         margin: 0;
-         padding-left: 18px;
-         color: #475467;
-         font-size: 0.88rem;
-         line-height: 1.65;
-         font-weight: 600;
-      }
+        .import-history-row[role="button"]:hover {
+            background: rgba(0, 113, 227, 0.055);
+            border-color: rgba(0, 113, 227, 0.16);
+            transform: translateY(-1px);
+            box-shadow: 0 10px 22px rgba(0, 113, 227, 0.06);
+        }
 
-     .csv-rule-code {
-         display: inline-flex;
-         padding: 3px 7px;
-         border-radius: 999px;
-         background: rgba(0, 113, 227, 0.08);
-         color: var(--apple-blue);
-        font-weight: 800;
-        font-size: 0.78rem;
-      }
+        .import-history-row[role="button"]:focus {
+            outline: none;
+            box-shadow: 0 0 0 4px rgba(0, 113, 227, 0.10);
+        }
 
-     .csv-bad-example {
-         margin-top: 12px;
-         border-radius: 18px;
-         padding: 14px;
-         background: rgba(239, 68, 68, 0.06);
-         border: 1px solid rgba(239, 68, 68, 0.14);
-         color: #7f1d1d;
-         font-size: 0.88rem;
-         font-weight: 650;
-     }
+        .import-history-main {
+            min-width: 0;
+        }
 
-     .csv-bad-example strong {
-        color: #b91c1c;
-     }
+        .import-history-file {
+            font-weight: 850;
+            color: #111827;
+            word-break: break-word;
+        }
 
-     @media (max-width: 991px) {
-    .csv-rules-grid {
-        grid-template-columns: 1fr;
-         }
-    }
+        .import-history-meta {
+            margin-top: 4px;
+            color: #667085;
+            font-size: 0.84rem;
+            font-weight: 650;
+        }
+
+        .import-history-stats {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+        }
+
+        .import-history-pill {
+            display: inline-flex;
+            align-items: center;
+            padding: 7px 11px;
+            border-radius: 999px;
+            font-size: 0.74rem;
+            font-weight: 850;
+            white-space: nowrap;
+        }
+
+        .import-history-pill.success {
+            background: rgba(34, 197, 94, 0.12);
+            color: #15803d;
+            border: 1px solid rgba(34, 197, 94, 0.18);
+        }
+
+        .import-history-pill.error {
+            background: rgba(239, 68, 68, 0.12);
+            color: #b91c1c;
+            border: 1px solid rgba(239, 68, 68, 0.18);
+        }
+
+        .import-history-pill.neutral {
+            background: rgba(15, 23, 42, 0.06);
+            color: #475467;
+            border: 1px solid rgba(15, 23, 42, 0.08);
+        }
+
+        .import-history-empty {
+            padding: 18px;
+            border-radius: 18px;
+            text-align: center;
+            color: #667085;
+            font-weight: 700;
+            background: rgba(15, 23, 42, 0.03);
+            border: 1px dashed rgba(15, 23, 42, 0.12);
+        }
+
+        .csv-rules-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 12px;
+        }
+
+        .csv-rule-box {
+            border-radius: 18px;
+            padding: 14px;
+            background: rgba(15, 23, 42, 0.03);
+            border: 1px solid rgba(15, 23, 42, 0.06);
+        }
+
+        .csv-rule-label {
+            font-size: 0.72rem;
+            font-weight: 850;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: #7b8190;
+            margin-bottom: 8px;
+        }
+
+        .csv-rule-list {
+            margin: 0;
+            padding-left: 18px;
+            color: #475467;
+            font-size: 0.88rem;
+            line-height: 1.65;
+            font-weight: 600;
+        }
+
+        .csv-rule-code {
+            display: inline-flex;
+            padding: 3px 7px;
+            border-radius: 999px;
+            background: rgba(0, 113, 227, 0.08);
+            color: var(--apple-blue);
+            font-weight: 800;
+            font-size: 0.78rem;
+        }
+
+        .csv-bad-example {
+            margin-top: 12px;
+            border-radius: 18px;
+            padding: 14px;
+            background: rgba(239, 68, 68, 0.06);
+            border: 1px solid rgba(239, 68, 68, 0.14);
+            color: #7f1d1d;
+            font-size: 0.88rem;
+            font-weight: 650;
+        }
+
+        .csv-bad-example strong {
+            color: #b91c1c;
+        }
 
         .inventory-upload-result-card {
             border-radius: 22px;
@@ -2333,7 +2446,7 @@
             gap: 8px;
             padding: 10px 12px;
             border-radius: 999px;
-            background: rgba(255,255,255,0.82);
+            background: rgba(255, 255, 255, 0.82);
             border: 1px solid rgba(15, 23, 42, 0.08);
             color: #475467;
             font-size: 0.82rem;
@@ -2342,7 +2455,7 @@
         }
 
         .merchant-empty-admin {
-            background: rgba(255,255,255,0.64);
+            background: rgba(255, 255, 255, 0.64);
         }
 
         .merchant-inventory-grid {
@@ -2432,11 +2545,11 @@
             border: 1px solid rgba(245, 158, 11, 0.2);
         }
 
-       .merchant-status-pill.danger {
-           background: rgba(239, 68, 68, 0.12);
-           color: #b91c1c;
-           border: 1px solid rgba(239, 68, 68, 0.18);
-       }
+        .merchant-status-pill.danger {
+            background: rgba(239, 68, 68, 0.12);
+            color: #b91c1c;
+            border: 1px solid rgba(239, 68, 68, 0.18);
+        }
 
         .merchant-status-pill.synced {
             background: rgba(0, 113, 227, 0.12);
@@ -2551,6 +2664,11 @@
         }
 
         @media (min-width: 1200px) {
+            #suggestionsRow:has(> :nth-child(1):last-child),
+            #suggestionsRow:has(> :nth-child(2):last-child) {
+                justify-content: center;
+            }
+
             .merchant-inventory-grid:has(> :nth-child(1):last-child) {
                 grid-template-columns: minmax(320px, 420px);
                 justify-content: center;
@@ -2565,6 +2683,52 @@
         @media (max-width: 1100px) {
             .merchant-inventory-grid {
                 grid-template-columns: repeat(2, minmax(280px, 1fr));
+            }
+
+            .secure-store-card {
+                min-width: 280px;
+                flex-basis: 310px;
+            }
+        }
+
+        @media (max-width: 991px) {
+            .auth-shell {
+                padding: 16px;
+            }
+
+            .auth-card {
+                padding: 18px;
+                border-radius: 24px;
+            }
+
+            .hero-title {
+                font-size: clamp(2.7rem, 8vw, 4.4rem);
+            }
+
+            .summary-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .welcome-card {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .csv-rules-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .search-shell {
+                flex-wrap: wrap;
+                border-radius: 26px;
+            }
+
+            .secure-store-card {
+                width: 100%;
+                max-width: none;
+                flex: 1 1 100%;
+                border-right: none;
+                border-bottom: 1px solid rgba(15, 23, 42, 0.08);
             }
         }
 
@@ -2604,30 +2768,6 @@
             }
         }
 
-        @media (max-width: 991px) {
-            .auth-shell {
-                padding: 16px;
-            }
-
-            .auth-card {
-                padding: 18px;
-                border-radius: 24px;
-            }
-
-            .hero-title {
-                font-size: clamp(2.7rem, 8vw, 4.4rem);
-            }
-
-            .summary-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .welcome-card {
-                flex-direction: column;
-                align-items: flex-start;
-            }
-        }
-
         @media (max-width: 768px) {
             .inventory-upload-summary {
                 grid-template-columns: 1fr;
@@ -2644,6 +2784,11 @@
             .merchant-dashboard-toolbar {
                 flex-direction: column;
                 align-items: stretch;
+            }
+
+            .merchant-dashboard-note {
+                border-radius: 18px;
+                align-items: flex-start;
             }
 
             .merchant-stock-editor {
@@ -2681,6 +2826,36 @@
             .search-shell .form-select,
             .search-shell .btn {
                 min-height: 58px;
+            }
+
+            .secure-store-card {
+                min-height: auto;
+                padding: 14px 16px;
+            }
+
+            .secure-store-copy {
+                text-align: left;
+            }
+
+            .secure-store-name {
+                font-size: 0.9rem;
+            }
+
+            .secure-store-code {
+                font-size: 0.72rem;
+            }
+
+            .secure-context-box {
+                padding: 13px 14px;
+            }
+
+            .import-history-row {
+                align-items: flex-start;
+                flex-direction: column;
+            }
+
+            .import-history-stats {
+                justify-content: flex-start;
             }
 
             .offcanvas {
@@ -2887,16 +3062,15 @@
                     </div>
 
                     <div class="input-group input-group-lg search-shell">
-                        <select id="retailerSelect" class="form-select fw-bold" style="max-width: 170px;">
-                            <option value="MACY001">Macy's</option>
-                            <option value="ZARA001">Zara</option>
-                            <option value="NORD001">Nordstrom</option>
-                            <option value="NIKE001">Nike</option>
-                        </select>
 
-                        <select id="storeCodeSelect" class="form-select fw-bold" style="max-width: 185px;">
-                            <option value="">Select Store</option>
-                        </select>
+                        <div class="secure-store-card">
+                            <div class="secure-store-icon">US</div>
+                            <div class="secure-store-copy">
+                                <div class="secure-store-label">Secure Smart Mirror</div>
+                                <div id="currentStoreName" class="secure-store-name">Current Store</div>
+                                <div id="currentStoreCode" class="secure-store-code">JWT store context</div>
+                            </div>
+                        </div>
 
                         <select id="vibeSelect" class="form-select premium-accent-select fw-bold" style="max-width: 185px;">
                             <option value="Casual">Casual</option>
@@ -2925,23 +3099,7 @@
                         </div>
                     </div>
 
-                    <div class="mt-3 text-center">
-                        <button class="btn btn-dark btn-sm me-2 quick-scan-btn" type="button" data-retailer="MACY001" data-rfid="RFID1001">
-                            Macy’s ⚡
-                        </button>
-
-                        <button class="btn btn-outline-dark btn-sm me-2 quick-scan-btn" type="button" data-retailer="ZARA001" data-rfid="RFID2001">
-                            Zara ⚡
-                        </button>
-
-                        <button class="btn btn-outline-dark btn-sm me-2 quick-scan-btn" type="button" data-retailer="NIKE001" data-rfid="RFID3001">
-                            Nike ⚡
-                        </button>
-
-                        <button class="btn btn-outline-dark btn-sm quick-scan-btn" type="button" data-retailer="NORD001" data-rfid="RFID4001">
-                            Nordstrom ⚡
-                        </button>
-                    </div>
+                    <div id="quickScanButtons" class="mt-3 text-center"></div>
 
                     <div class="text-center mt-3">
                         <div id="scanStatus" class="status-message"></div>
@@ -2962,29 +3120,20 @@
                 <div class="merchant-dashboard-note mb-3">
                     <span>⚙️</span>
                     <span>
-                        Bulk Mode is prepared for larger enterprise imports. Current uploads process immediately and create job records.
-                    </span>
+                    Bulk Mode is prepared for larger enterprise imports. Current uploads process immediately and create job records.
+                  </span>
+                </div>
+
+                <div class="secure-context-box mb-3">
+                    <div class="secure-context-title">Upload Target</div>
+                    <div id="uploadSecureStoreLabel" class="secure-context-value">
+                        Inventory uploads will use your logged-in store.
+                    </div>
                 </div>
 
                 <div class="row g-3 align-items-end">
-                    <div class="col-md-3">
-                        <label class="form-label fw-bold small text-muted">Retailer</label>
-                        <select id="uploadRetailerSelect" class="form-select auth-input">
-                            <option value="MACY001">Macy's</option>
-                            <option value="ZARA001">Zara</option>
-                            <option value="NORD001">Nordstrom</option>
-                            <option value="NIKE001">Nike</option>
-                        </select>
-                    </div>
 
-                    <div class="col-md-3">
-                        <label class="form-label fw-bold small text-muted">Store</label>
-                        <select id="uploadStoreCodeSelect" class="form-select auth-input">
-                            <option value="">Select Store</option>
-                        </select>
-                    </div>
-
-                    <div class="col-md-4">
+                    <div class="col-md-6">
                         <label class="form-label fw-bold small text-muted">CSV File</label>
                         <input
                                 id="inventoryCsvFile"
@@ -3134,7 +3283,7 @@
                 <div class="merchant-dashboard-toolbar">
                     <div class="merchant-dashboard-note">
                         <span>🧾</span>
-                        <span>Filter by retailer, store, category, or RFID to manage live inventory.</span>
+                        <span>Inventory is locked to your logged-in store. Search by RFID, item, brand, or category.</span>
                     </div>
                     <div class="merchant-dashboard-note">
                         <span>✏️</span>
@@ -3165,24 +3314,8 @@
                 </div>
 
                 <div class="row g-3 align-items-end">
-                    <div class="col-md-3">
-                        <label class="form-label fw-bold small text-muted">Retailer</label>
-                        <select id="inventoryRetailerSelect" class="form-select auth-input">
-                            <option value="MACY001">Macy's</option>
-                            <option value="ZARA001">Zara</option>
-                            <option value="NORD001">Nordstrom</option>
-                            <option value="NIKE001">Nike</option>
-                        </select>
-                    </div>
 
-                    <div class="col-md-3">
-                        <label class="form-label fw-bold small text-muted">Store</label>
-                        <select id="inventoryStoreCodeSelect" class="form-select auth-input">
-                            <option value="">Select Store</option>
-                        </select>
-                    </div>
-
-                    <div class="col-md-3">
+                    <div class="col-md-5">
                         <label class="form-label fw-bold small text-muted">Search</label>
                         <input
                                 id="inventorySearchInput"
@@ -3192,7 +3325,7 @@
                         />
                     </div>
 
-                    <div class="col-md-2">
+                    <div class="col-md-3">
                         <label class="form-label fw-bold small text-muted">Category</label>
                         <select id="inventoryCategoryFilter" class="form-select auth-input">
                             <option value="">All</option>
@@ -3203,7 +3336,7 @@
                         </select>
                     </div>
 
-                    <div class="col-md-1">
+                    <div class="col-md-2">
                         <button id="loadInventoryBtn" class="btn top-button w-100" type="button">
                             Load
                         </button>
@@ -3384,13 +3517,7 @@
                         </select>
                     </div>
                     <div class="col-6">
-                        <select id="activityRetailerFilter" class="form-select form-select-sm">
-                            <option value="ALL">All Retailers</option>
-                            <option value="MACY001">Macy's</option>
-                            <option value="NORD001">Nordstrom</option>
-                            <option value="ZARA001">Zara</option>
-                            <option value="NIKE001">Nike</option>
-                        </select>
+                        <select id="activityRetailerFilter" class="form-select form-select-sm"></select>
                     </div>
                 </div>
 
@@ -3476,35 +3603,61 @@
 
 <div id="toastShell" class="toast-shell"></div>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="/retailers.js"></script>
 
 <script>
     console.log("UNIVERSAL STYLIST v16.0 LUXURY UI LOADED");
 
-    const API = {
-        auth: "/api/v1/saas/auth",
-        stylist: "/api/v1/macy-stylist",
-        merchant: "/api/v1/merchant/inventory"
-    };
+const API = {
+    auth: "/api/v1/saas/auth",
+    stylist: "/api/v1/macy-stylist",
+    merchant: "/api/v1/merchant/inventory"
+};
 
-    const STORE_OPTIONS = {
-        MACY001: [
-            { code: "MACY-NYC-01", label: "Herald Square" },
-            { code: "MACY-BK-02", label: "Brooklyn" }
-        ],
-        ZARA001: [
-            { code: "ZARA-SOHO-01", label: "SoHo" },
-            { code: "ZARA-5TH-02", label: "5th Avenue" }
-        ],
-        NORD001: [
-            { code: "NORD-NYC-01", label: "57th Street" },
-            { code: "NORD-WTC-02", label: "World Trade Center" }
-        ],
-        NIKE001: [
-            { code: "NIKE-NYC-01", label: "Nike NYC" },
-            { code: "NIKE-SOHO-02", label: "Nike SoHo" }
-        ]
-    };
+const RETAILER_CONFIG = window.UniversalStylistRetailers;
 
+if (!RETAILER_CONFIG) {
+   throw new Error("retailers.js did not load. Make sure <script src='/retailers.js'><\/script> appears before the main app script.");
+}
+
+const STORE_OPTIONS = RETAILER_CONFIG.getStoreOptions();
+
+const QUICK_SCAN_RFIDS = {
+MACY001: "RFID1001",
+ZARA001: "RFID2001",
+NIKE001: "RFID3001",
+NORD001: "RFID4001",
+WALMART001: "RFID5001",
+TARGET001: "RFID6001"
+};
+const DEMO_SCAN_MODE = false;
+
+const DEMO_SCAN_CONTEXT = {
+    MACY001: {
+        retailerKey: "MACY001",
+        storeCode: "MACY-NYC-01"
+    },
+    ZARA001: {
+        retailerKey: "ZARA001",
+        storeCode: "ZARA-SOHO-01"
+    },
+    NIKE001: {
+        retailerKey: "NIKE001",
+        storeCode: "NIKE-NYC-01"
+    },
+    NORD001: {
+        retailerKey: "NORD001",
+        storeCode: "NORD-NYC-01"
+    },
+    WALMART001: {
+        retailerKey: "WALMART001",
+        storeCode: "WALMART-NYC-01"
+    },
+    TARGET001: {
+        retailerKey: "TARGET001",
+        storeCode: "TARGET-NYC-01"
+    }
+};
     let currentRfid = "";
     let currentLoadedItem = null;
     let lastScannedItem = null;
@@ -3534,14 +3687,141 @@
             .replace(/'/g, "&#039;");
     }
 
+function populateRetailerSelect(selectId, selectedValue = "MACY001", includeAllOption = false, allValue = "") {
+    const select = document.getElementById(selectId);
+    if (!select) return;
+
+     const allOption = includeAllOption
+         ? `<option value="${escapeHtml(allValue)}">All Retailers</option>`
+         : "";
+
+     const options = RETAILER_CONFIG.getRetailerEntries()
+         .map(retailer => {
+              const selected = retailer.key === selectedValue ? " selected" : "";
+
+              return `
+                 <option value="${escapeHtml(retailer.key)}"${selected}>
+                       ${escapeHtml(retailer.name)}
+                 </option>
+            `;
+        })
+         .join("");
+
+      select.innerHTML = `${allOption}${options}`;
+
+     if (includeAllOption && selectedValue === allValue) {
+       select.value = allValue;
+        return;
+        }
+
+      const exists = RETAILER_CONFIG.getRetailerEntries().some(retailer => retailer.key === selectedValue);
+      select.value = exists ? selectedValue : "MACY001";
+       }
+
+function populateActivityRetailerFilter() {
+     const select = document.getElementById("activityRetailerFilter");
+        if (!select) return;
+
+     const options = RETAILER_CONFIG.getRetailerEntries()
+          .map(retailer => `
+        <option value="${escapeHtml(retailer.key)}">
+           ${escapeHtml(retailer.name)}
+        </option>
+    `)
+     .join("");
+
+       select.innerHTML = `
+         <option value="ALL">All Retailers</option>
+       ${options}
+      `;
+     }
+function renderQuickScanButtons() {
+    const container = document.getElementById("quickScanButtons");
+    if (!container) return;
+
+    const quickScans = [
+        {
+            label: "Oxford Shirt",
+            retailerKey: "MACY001",
+            rfid: "RFID1001"
+        },
+        {
+            label: "Cropped Shirt",
+            retailerKey: "ZARA001",
+            rfid: "RFID2001"
+        },
+        {
+            label: "Nike Tee",
+            retailerKey: "NIKE001",
+            rfid: "RFID3001"
+        },
+        {
+            label: "Cashmere Crewneck",
+            retailerKey: "NORD001",
+            rfid: "RFID4001"
+        },
+        {
+            label: "Walmart Hoodie",
+            retailerKey: "WALMART001",
+            rfid: "RFID5001"
+        },
+        {
+            label: "Target Tee",
+            retailerKey: "TARGET001",
+            rfid: "RFID6001"
+        }
+    ];
+
+    container.innerHTML = quickScans.map((item, index) => {
+        const btnClass = index === 0 ? "btn-dark" : "btn-outline-dark";
+
+        return `
+            <button
+                class="btn ${btnClass} btn-sm me-2 mb-2 quick-scan-btn"
+                type="button"
+                data-retailer-key="${escapeHtml(item.retailerKey)}"
+                data-rfid="${escapeHtml(item.rfid)}"
+            >
+                ${escapeHtml(item.label)} ⚡
+            </button>
+        `;
+    }).join("");
+
+    container.querySelectorAll(".quick-scan-btn").forEach(button => {
+        button.addEventListener("click", () => {
+            const retailerKey = button.dataset.retailerKey || "";
+            const rfid = button.dataset.rfid || "";
+
+            quickScan(retailerKey, rfid);
+        });
+    });
+}
+
+    function getStoreLabel(retailerKey, storeCode) {
+      const stores = STORE_OPTIONS[retailerKey] || [];
+      const store = stores.find(item => item.code === storeCode);
+
+     return store?.label || storeCode || "";
+  }
+    function getJwtPayload() {
+      return parseJwtPayload(getToken()) || {};
+  }
+
     function getSelectedRetailerKey() {
-        return document.getElementById("retailerSelect")?.value || "MACY001";
-    }
+       return (
+           window.loggedInRetailerKey ||
+           getJwtContext().retailerKey ||
+           ""
+    );
+}
 
-    function getSelectedStoreCode() {
-        return document.getElementById("storeCodeSelect")?.value || "";
-    }
-
+   function getSelectedStoreCode() {
+      return (
+          window.loggedInRetailerKey ||
+          getJwtContext().retailerKey ||
+          ""
+    );
+}
     function populateStoreOptions(retailerKey, preferredStoreCode = "") {
         const storeSelect = document.getElementById("storeCodeSelect");
         if (!storeSelect) return;
@@ -3602,12 +3882,41 @@
         storeSelect.value = exists ? fallbackStoreCode : stores[0].code;
     }
 
-    function safeImageUrl(url, fallback = "https://placehold.co/500x620?text=Scanned+Item") {
-    const value = String(url || "").trim();
+    function buildImagePlaceholder(text = "Inventory Item") {
+        const safeText = String(text || "Inventory Item")
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;");
 
-    if (!value) return fallback;
+        const svg = `
+            <svg xmlns="http://www.w3.org/2000/svg" width="500" height="620" viewBox="0 0 500 620">
+                <rect width="500" height="620" fill="#f3f4f6"/>
+                <rect x="80" y="120" width="340" height="380" rx="28" fill="#e5e7eb"/>
+                <text x="250" y="295" text-anchor="middle" font-family="Arial, sans-serif" font-size="24" font-weight="700" fill="#6b7280">
+                     ${safeText}
+            </text>
+            <text x="250" y="330" text-anchor="middle" font-family="Arial, sans-serif" font-size="15" fill="#9ca3af">
+                Image unavailable
+            </text>
+        </svg>
+    `;
 
-    try {
+    return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
+  }
+
+     function safeImageUrl(url, fallbackText = "Inventory Item") {
+         const value = String(url || "").trim();
+
+         if (!value) {
+        return buildImagePlaceholder(fallbackText);
+         }
+
+        if (value.startsWith("file://") || value.startsWith("/Users/") || value.startsWith("C:\\")) {
+        return buildImagePlaceholder(fallbackText);
+    }
+
+        try {
         const parsed = new URL(value, window.location.origin);
 
         if (
@@ -3618,11 +3927,11 @@
         ) {
             return parsed.href;
         }
-    } catch (_) {
-        return fallback;
+    } catch (error) {
+        return buildImagePlaceholder(fallbackText);
     }
 
-    return fallback;
+    return buildImagePlaceholder(fallbackText);
 }
 
     function safeNumber(value) {
@@ -3792,15 +4101,15 @@
     }
 
     function getToken() {
-        return localStorage.getItem("token") || "";
+        return sessionStorage.getItem("token") || "";
     }
 
     function setToken(token) {
-        localStorage.setItem("token", token);
+        sessionStorage.setItem("token", token);
     }
 
     function clearToken() {
-        localStorage.removeItem("token");
+        sessionStorage.removeItem("token");
     }
 
      function parseJwtPayload(token) {
@@ -3836,21 +4145,126 @@ function getCurrentUserRole() {
     );
 }
 
-function isOwnerUser() {
-    const role = String(getCurrentUserRole() || "").toUpperCase();
-    return role === "OWNER" || role === "ROLE_OWNER";
+   function isOwnerUser() {
+       const role = String(getCurrentUserRole() || "").toUpperCase();
+       return role === "OWNER" || role === "ROLE_OWNER";
+   }
+
+    function getJwtContext() {
+       const payload = parseJwtPayload(getToken()) || {};
+       const restored = window.loggedInAuthContext || {};
+
+       return {
+           userId: payload.userId || "",
+           tenantId: payload.tenantId || "",
+           storeId: payload.storeId || "",
+           email: payload.email || payload.sub || "",
+           fullName: payload.fullName || "",
+           role: payload.role || "",
+           businessName: payload.businessName || "",
+           tenantSlug: payload.tenantSlug || "",
+           plan: payload.plan || "",
+           retailerKey: payload.retailerKey || "",
+           storeCode: payload.storeCode || "",
+           storeName: payload.storeName || "",
+           location: payload.location || ""
+    };
+}
+
+     function getCurrentRetailerKey() {
+        return getJwtContext().retailerKey || "";
+    }
+
+     function getCurrentStoreCode() {
+        return getJwtContext().storeCode || "";
+     }
+
+     function getCurrentStoreName() {
+        const context = getJwtContext();
+        return context.storeName || context.storeCode || "Current Store";
+     }
+
+     function updateSecureStoreLabels() {
+        const context = getJwtContext();
+
+        const storeName = context.storeName || "Current Store";
+        const storeCode = context.storeCode || "JWT store context";
+        const retailerKey = context.retailerKey || "Secure retailer";
+        const businessName = context.businessName || "Your Store";
+
+        const currentStoreName = document.getElementById("currentStoreName");
+        const currentStoreCode = document.getElementById("currentStoreCode");
+        const uploadSecureStoreLabel = document.getElementById("uploadSecureStoreLabel");
+
+     if (currentStoreName) {
+        currentStoreName.textContent = storeName;
+    }
+
+     if (currentStoreCode) {
+        currentStoreCode.textContent = `${retailerKey} • ${storeCode}`;
+    }
+
+     if (uploadSecureStoreLabel) {
+        uploadSecureStoreLabel.textContent = `${businessName} • ${storeName} • ${storeCode}`;
+     }
+ }
+
+   async function restoreLoggedInStoreContext() {
+    try {
+        requireToken();
+
+        const resp = await fetch(`${API.stylist}/debug/auth`, {
+            headers: getAuthHeaders()
+        });
+
+        await assertAuthorizedResponse(resp, "Session expired. Please log in again.");
+
+        const auth = await resp.json();
+
+        const retailerKey = String(auth.jwtRetailerKey || "").trim();
+        const storeCode = String(auth.jwtStoreCode || "").trim();
+
+        if (!retailerKey || !storeCode) {
+            throw new Error("Logged-in store context is missing.");
+        }
+
+        window.loggedInRetailerKey = retailerKey;
+        window.loggedInStoreCode = storeCode;
+
+        window.loggedInAuthContext = {
+            userId: String(auth.jwtUserId || "").trim(),
+            tenantId: String(auth.jwtTenantId || "").trim(),
+            storeId: String(auth.jwtStoreId || "").trim(),
+            email: String(auth.jwtEmail || "").trim(),
+            role: String(auth.jwtRole || "").trim(),
+            retailerKey,
+            storeCode,
+            storeName: getStoreLabel(retailerKey, storeCode) || storeCode,
+            canManageInventory: Boolean(auth.canManageInventory)
+        };
+
+        updateSecureStoreLabels();
+
+        return {
+            retailerKey,
+            storeCode
+        };
+    } catch (error) {
+        console.warn("Could not restore logged-in store context:", error);
+        return null;
+    }
 }
 
     function getStoredLoginEmail() {
-        return localStorage.getItem("loginEmail") || "";
+        return sessionStorage.getItem("loginEmail") || "";
     }
 
     function setStoredLoginEmail(email) {
-        localStorage.setItem("loginEmail", email || "");
+        sessionStorage.setItem("loginEmail", email || "");
     }
 
     function clearStoredLoginEmail() {
-        localStorage.removeItem("loginEmail");
+        sessionStorage.removeItem("loginEmail");
     }
 
     function getAuthHeaders(extra = {}) {
@@ -3875,10 +4289,10 @@ function isOwnerUser() {
     function handleExpiredSession() {
         const hadToken = !!getToken();
 
-        localStorage.removeItem("token");
-        localStorage.removeItem("loginEmail");
-        localStorage.removeItem("user");
-        localStorage.removeItem("username");
+        sessionStorage.removeItem("token");
+        sessionStorage.removeItem("loginEmail");
+        sessionStorage.removeItem("user");
+        sessionStorage.removeItem("username");
 
         window.activeSavedLookId = "";
 
@@ -4030,6 +4444,7 @@ function cleanApiErrorMessage(message) {
             hideMerchantUploadSection();
             hideMerchantInventorySection();
         }
+            updateSecureStoreLabels();
     }
 
     function setButtonBusy(button, busyText) {
@@ -4456,20 +4871,31 @@ function cleanApiErrorMessage(message) {
         `;
     }
 
-    function getSavedLooks() {
-        try {
-            const raw = localStorage.getItem("savedLooks") || "[]";
-            const parsed = JSON.parse(raw);
-            return Array.isArray(parsed) ? parsed : [];
-        } catch (error) {
-            console.error("Failed to read saved looks:", error);
-            return [];
-        }
-    }
+   function getSavedLooksStorageKey() {
+    const context = getJwtContext();
+    const userPart = context.userId || context.email || "anonymous";
+    const storePart = context.storeCode || "no-store";
 
-    function setSavedLooks(looks) {
-        localStorage.setItem("savedLooks", JSON.stringify(Array.isArray(looks) ? looks : []));
+    return `savedLooks:${userPart}:${storePart}`;
+}
+
+function getSavedLooks() {
+    try {
+        const raw = sessionStorage.getItem(getSavedLooksStorageKey()) || "[]";
+        const parsed = JSON.parse(raw);
+        return Array.isArray(parsed) ? parsed : [];
+    } catch (error) {
+        console.error("Failed to read saved looks:", error);
+        return [];
     }
+}
+
+function setSavedLooks(looks) {
+    sessionStorage.setItem(
+        getSavedLooksStorageKey(),
+        JSON.stringify(Array.isArray(looks) ? looks : [])
+    );
+}
 
     function cloneSavedItem(item) {
         if (!item || typeof item !== "object") return null;
@@ -4526,35 +4952,32 @@ function cleanApiErrorMessage(message) {
     }
 
     function buildSavedLookPayload(fullOutfit) {
-        const activeLook =
-            Array.isArray(window.generatedLooks) && window.currentLookIndex >= 0
-                ? window.generatedLooks[window.currentLookIndex]
-                : null;
+    const activeLook =
+        Array.isArray(window.generatedLooks) && window.currentLookIndex >= 0
+            ? window.generatedLooks[window.currentLookIndex]
+            : null;
 
-        const vibe = document.getElementById("vibeSelect")?.value || "Casual";
-        const retailerKey = getSelectedRetailerKey();
-        const storeCode = getSelectedStoreCode();
-        const selectedStore =
-            (STORE_OPTIONS[retailerKey] || []).find(store => store.code === storeCode) || null;
+    const vibe = document.getElementById("vibeSelect")?.value || "Casual";
+    const context = getJwtContext();
 
-        return normalizeSavedLookEntry({
-            id: window.activeSavedLookId || `look-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-            savedAt: new Date().toISOString(),
-            anchor: cloneSavedItem({
-                ...(lastScannedItem || {}),
-                retailerKey,
-                storeCode,
-                storeName: getItemField(lastScannedItem, "storeName") || selectedStore?.label || ""
-            }),
-            look: fullOutfit,
-            suggestions: activeLook?.suggestions || [],
-            score: safeNumber(fullOutfit?.overallScore),
-            vibe,
-            retailerKey,
-            storeCode,
-            storeName: selectedStore?.label || ""
-        });
-    }
+    return normalizeSavedLookEntry({
+        id: window.activeSavedLookId || `look-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        savedAt: new Date().toISOString(),
+        anchor: cloneSavedItem({
+            ...(lastScannedItem || {}),
+            retailerKey: context.retailerKey,
+            storeCode: context.storeCode,
+            storeName: getItemField(lastScannedItem, "storeName") || context.storeName || context.storeCode || ""
+        }),
+        look: fullOutfit,
+        suggestions: activeLook?.suggestions || [],
+        score: safeNumber(fullOutfit?.overallScore),
+        vibe,
+        retailerKey: context.retailerKey,
+        storeCode: context.storeCode,
+        storeName: context.storeName || context.storeCode || ""
+    });
+}
 
     function updateSaveLookButtonState() {
         const btn = document.getElementById("saveFullLookBtn");
@@ -4771,82 +5194,80 @@ function cleanApiErrorMessage(message) {
     }
 
     function applySavedLookById(lookId) {
-        const savedLooks = getSavedLooks().map(normalizeSavedLookEntry).filter(Boolean);
-        const entry = savedLooks.find(item => item.id === lookId);
+    const savedLooks = getSavedLooks()
+        .map(normalizeSavedLookEntry)
+        .filter(Boolean);
 
-        if (!entry || !entry.look) {
-            showToast("Saved look not found.", "error");
-            return;
-        }
+    const entry = savedLooks.find(item => item.id === lookId);
 
-        window.activeSavedLookId = lookId;
-
-        const savedVibe = entry.vibe || "Casual";
-        const vibeSelect = document.getElementById("vibeSelect");
-        if (vibeSelect) vibeSelect.value = savedVibe;
-
-        const savedRetailerKey =
-            entry.retailerKey ||
-            getItemField(entry.anchor, "retailerKey") ||
-            getSelectedRetailerKey();
-
-        const savedStoreCode =
-            entry.storeCode ||
-            getItemField(entry.anchor, "storeCode") ||
-            "";
-
-        const retailerSelect = document.getElementById("retailerSelect");
-        if (retailerSelect && savedRetailerKey) retailerSelect.value = savedRetailerKey;
-
-        populateStoreOptions(savedRetailerKey, savedStoreCode);
-
-        const payload = {
-            ...(entry.anchor || {}),
-            fullOutfit: entry.look,
-            suggestions: Array.isArray(entry.suggestions) ? entry.suggestions : []
-        };
-
-        renderScanResult(payload, savedVibe);
-        renderSavedLooksDrawer();
-        updateSaveLookButtonState();
-
-        const scrollToLoadedLook = () => {
-            const fullOutfitContainer = document.getElementById("fullOutfitContainer");
-            const anchorPieceContainer = document.getElementById("anchorPieceContainer");
-            const scanResultSection = document.getElementById("scanResultSection");
-
-            const target =
-                (fullOutfitContainer && fullOutfitContainer.innerHTML.trim() ? fullOutfitContainer : null) ||
-                (anchorPieceContainer && anchorPieceContainer.innerHTML.trim() ? anchorPieceContainer : null) ||
-                scanResultSection;
-
-            requestAnimationFrame(() => {
-                target?.scrollIntoView({
-                    behavior: "smooth",
-                    block: "start"
-                });
-            });
-        };
-
-        const savedLooksPanel = document.getElementById("savedLooksSidebar");
-        if (savedLooksPanel) {
-            const instance =
-                bootstrap.Offcanvas.getInstance(savedLooksPanel) ||
-                new bootstrap.Offcanvas(savedLooksPanel);
-
-            const handleHidden = () => {
-                scrollToLoadedLook();
-            };
-
-            savedLooksPanel.addEventListener("hidden.bs.offcanvas", handleHidden, { once: true });
-            instance.hide();
-        } else {
-            scrollToLoadedLook();
-        }
-
-        showToast("Saved look loaded.", "success");
+    if (!entry || !entry.look) {
+        showToast("Saved look not found.", "error");
+        return;
     }
 
+    window.activeSavedLookId = lookId;
+
+    const savedVibe = entry.vibe || "Casual";
+    const vibeSelect = document.getElementById("vibeSelect");
+
+    if (vibeSelect) {
+        vibeSelect.value = savedVibe;
+    }
+
+    /*
+     * Important:
+     * Saved looks should NOT change retailer/store anymore.
+     * The smart mirror store is controlled by the logged-in JWT context.
+     */
+
+    const payload = {
+        ...(entry.anchor || {}),
+        fullOutfit: entry.look,
+        suggestions: Array.isArray(entry.suggestions) ? entry.suggestions : []
+    };
+
+    renderScanResult(payload, savedVibe);
+    renderSavedLooksDrawer();
+    updateSaveLookButtonState();
+    updateSecureStoreLabels();
+
+    const scrollToLoadedLook = () => {
+        const fullOutfitContainer = document.getElementById("fullOutfitContainer");
+        const anchorPieceContainer = document.getElementById("anchorPieceContainer");
+        const scanResultSection = document.getElementById("scanResultSection");
+
+        const target =
+            (fullOutfitContainer && fullOutfitContainer.innerHTML.trim() ? fullOutfitContainer : null) ||
+            (anchorPieceContainer && anchorPieceContainer.innerHTML.trim() ? anchorPieceContainer : null) ||
+            scanResultSection;
+
+        requestAnimationFrame(() => {
+            target?.scrollIntoView({
+                behavior: "smooth",
+                block: "start"
+            });
+        });
+    };
+
+    const savedLooksPanel = document.getElementById("savedLooksSidebar");
+
+    if (savedLooksPanel) {
+        const instance =
+            bootstrap.Offcanvas.getInstance(savedLooksPanel) ||
+            new bootstrap.Offcanvas(savedLooksPanel);
+
+        const handleHidden = () => {
+            scrollToLoadedLook();
+        };
+
+        savedLooksPanel.addEventListener("hidden.bs.offcanvas", handleHidden, { once: true });
+        instance.hide();
+    } else {
+        scrollToLoadedLook();
+    }
+
+    showToast("Saved look loaded.", "success");
+}
     function deleteSavedLookById(lookId) {
         const savedLooks = getSavedLooks()
             .map(normalizeSavedLookEntry)
@@ -5005,12 +5426,8 @@ function cleanApiErrorMessage(message) {
                     requireToken();
 
                     const nextVariation = safeNumber(window.currentLookVariation || 0) + 1;
-                    const retailerKey = getSelectedRetailerKey();
-                    const storeCode = getSelectedStoreCode();
 
                     const params = new URLSearchParams({
-                        retailerKey,
-                        storeCode,
                         vibe,
                         variation: String(nextVariation)
                     });
@@ -5059,8 +5476,6 @@ function cleanApiErrorMessage(message) {
 
         try {
             const vibe = document.getElementById("vibeSelect")?.value || "Casual";
-            const retailerKey = getSelectedRetailerKey();
-            const storeCode = getSelectedStoreCode();
             const rfid =
                 currentRfid ||
                 getItemField(lastScannedItem, "rfid", "itemRfid", "productRfid", "id");
@@ -5070,8 +5485,6 @@ function cleanApiErrorMessage(message) {
             requireToken();
 
             const params = new URLSearchParams({
-                retailerKey,
-                storeCode,
                 vibe,
                 swapCategory,
                 currentTopRfid: window.currentLookState?.topRfid || "",
@@ -5800,97 +6213,10 @@ async function clearDemoInventory() {
     }
 }
 
-async function exportMerchantInventoryCsv() {
-    const retailerKey = document.getElementById("inventoryRetailerSelect")?.value || "";
-    const storeCode = document.getElementById("inventoryStoreCodeSelect")?.value || "";
-    const query = document.getElementById("inventorySearchInput")?.value || "";
-    const category = document.getElementById("inventoryCategoryFilter")?.value || "";
-    const button = document.getElementById("exportInventoryBtn");
-
-    if (!retailerKey) {
-        setMerchantInventoryStatus("Select a retailer first.", "danger");
-        showToast("Select a retailer first.", "error");
-        return;
-    }
-
-    if (!storeCode) {
-        setMerchantInventoryStatus("Select a store first.", "danger");
-        showToast("Select a store first.", "error");
-        return;
-    }
-
-    try {
-        requireToken();
-
-        setButtonBusy(button, "Downloading...");
-        setMerchantInventoryStatus("Preparing CSV export...", "muted");
-
-        const params = new URLSearchParams({
-            retailerKey,
-            storeCode,
-            q: query,
-            category
-        });
-
-        const resp = await fetch(`${API.merchant}/export?${params.toString()}`, {
-            method: "GET",
-            headers: getAuthHeaders()
-        });
-
-        await assertAuthorizedResponse(resp, "Failed to export inventory.");
-
-        const blob = await resp.blob();
-
-        let filename = "merchant-inventory.csv";
-        const disposition = resp.headers.get("Content-Disposition");
-
-        if (disposition) {
-            const filenameMatch = disposition.match(/filename="?([^"]+)"?/);
-            if (filenameMatch && filenameMatch[1]) {
-                filename = filenameMatch[1];
-            }
-        }
-
-        const downloadUrl = window.URL.createObjectURL(blob);
-        const link = document.createElement("a");
-
-        link.href = downloadUrl;
-        link.download = filename;
-        document.body.appendChild(link);
-        link.click();
-
-        link.remove();
-        window.URL.revokeObjectURL(downloadUrl);
-
-        setMerchantInventoryStatus("CSV downloaded.", "success");
-        showToast("CSV downloaded.", "success");
-    } catch (error) {
-        console.error("Inventory Export Error:", error);
-        setMerchantInventoryStatus(error.message || "Failed to export inventory.", "danger");
-        showToast(error.message || "Failed to export inventory.", "error");
-    } finally {
-        clearButtonBusy(button, "Download CSV");
-    }
-}
-
 async function exportLowStockInventoryCsv() {
-    const retailerKey = document.getElementById("inventoryRetailerSelect")?.value || "";
-    const storeCode = document.getElementById("inventoryStoreCodeSelect")?.value || "";
     const query = document.getElementById("inventorySearchInput")?.value || "";
     const category = document.getElementById("inventoryCategoryFilter")?.value || "";
     const button = document.getElementById("exportLowStockBtn");
-
-    if (!retailerKey) {
-        setMerchantInventoryStatus("Select a retailer first.", "danger");
-        showToast("Select a retailer first.", "error");
-        return;
-    }
-
-    if (!storeCode) {
-        setMerchantInventoryStatus("Select a store first.", "danger");
-        showToast("Select a store first.", "error");
-        return;
-    }
 
     try {
         requireToken();
@@ -5899,8 +6225,6 @@ async function exportLowStockInventoryCsv() {
         setMerchantInventoryStatus("Preparing low stock CSV export...", "muted");
 
         const params = new URLSearchParams({
-            retailerKey,
-            storeCode,
             q: query,
             category,
             threshold: "3"
@@ -5949,23 +6273,8 @@ async function exportLowStockInventoryCsv() {
 
 async function exportInventoryCsv() {
     const button = document.getElementById("exportInventoryCsvBtn");
-
-    const retailerKey = document.getElementById("inventoryRetailerSelect")?.value || "";
-    const storeCode = document.getElementById("inventoryStoreCodeSelect")?.value || "";
     const query = document.getElementById("inventorySearchInput")?.value || "";
     const category = document.getElementById("inventoryCategoryFilter")?.value || "";
-
-    if (!retailerKey) {
-        setMerchantInventoryStatus("Select a retailer before exporting.", "danger");
-        showToast("Select a retailer before exporting.", "error");
-        return;
-    }
-
-    if (!storeCode) {
-        setMerchantInventoryStatus("Select a store before exporting.", "danger");
-        showToast("Select a store before exporting.", "error");
-        return;
-    }
 
     try {
         requireToken();
@@ -5974,8 +6283,6 @@ async function exportInventoryCsv() {
         setMerchantInventoryStatus("Preparing CSV export...", "muted");
 
         const params = new URLSearchParams({
-            retailerKey,
-            storeCode,
             q: query,
             category
         });
@@ -6017,23 +6324,9 @@ async function exportInventoryCsv() {
 }
 
 async function exportReorderReportCsv() {
-    const retailerKey = document.getElementById("inventoryRetailerSelect")?.value || "";
-    const storeCode = document.getElementById("inventoryStoreCodeSelect")?.value || "";
     const query = document.getElementById("inventorySearchInput")?.value || "";
     const category = document.getElementById("inventoryCategoryFilter")?.value || "";
     const button = document.getElementById("exportReorderReportBtn");
-
-    if (!retailerKey) {
-        setMerchantInventoryStatus("Select a retailer first.", "danger");
-        showToast("Select a retailer first.", "error");
-        return;
-    }
-
-    if (!storeCode) {
-        setMerchantInventoryStatus("Select a store first.", "danger");
-        showToast("Select a store first.", "error");
-        return;
-    }
 
     try {
         requireToken();
@@ -6042,8 +6335,6 @@ async function exportReorderReportCsv() {
         setMerchantInventoryStatus("Preparing reorder report...", "muted");
 
         const params = new URLSearchParams({
-            retailerKey,
-            storeCode,
             q: query,
             category
         });
@@ -6085,26 +6376,14 @@ async function exportReorderReportCsv() {
         setMerchantInventoryStatus(error.message || "Failed to export reorder report.", "danger");
         showToast(error.message || "Failed to export reorder report.", "error");
     } finally {
-       clearButtonBusy(button, "Download Reorder Report");
+        clearButtonBusy(button, "Download Reorder Report");
     }
 }
     async function loadMerchantInventory() {
-        const retailerKey = document.getElementById("inventoryRetailerSelect")?.value || "";
-        const storeCode = document.getElementById("inventoryStoreCodeSelect")?.value || "";
         const query = document.getElementById("inventorySearchInput")?.value || "";
         const category = document.getElementById("inventoryCategoryFilter")?.value || "";
         const loadBtn = document.getElementById("loadInventoryBtn");
         const topLoadBtn = document.getElementById("loadInventoryBtnTop");
-
-        if (!retailerKey) {
-            setMerchantInventoryStatus("Select a retailer first.", "danger");
-            return;
-        }
-
-        if (!storeCode) {
-            setMerchantInventoryStatus("Select a store first.", "danger");
-            return;
-        }
 
         try {
             requireToken();
@@ -6114,8 +6393,6 @@ async function exportReorderReportCsv() {
             setMerchantInventoryStatus("Loading merchant inventory...", "muted");
 
             const params = new URLSearchParams({
-                retailerKey,
-                storeCode,
                 q: query,
                 category,
                 page: String(merchantInventoryPage),
@@ -6127,6 +6404,7 @@ async function exportReorderReportCsv() {
             });
 
             await assertAuthorizedResponse(resp, "Failed to load merchant inventory.");
+
             const result = await resp.json();
 
             renderMerchantInventory(result);
@@ -6380,7 +6658,7 @@ function renderImportHistory(history) {
                 : "success";
 
         return `
-            <div class="import-history-row"
+            <div class="import-history-row">
                 <div class="import-history-main">
                     <div class="import-history-file">${escapeHtml(filename)}</div>
                     <div class="import-history-meta">
@@ -6400,22 +6678,7 @@ function renderImportHistory(history) {
 }
 
 async function loadImportHistory() {
-    const retailerKey =
-        document.getElementById("uploadRetailerSelect")?.value ||
-        document.getElementById("inventoryRetailerSelect")?.value ||
-        "";
-
-    const storeCode =
-        document.getElementById("uploadStoreCodeSelect")?.value ||
-        document.getElementById("inventoryStoreCodeSelect")?.value ||
-        "";
-
     const refreshBtn = document.getElementById("refreshImportHistoryBtn");
-
-    if (!retailerKey || !storeCode) {
-        renderImportHistory([]);
-        return;
-    }
 
     try {
         requireToken();
@@ -6425,12 +6688,7 @@ async function loadImportHistory() {
             refreshBtn.textContent = "Refreshing...";
         }
 
-        const params = new URLSearchParams({
-            retailerKey,
-            storeCode
-        });
-
-        const resp = await fetch(`${API.merchant}/import-history?${params.toString()}`, {
+        const resp = await fetch(`${API.merchant}/import-history`, {
             method: "GET",
             headers: getAuthHeaders()
         });
@@ -6753,22 +7011,7 @@ async function showImportJobDetails(jobId) {
     }
 }
 async function loadImportJobs() {
-    const retailerKey =
-        document.getElementById("uploadRetailerSelect")?.value ||
-        document.getElementById("inventoryRetailerSelect")?.value ||
-        "";
-
-    const storeCode =
-        document.getElementById("uploadStoreCodeSelect")?.value ||
-        document.getElementById("inventoryStoreCodeSelect")?.value ||
-        "";
-
     const refreshBtn = document.getElementById("refreshImportJobsBtn");
-
-    if (!retailerKey || !storeCode) {
-        renderImportJobs([]);
-        return;
-    }
 
     try {
         requireToken();
@@ -6778,12 +7021,7 @@ async function loadImportJobs() {
             refreshBtn.textContent = "Refreshing...";
         }
 
-        const params = new URLSearchParams({
-            retailerKey,
-            storeCode
-        });
-
-        const resp = await fetch(`${API.merchant}/import-jobs?${params.toString()}`, {
+        const resp = await fetch(`${API.merchant}/import-jobs`, {
             method: "GET",
             headers: getAuthHeaders()
         });
@@ -6811,23 +7049,9 @@ async function loadImportJobs() {
     }
 }
     async function uploadInventoryCsv() {
-        const retailerKey = document.getElementById("uploadRetailerSelect")?.value || "";
-        const storeCode = document.getElementById("uploadStoreCodeSelect")?.value || "";
         const fileInput = document.getElementById("inventoryCsvFile");
         const uploadBtn = document.getElementById("uploadInventoryBtn");
         const file = fileInput?.files?.[0];
-
-        if (!retailerKey) {
-            setInventoryUploadStatus("Select a retailer first.", "danger");
-            showToast("Select a retailer first.", "error");
-            return;
-        }
-
-        if (!storeCode) {
-            setInventoryUploadStatus("Select a store first.", "danger");
-            showToast("Select a store first.", "error");
-            return;
-        }
 
         if (!file) {
             setInventoryUploadStatus("Choose a CSV file first.", "danger");
@@ -6840,8 +7064,6 @@ async function loadImportJobs() {
 
             const formData = new FormData();
             formData.append("file", file);
-            formData.append("retailerKey", retailerKey);
-            formData.append("storeCode", storeCode);
 
             setButtonBusy(uploadBtn, "Uploading...");
             setInventoryUploadStatus("Uploading inventory CSV...", "muted");
@@ -6877,23 +7099,9 @@ async function loadImportJobs() {
     }
 
   async function uploadInventoryCsvBulk() {
-    const retailerKey = document.getElementById("uploadRetailerSelect")?.value || "";
-    const storeCode = document.getElementById("uploadStoreCodeSelect")?.value || "";
     const fileInput = document.getElementById("inventoryCsvFile");
     const bulkUploadBtn = document.getElementById("bulkUploadInventoryBtn");
     const file = fileInput?.files?.[0];
-
-    if (!retailerKey) {
-        setInventoryUploadStatus("Select a retailer first.", "danger");
-        showToast("Select a retailer first.", "error");
-        return;
-    }
-
-    if (!storeCode) {
-        setInventoryUploadStatus("Select a store first.", "danger");
-        showToast("Select a store first.", "error");
-        return;
-    }
 
     if (!file) {
         setInventoryUploadStatus("Choose a CSV file first.", "danger");
@@ -6906,8 +7114,6 @@ async function loadImportJobs() {
 
         const formData = new FormData();
         formData.append("file", file);
-        formData.append("retailerKey", retailerKey);
-        formData.append("storeCode", storeCode);
 
         setButtonBusy(bulkUploadBtn, "Starting...");
         setInventoryUploadStatus("Starting async bulk import...", "muted");
@@ -6960,47 +7166,58 @@ async function loadImportJobs() {
         clearButtonBusy(bulkUploadBtn, "Bulk Upload");
     }
 }
-    async function login() {
-        const email = document.getElementById("loginEmail")?.value.trim();
-        const password = document.getElementById("loginPassword")?.value.trim();
-        const loginBtn = document.getElementById("loginBtn");
+   async function login() {
+    const email = document.getElementById("loginEmail")?.value.trim();
+    const password = document.getElementById("loginPassword")?.value.trim();
+    const loginBtn = document.getElementById("loginBtn");
 
-        if (!email || !password) {
-            showToast("Enter email and password.", "error");
-            return;
-        }
-
-        try {
-            setButtonBusy(loginBtn, "Logging in...");
-
-            const resp = await fetch(`${API.auth}/login`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ email, password })
-            });
-
-            if (!resp.ok) {
-                const msg = await resp.text().catch(() => "");
-                throw new Error(msg || "Login failed.");
-            }
-
-            const token = await resp.text();
-            setToken(token);
-            setStoredLoginEmail(email);
-            updateAuthStatus();
-            updateAuthUI();
-            await loadBag();
-            renderSavedLooksDrawer();
-            merchantInventoryPage = 0;
-            await loadMerchantInventory();
-            showToast("Logged in successfully.", "success");
-        } catch (error) {
-            console.error("Login Error:", error);
-            showToast(error.message || "Login failed.", "error");
-        } finally {
-            clearButtonBusy(loginBtn, "Login");
-        }
+    if (!email || !password) {
+        showToast("Enter email and password.", "error");
+        return;
     }
+
+    try {
+        setButtonBusy(loginBtn, "Logging in...");
+
+        const resp = await fetch(`${API.auth}/login`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email, password })
+        });
+
+        if (!resp.ok) {
+            const msg = await resp.text().catch(() => "");
+            throw new Error(msg || "Login failed.");
+        }
+
+        const token = await resp.text();
+
+        setToken(token);
+        setStoredLoginEmail(email);
+
+        await restoreLoggedInStoreContext();
+
+        updateAuthStatus();
+        updateAuthUI();
+
+        await loadBag();
+        renderSavedLooksDrawer();
+
+        if (isOwnerUser()) {
+            merchantInventoryPage = 0;
+            await loadImportHistory();
+            await loadImportJobs();
+            await loadMerchantInventory();
+        }
+
+        showToast("Logged in successfully.", "success");
+    } catch (error) {
+        console.error("Login Error:", error);
+        showToast(error.message || "Login failed.", "error");
+    } finally {
+        clearButtonBusy(loginBtn, "Login");
+    }
+}
 
     async function signup() {
         const signupBtn = document.getElementById("signupBtn");
@@ -7050,6 +7267,11 @@ async function loadImportJobs() {
     function logout() {
         clearToken();
         clearStoredLoginEmail();
+
+        window.loggedInRetailerKey = "";
+        window.loggedInStoreCode = "";
+        window.loggedInAuthContext = null;
+
         updateAuthStatus();
         updateAuthUI();
         resetScanExperience();
@@ -7062,138 +7284,194 @@ async function loadImportJobs() {
                     <div class="bag-empty-title">Logged out</div>
                     <p class="bag-empty-text">Log in to access your saved bag and insights.</p>
                 </div>
-            `;
-        }
-
-        renderSavedLooksDrawer();
-        showToast("Logged out.", "info");
+        `;
     }
 
-    async function handleScan() {
-        const retailer = getSelectedRetailerKey();
-        const storeCode = getSelectedStoreCode();
-        const rfid = document.getElementById("rfidInput")?.value.trim();
-        const vibe = document.getElementById("vibeSelect")?.value || "Casual";
-        const scanBtn = document.getElementById("scanBtn");
+    renderSavedLooksDrawer();
+    showToast("Logged out.", "info");
+}
 
-        if (!rfid) {
-            setScanStatus("Enter or scan an RFID tag first.", "danger");
-            resetScanExperience();
-            setTimeout(() => setScanStatus("Ready to scan.", "muted"), 1800);
-            return;
-        }
+  async function handleScan(scanOverride = null) {
+    const selectedRetailer = getSelectedRetailerKey();
+    const selectedStoreCode = getSelectedStoreCode();
 
-        if (!storeCode) {
-            setScanStatus("Select a store first.", "danger");
-            showToast("Please select a store.", "error");
-            return;
-        }
+    const retailer =
+        scanOverride?.retailerKey ||
+        selectedRetailer;
 
-        setScanStatus("Analyzing item...", "muted");
-        setLiveDotState("scanning");
-        showLoadingState();
+    const storeCode =
+        scanOverride?.storeCode ||
+        selectedStoreCode;
 
-        if (scanBtn) {
-            scanBtn.disabled = true;
-            scanBtn.setAttribute("aria-busy", "true");
-            scanBtn.innerHTML = "Analyzing<span class='dot-anim'></span>";
-        }
+    const rfid = document.getElementById("rfidInput")?.value.trim();
+    const vibe = document.getElementById("vibeSelect")?.value || "Casual";
+    const scanBtn = document.getElementById("scanBtn");
 
-        try {
-            requireToken();
+    if (!rfid) {
+        setScanStatus("Enter or scan an RFID tag first.", "danger");
+        resetScanExperience();
+        setTimeout(() => setScanStatus("Ready to scan.", "muted"), 1800);
+        return;
+    }
 
-            window.activeSavedLookId = "";
-            updateSaveLookButtonState();
+    setScanStatus("Analyzing item...", "muted");
+    setLiveDotState("scanning");
+    showLoadingState();
 
-            const params = new URLSearchParams({
-                storeCode,
-                vibe
-            });
+    if (scanBtn) {
+        scanBtn.disabled = true;
+        scanBtn.setAttribute("aria-busy", "true");
+        scanBtn.innerHTML = "Analyzing<span class='dot-anim'></span>";
+    }
 
-            const resp = await fetch(
-                `${API.stylist}/scan/${encodeURIComponent(retailer)}/${encodeURIComponent(rfid)}?${params.toString()}`,
-                { headers: getAuthHeaders() }
-            );
+    try {
+        requireToken();
 
-            await assertAuthorizedResponse(resp, "Could not scan this item for the selected retailer.");
-            const data = await resp.json();
+        window.activeSavedLookId = "";
+        updateSaveLookButtonState();
 
-            hideLoadingState();
-            renderScanResult(data, vibe);
-            setLiveDotState("success");
+        const params = new URLSearchParams({
+            vibe
+        });
 
-            const rfidInput = document.getElementById("rfidInput");
-            if (rfidInput) rfidInput.value = "";
+        /*
+         * Normal secured mode:
+         * Backend uses JWT retailer/store context.
+         *
+         * Demo scan mode:
+         * Backend can optionally use retailerKey/storeCode override
+         * if your controller/service supports demo context switching.
+         */
+        if (DEMO_SCAN_MODE) {
+            if (retailer) {
+                params.set("retailerKey", retailer);
+            }
 
-            setScanStatus(
-                `Loaded ${data?.itemName || data?.name || "item"} from ${data?.retailerName || data?.retailer || "retailer"}.`,
-                "success"
-            );
-
-            setTimeout(() => {
-                setLiveDotState("ready");
-                setScanStatus("Ready to scan.", "muted");
-            }, 1800);
-        } catch (error) {
-            hideLoadingState();
-            resetScanExperience();
-            setLiveDotState("error");
-
-           const message =
-               typeof error === "string"
-                    ? error
-                    : error?.message || JSON.stringify(error) || "Unable to scan item.";
-
-            setScanStatus(message, "danger");
-            showToast(message, "error");
-
-           console.error("Scan request failed:", {
-                error,
-                message: error?.message || String(error),
-                stack: error?.stack,
-                retailer,
-                storeCode,
-                rfid,
-               vibe
-         });
-
-            setTimeout(() => {
-                setLiveDotState("ready");
-                setScanStatus("Ready to scan.", "muted");
-            }, 1800);
-        } finally {
-            if (scanBtn) {
-                scanBtn.disabled = false;
-                scanBtn.removeAttribute("aria-busy");
-                setTimeout(() => {
-                    scanBtn.textContent = "Scan Item";
-                }, 300);
+            if (storeCode) {
+                params.set("storeCode", storeCode);
             }
         }
+
+        const resp = await fetch(
+            `${API.stylist}/scan/${encodeURIComponent(rfid)}?${params.toString()}`,
+            {
+                method: "GET",
+                headers: getAuthHeaders()
+            }
+        );
+
+        await assertAuthorizedResponse(resp, "Could not scan this item for the selected store.");
+        const data = await resp.json();
+
+        hideLoadingState();
+        renderScanResult(data, vibe);
+        setLiveDotState("success");
+
+        const rfidInput = document.getElementById("rfidInput");
+        if (rfidInput) rfidInput.value = "";
+
+        setScanStatus(
+            `Loaded ${data?.itemName || data?.name || "item"} from ${data?.retailerName || data?.retailer || "retailer"}.`,
+            "success"
+        );
+
+        setTimeout(() => {
+            setLiveDotState("ready");
+            setScanStatus("Ready to scan.", "muted");
+        }, 1800);
+    } catch (error) {
+        hideLoadingState();
+        resetScanExperience();
+        setLiveDotState("error");
+
+        const message =
+            typeof error === "string"
+                ? error
+                : error?.message || JSON.stringify(error) || "Unable to scan item.";
+
+        setScanStatus(message, "danger");
+        showToast(message, "error");
+
+        console.error("Scan request failed:", {
+            error,
+            message: error?.message || String(error),
+            stack: error?.stack,
+            retailer,
+            storeCode,
+            rfid,
+            vibe,
+            demoScanMode: DEMO_SCAN_MODE
+        });
+
+        setTimeout(() => {
+            setLiveDotState("ready");
+            setScanStatus("Ready to scan.", "muted");
+        }, 1800);
+    } finally {
+        if (scanBtn) {
+            scanBtn.disabled = false;
+            scanBtn.removeAttribute("aria-busy");
+            setTimeout(() => {
+                scanBtn.textContent = "Scan Item";
+            }, 300);
+        }
+    }
+}
+
+ function quickScan(retailerKey, rfid) {
+    const safeRetailerKey = String(retailerKey || "").trim();
+    const safeRfid = String(rfid || "").trim();
+
+    if (!safeRetailerKey) {
+        setScanStatus("Quick scan is missing retailer context.", "danger");
+        showToast("Quick scan is missing retailer context.", "error");
+        return;
     }
 
-   function quickScan(retailerKey, rfid) {
+    if (!safeRfid || safeRfid.toLowerCase() === "undefined") {
+        setScanStatus("Quick scan is missing RFID.", "danger");
+        showToast("Quick scan is missing RFID.", "error");
+        return;
+    }
+
+    const demoContext = DEMO_SCAN_CONTEXT?.[safeRetailerKey];
+
+    if (!demoContext || !demoContext.retailerKey || !demoContext.storeCode) {
+        setScanStatus(`No demo scan context found for ${safeRetailerKey}.`, "danger");
+        showToast(`No demo scan context found for ${safeRetailerKey}.`, "error");
+        return;
+    }
+
     const retailerSelect = document.getElementById("retailerSelect");
+    const storeSelect = document.getElementById("storeCodeSelect");
     const rfidInput = document.getElementById("rfidInput");
     const vibeSelect = document.getElementById("vibeSelect");
 
-    if (retailerSelect) retailerSelect.value = retailerKey;
-
-    populateStoreOptions(retailerKey);
-
-    const firstStore = STORE_OPTIONS[retailerKey]?.[0]?.code || "";
-    const storeSelect = document.getElementById("storeCodeSelect");
-
-    if (storeSelect && firstStore) {
-        storeSelect.value = firstStore;
+    if (retailerSelect) {
+        retailerSelect.value = demoContext.retailerKey;
     }
 
-    if (rfidInput) rfidInput.value = rfid;
-    if (vibeSelect) vibeSelect.value = "Casual";
+    populateStoreOptions(demoContext.retailerKey, demoContext.storeCode);
 
-    handleScan();
+    if (storeSelect) {
+        storeSelect.value = demoContext.storeCode;
+    }
+
+    if (rfidInput) {
+        rfidInput.value = safeRfid;
+    }
+
+    if (vibeSelect) {
+        vibeSelect.value = "Casual";
+    }
+
+    setScanStatus(`Scanning ${safeRfid} from ${demoContext.retailerKey}...`, "muted");
+
+    handleScan({
+        retailerKey: demoContext.retailerKey,
+        storeCode: demoContext.storeCode
+    });
 }
-
     async function saveToBag() {
         if (!currentRfid || !currentLoadedItem) {
             setScanStatus("Scan an item before saving it to your bag.", "danger");
@@ -7839,11 +8117,13 @@ async function loadImportJobs() {
         document.getElementById("saveToBagBtn")?.addEventListener("click", saveToBag);
         document.getElementById("viewBagBtn")?.addEventListener("click", loadBag);
         document.getElementById("viewSavedLooksBtn")?.addEventListener("click", renderSavedLooksDrawer);
+
         document.getElementById("seedDemoInventoryBtn")?.addEventListener("click", seedDemoInventory);
         document.getElementById("clearDemoInventoryBtn")?.addEventListener("click", clearDemoInventory);
         document.getElementById("exportInventoryCsvBtn")?.addEventListener("click", exportInventoryCsv);
         document.getElementById("exportLowStockBtn")?.addEventListener("click", exportLowStockInventoryCsv);
         document.getElementById("exportReorderReportBtn")?.addEventListener("click", exportReorderReportCsv);
+
         document.getElementById("uploadInventoryBtn")?.addEventListener("click", uploadInventoryCsv);
         document.getElementById("bulkUploadInventoryBtn")?.addEventListener("click", uploadInventoryCsvBulk);
         document.getElementById("refreshImportHistoryBtn")?.addEventListener("click", loadImportHistory);
@@ -7851,17 +8131,6 @@ async function loadImportJobs() {
         document.getElementById("downloadInventoryTemplateBtn")?.addEventListener("click", downloadInventoryImportTemplate);
         document.getElementById("downloadInventoryTemplateBtnSecondary")?.addEventListener("click", downloadInventoryImportTemplate);
 
- document.getElementById("uploadRetailerSelect")?.addEventListener("change", event => {
-              const retailerKey = event.target.value || "MACY001";
-              populateUploadStoreOptions(retailerKey);
-              loadImportHistory();
-              loadImportJobs();
-         });
-
-document.getElementById("uploadStoreCodeSelect")?.addEventListener("change", () => {
-              loadImportHistory();
-              loadImportJobs();
-        });
 
         document.getElementById("loadInventoryBtn")?.addEventListener("click", () => {
             merchantInventoryPage = 0;
@@ -7871,11 +8140,6 @@ document.getElementById("uploadStoreCodeSelect")?.addEventListener("change", () 
         document.getElementById("loadInventoryBtnTop")?.addEventListener("click", () => {
             merchantInventoryPage = 0;
             loadMerchantInventory();
-        });
-
-        document.getElementById("inventoryRetailerSelect")?.addEventListener("change", event => {
-            const retailerKey = event.target.value || "MACY001";
-            populateInventoryStoreOptions(retailerKey);
         });
 
         document.getElementById("inventorySearchInput")?.addEventListener("keydown", event => {
@@ -7891,11 +8155,8 @@ document.getElementById("uploadStoreCodeSelect")?.addEventListener("change", () 
             loadMerchantInventory();
         });
 
-        document.getElementById("retailerSelect")?.addEventListener("change", event => {
-            populateStoreOptions(event.target.value || "MACY001");
-        });
-
         document.getElementById("welcomeLogoutBtn")?.addEventListener("click", logout);
+
         document.getElementById("welcomeScanBtn")?.addEventListener("click", () => {
             document.getElementById("scanConsole")?.scrollIntoView({
                 behavior: "smooth",
@@ -7914,6 +8175,7 @@ document.getElementById("uploadStoreCodeSelect")?.addEventListener("change", () 
             const rfid =
                 currentRfid ||
                 getItemField(lastScannedItem, "rfid", "itemRfid", "productRfid", "id");
+
             const createLookBtn = document.getElementById("createLookBtn");
 
             if (!rfid) {
@@ -7938,12 +8200,7 @@ document.getElementById("uploadStoreCodeSelect")?.addEventListener("change", () 
                 window.lastSwapCategory = "";
                 resetLookHistory();
 
-                const retailerKey = getSelectedRetailerKey();
-                const storeCode = getSelectedStoreCode();
-
                 const params = new URLSearchParams({
-                    retailerKey,
-                    storeCode,
                     vibe
                 });
 
@@ -7953,23 +8210,16 @@ document.getElementById("uploadStoreCodeSelect")?.addEventListener("change", () 
                 );
 
                 await assertAuthorizedResponse(resp, `Look request failed with status ${resp.status}`);
+
                 const look = await resp.json();
 
                 window.currentLookVariation = safeNumber(look?.variation || 0);
                 pushLookToHistory(look, window.currentLookVariation);
 
-                const activeLook =
-                    Array.isArray(window.generatedLooks) && window.currentLookIndex >= 0
-                        ? window.generatedLooks[window.currentLookIndex]
-                        : null;
+                const fullOutfitContainer = document.getElementById("fullOutfitContainer");
 
-                const hasFullOutfit =
-                    !!activeLook?.fullOutfit &&
-                    !!document.getElementById("fullOutfitContainer") &&
-                    document.getElementById("fullOutfitContainer").innerHTML.trim() !== "";
-
-                if (hasFullOutfit) {
-                    document.getElementById("fullOutfitContainer")?.scrollIntoView({
+                if (fullOutfitContainer && fullOutfitContainer.innerHTML.trim()) {
+                    fullOutfitContainer.scrollIntoView({
                         behavior: "smooth",
                         block: "start"
                     });
@@ -7983,7 +8233,7 @@ document.getElementById("uploadStoreCodeSelect")?.addEventListener("change", () 
                 showToast(`Full look created for ${itemName}.`, "success");
                 setScanStatus(`Full look created for ${itemName}.`, "success");
 
-                setTimeout(() => {
+                window.setTimeout(() => {
                     setScanStatus("Ready to scan.", "muted");
                 }, 1800);
             } catch (error) {
@@ -8003,9 +8253,11 @@ document.getElementById("uploadStoreCodeSelect")?.addEventListener("change", () 
                 loadAllInsights();
             }
         });
+
         document.getElementById("importJobDetailsModal")?.addEventListener("hidden.bs.modal", () => {
             stopImportJobDetailsAutoRefresh();
         });
+
         document.getElementById("rfidInput")?.addEventListener("keydown", event => {
             if (event.key === "Enter") {
                 event.preventDefault();
@@ -8023,31 +8275,39 @@ document.getElementById("uploadStoreCodeSelect")?.addEventListener("change", () 
             loadActivityTable();
         });
 
-        document.querySelectorAll(".quick-scan-btn").forEach(button => {
-            button.addEventListener("click", () => {
-                const retailer = button.dataset.retailer || "MACY001";
-                const rfid = button.dataset.rfid || "RFID1001";
-                quickScan(retailer, rfid);
-            });
-        });
-
-        populateStoreOptions(getSelectedRetailerKey());
-        populateUploadStoreOptions(document.getElementById("uploadRetailerSelect")?.value || "MACY001");
-        populateInventoryStoreOptions(document.getElementById("inventoryRetailerSelect")?.value || "MACY001");
+        populateActivityRetailerFilter();
+        renderQuickScanButtons();
     }
 
-    bindEvents();
-    startActivityRefresh();
-    updateAuthStatus();
-    updateAuthUI();
-    setScanStatus("Ready to scan.", "muted");
-    resetScanExperience();
-    renderSavedLooksDrawer();
-    if (getToken()) {
-    loadImportHistory();
-    loadImportJobs();
+   async function initializeApp() {
+       bindEvents();
+       startActivityRefresh();
+
+       updateAuthStatus();
+       setScanStatus("Ready to scan.", "muted");
+       resetScanExperience();
+
+       if (getToken()) {
+           await restoreLoggedInStoreContext();
+       }
+
+        updateAuthUI();
+        renderSavedLooksDrawer();
+        updateSecureStoreLabels();
+
+        if (getToken() && isOwnerUser()) {
+            merchantInventoryPage = 0;
+            await loadImportHistory();
+            await loadImportJobs();
+            await loadMerchantInventory();
     }
-    window.quickScan = quickScan;
+}
+
+initializeApp();
+
+window.quickScan = quickScan;
+window.showImportJobDetails = showImportJobDetails;
+window.handleImportJobRowKeydown = handleImportJobRowKeydown;
 </script>
 </body>
 </html>

@@ -1,7 +1,10 @@
 package com.retailai.model;
 
-import jakarta.persistence.*;
-import java.time.LocalDateTime;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
 
 @Entity
 public class Tenant {
@@ -20,15 +23,36 @@ public class Tenant {
     private String email;
 
     @Column(nullable = false)
-    private String plan;
+    private String plan = "STARTER";
 
     @Column(nullable = false)
-    private boolean active = true;
+    private Boolean active = true;
 
-    private LocalDateTime createdAt = LocalDateTime.now();
+    public Tenant() {
+    }
+
+    public Tenant(
+            Long id,
+            String businessName,
+            String slug,
+            String email,
+            String plan,
+            Boolean active
+    ) {
+        this.id = id;
+        this.businessName = businessName;
+        this.slug = slug;
+        this.email = email;
+        this.plan = plan;
+        this.active = active;
+    }
 
     public Long getId() {
         return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
     }
 
     public String getBusinessName() {
@@ -55,6 +79,14 @@ public class Tenant {
         this.email = email;
     }
 
+    public String getTenantEmail() {
+        return email;
+    }
+
+    public void setTenantEmail(String tenantEmail) {
+        this.email = tenantEmail;
+    }
+
     public String getPlan() {
         return plan;
     }
@@ -63,15 +95,15 @@ public class Tenant {
         this.plan = plan;
     }
 
-    public boolean isActive() {
+    public Boolean getActive() {
         return active;
     }
 
-    public void setActive(boolean active) {
+    public void setActive(Boolean active) {
         this.active = active;
     }
 
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
+    public boolean isActive() {
+        return Boolean.TRUE.equals(active);
     }
 }

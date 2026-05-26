@@ -6,6 +6,7 @@ import com.retailai.dto.FullOutfitDTO;
 import com.retailai.dto.LookResponseDTO;
 import com.retailai.dto.MerchantInventoryItemDTO;
 import com.retailai.dto.MerchantInventoryPageDTO;
+import com.retailai.dto.StoreStaffDashboardDTO;
 import com.retailai.dto.RecommendationItemDTO;
 import com.retailai.dto.RetailerStatsDTO;
 import com.retailai.dto.ScanResultDTO;
@@ -557,6 +558,100 @@ public class InventoryService {
                 .collect(Collectors.toList());
     }
 
+    public StoreStaffDashboardDTO getStoreStaffDashboard(String retailerKey, String storeCode) {
+        String safeRetailerKey = normalizeRequired(retailerKey, "Retailer key is required.");
+        String safeStoreCode = normalizeRequired(storeCode, "Store code is required.");
+
+        AnalyticsSummaryDTO summary = getAnalyticsSummary(safeRetailerKey, safeStoreCode);
+
+        List<ActivityDTO> recentActivity;
+        try {
+            recentActivity = getRecentActivity("ALL", safeRetailerKey, safeStoreCode);
+        } catch (RuntimeException e) {
+            recentActivity = new ArrayList<>();
+        }
+
+        MerchantInventoryPageDTO inventoryPage = getMerchantInventory(
+                safeRetailerKey,
+                safeStoreCode,
+                null,
+                null,
+                0,
+                50
+        );
+
+        List<MerchantInventoryItemDTO> inventoryItems =
+                inventoryPage == null || inventoryPage.getItems() == null
+                        ? new ArrayList<>()
+                        : inventoryPage.getItems();
+
+        long totalInventoryItems =
+                inventoryPage == null
+                        ? inventoryItems.size()
+                        : Math.max(inventoryPage.getTotalItems(), inventoryItems.size());
+
+        long lowStockCount = inventoryItems.stream()
+                .filter(item -> {
+                    Integer stock = item.getStockQuantity();
+                    int safeStock = stock == null ? 0 : stock;
+                    return safeStock > 0 && safeStock <= 3;
+                })
+                .count();
+
+        long outOfStockCount = inventoryItems.stream()
+                .filter(item -> {
+                    Integer stock = item.getStockQuantity();
+                    int safeStock = stock == null ? 0 : stock;
+                    return safeStock <= 0;
+                })
+                .count();
+
+        StoreStaffDashboardDTO dashboard = new StoreStaffDashboardDTO();
+
+        dashboard.setRetailerKey(safeRetailerKey);
+        dashboard.setStoreCode(safeStoreCode);
+        dashboard.setStoreName(resolveStoreNameFromInventory(inventoryItems, safeStoreCode));
+
+        dashboard.setTodaysScans(summary == null ? 0 : summary.getTotalScans());
+        dashboard.setTodaysSaves(summary == null ? 0 : summary.getTotalSaves());
+        dashboard.setConversionRate(summary == null ? 0.0 : summary.getConversionRate());
+
+        dashboard.setTotalInventoryItems(totalInventoryItems);
+        dashboard.setLowStockCount(lowStockCount);
+        dashboard.setOutOfStockCount(outOfStockCount);
+
+        dashboard.setTopScannedItem(summary == null ? "N/A" : summary.getTopScannedItem());
+        dashboard.setTopSavedItem(summary == null ? "N/A" : summary.getTopSavedItem());
+
+        dashboard.setRecentActivity(
+                recentActivity == null
+                        ? new ArrayList<>()
+                        : recentActivity.stream().limit(6).toList()
+        );
+
+        return dashboard;
+    }
+
+    private String resolveStoreNameFromInventory(
+            List<MerchantInventoryItemDTO> inventoryItems,
+            String fallbackStoreCode
+    ) {
+        if (inventoryItems != null) {
+            for (MerchantInventoryItemDTO item : inventoryItems) {
+                if (item == null) {
+                    continue;
+                }
+
+                String storeName = safe(item.getStoreName());
+
+                if (!storeName.isBlank()) {
+                    return storeName;
+                }
+            }
+        }
+
+        return safe(fallbackStoreCode);
+    }
     public AnalyticsSummaryDTO getAnalyticsSummary() {
         return getAnalyticsSummary(null, null);
     }

@@ -7,6 +7,7 @@ import com.retailai.dto.MerchantInventoryActiveUpdateDTO;
 import com.retailai.dto.MerchantInventoryItemDTO;
 import com.retailai.dto.MerchantInventoryPageDTO;
 import com.retailai.dto.MerchantInventoryStockUpdateDTO;
+import com.retailai.dto.StoreStaffDashboardDTO;
 import com.retailai.service.AuthContextService;
 import com.retailai.service.BulkInventoryImportService;
 import com.retailai.service.DemoInventorySeedService;
@@ -396,6 +397,27 @@ public class MerchantInventoryController {
         } catch (RuntimeException e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("Inventory load failed: " + e.getMessage());
+        }
+    }
+
+    @GetMapping("/staff-dashboard")
+    public ResponseEntity<?> getStoreStaffDashboard(HttpServletRequest request) {
+        try {
+            AuthContextService.AuthContext auth = requireAuthenticated(request);
+
+            StoreStaffDashboardDTO dashboard = inventoryService.getStoreStaffDashboard(
+                    auth.retailerKey(),
+                    auth.storeCode()
+            );
+
+            return ResponseEntity.ok(dashboard);
+        } catch (SecurityException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(e.getMessage());
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Store staff dashboard load failed: " + e.getMessage());
         }
     }
 

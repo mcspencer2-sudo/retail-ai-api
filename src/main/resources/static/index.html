@@ -2662,6 +2662,140 @@
             gap: 12px;
             flex-wrap: wrap;
         }
+        .checkout-modal-content {
+            border: none;
+            border-radius: 28px;
+            overflow: hidden;
+            background:
+                radial-gradient(circle at top left, rgba(0, 113, 227, 0.08), transparent 28%),
+                linear-gradient(180deg, #ffffff 0%, #f7f9fc 100%);
+            box-shadow: 0 28px 70px rgba(15, 23, 42, 0.18);
+        }
+
+        .checkout-modal-header,
+        .checkout-modal-footer {
+            border-color: rgba(15, 23, 42, 0.08);
+            background: rgba(255, 255, 255, 0.78);
+            backdrop-filter: blur(14px);
+        }
+
+        .checkout-review-list {
+            display: grid;
+            gap: 12px;
+            margin-bottom: 18px;
+        }
+
+        .checkout-review-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            border-radius: 18px;
+            background: rgba(15, 23, 42, 0.035);
+            border: 1px solid rgba(15, 23, 42, 0.06);
+       }
+
+        .checkout-review-img {
+            width: 58px;
+            height: 58px;
+            object-fit: contain;
+            border-radius: 14px;
+            background: #f6f7fb;
+            padding: 6px;
+            flex-shrink: 0;
+       }
+
+        .checkout-review-name {
+            font-size: 0.96rem;
+            font-weight: 850;
+            color: #111827;
+            line-height: 1.25;
+        }
+
+        .checkout-review-meta {
+            margin-top: 3px;
+            font-size: 0.8rem;
+            color: #667085;
+            font-weight: 650;
+        }
+
+         .checkout-review-price {
+             margin-left: auto;
+             font-weight: 900;
+             color: #111827;
+             white-space: nowrap;
+         }
+
+         .checkout-summary-box {
+             border-radius: 22px;
+             padding: 16px;
+             background: #111827;
+             color: #fff;
+             box-shadow: 0 16px 34px rgba(17, 24, 39, 0.16);
+         }
+
+         .checkout-summary-row {
+             display: flex;
+             justify-content: space-between;
+             gap: 14px;
+             margin-bottom: 10px;
+             color: rgba(255, 255, 255, 0.78);
+             font-weight: 700;
+         }
+
+         .checkout-summary-row.final {
+             margin-bottom: 0;
+             padding-top: 12px;
+             border-top: 1px solid rgba(255, 255, 255, 0.16);
+             color: #ffffff;
+             font-size: 1.18rem;
+             font-weight: 950;
+         }
+
+         .checkout-success-card {
+             text-align: center;
+             padding: 22px 12px;
+         }
+
+         .checkout-success-icon {
+             width: 64px;
+             height: 64px;
+             border-radius: 999px;
+             display: inline-flex;
+             align-items: center;
+             justify-content: center;
+             margin-bottom: 14px;
+             background: linear-gradient(135deg, #16a34a, #22c55e);
+             color: #fff;
+             font-size: 1.55rem;
+             font-weight: 950;
+             box-shadow: 0 14px 30px rgba(34, 197, 94, 0.22);
+         }
+
+         .checkout-success-title {
+             font-size: 1.35rem;
+             font-weight: 900;
+             color: #111827;
+             letter-spacing: -0.04em;
+             margin-bottom: 8px;
+         }
+
+         .checkout-success-copy {
+             color: #667085;
+             font-weight: 650;
+             line-height: 1.65;
+             margin-bottom: 14px;
+         }
+
+         .checkout-receipt-code {
+             display: inline-flex;
+             padding: 8px 12px;
+             border-radius: 999px;
+             background: rgba(0, 113, 227, 0.10);
+             color: var(--apple-blue);
+             font-size: 0.82rem;
+             font-weight: 850;
+         }
 
         @media (min-width: 1200px) {
             #suggestionsRow:has(> :nth-child(1):last-child),
@@ -3558,6 +3692,42 @@
 
     <div class="offcanvas-body px-4 pt-3" id="savedLooksContent">
         <div class="loading-state">Loading saved looks...</div>
+    </div>
+</div>
+<div
+        class="modal fade"
+        id="checkoutModal"
+        tabindex="-1"
+        aria-labelledby="checkoutModalLabel"
+        aria-hidden="true"
+>
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content checkout-modal-content">
+            <div class="modal-header checkout-modal-header">
+                <div>
+                    <div class="section-kicker">Checkout Simulation</div>
+                    <h5 class="modal-title fw-bold" id="checkoutModalLabel">
+                        Complete Your Store Checkout
+                    </h5>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <div class="modal-body">
+                <div id="checkoutModalBody">
+                    <div class="text-muted fw-semibold">Preparing checkout...</div>
+                </div>
+            </div>
+
+            <div class="modal-footer checkout-modal-footer">
+                <button type="button" class="btn merchant-inline-btn" data-bs-dismiss="modal">
+                    Keep Shopping
+                </button>
+                <button type="button" class="btn merchant-inline-btn primary" id="confirmCheckoutBtn">
+                    Confirm Checkout
+                </button>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -7617,6 +7787,192 @@ async function loadImportJobs() {
         }
     }
 
+    let lastLoadedBag = null;
+
+function generateMockOrderNumber() {
+    const stamp = new Date()
+        .toISOString()
+        .replace(/[-:.TZ]/g, "")
+        .slice(0, 14);
+
+    const suffix = Math.random().toString(36).slice(2, 6).toUpperCase();
+
+    return `US-${stamp}-${suffix}`;
+}
+
+function getBagItemsFromLastLoad() {
+    const items = Array.isArray(lastLoadedBag?.items) ? lastLoadedBag.items : [];
+    return items;
+}
+
+function calculateCheckoutTotals(items) {
+    const safeItems = Array.isArray(items) ? items : [];
+
+    const subtotal = safeItems.reduce((sum, item) => {
+        return sum + safeNumber(item?.price);
+    }, 0);
+
+    const tax = subtotal * 0.0825;
+    const total = subtotal + tax;
+
+    return {
+        subtotal,
+        tax,
+        total
+    };
+}
+
+function openCheckoutModal() {
+    const items = getBagItemsFromLastLoad();
+
+    if (!items.length) {
+        showToast("Your bag is empty.", "error");
+        return;
+    }
+
+    const modalEl = document.getElementById("checkoutModal");
+    const bodyEl = document.getElementById("checkoutModalBody");
+    const confirmBtn = document.getElementById("confirmCheckoutBtn");
+
+    if (!modalEl || !bodyEl || !confirmBtn) {
+        showToast("Checkout modal is missing.", "error");
+        return;
+    }
+
+    const totals = calculateCheckoutTotals(items);
+
+    bodyEl.innerHTML = `
+        <div class="checkout-review-list">
+            ${items.map(item => {
+                const name = item.itemName || item.name || "Unnamed Item";
+                const retailer = item.retailerName || item.retailer || "Retailer";
+                const category = item.category || "Style Item";
+                const imageUrl = safeImageUrl(item.imageUrl || "", "https://placehold.co/76x76?text=Item");
+                const price = safeNumber(item.price);
+
+                return `
+                    <div class="checkout-review-item">
+                        <img
+                            src="${imageUrl}"
+                            alt="${escapeHtml(name)}"
+                            class="checkout-review-img"
+                            onerror="this.src='https://placehold.co/76x76?text=Item';"
+                        />
+                        <div class="min-width-0">
+                            <div class="checkout-review-name">${escapeHtml(name)}</div>
+                            <div class="checkout-review-meta">
+                                ${escapeHtml(retailer)} • ${escapeHtml(category)}
+                            </div>
+                        </div>
+                        <div class="checkout-review-price">${formatPrice(price)}</div>
+                    </div>
+                `;
+            }).join("")}
+        </div>
+
+        <div class="checkout-summary-box">
+            <div class="checkout-summary-row">
+                <span>Subtotal</span>
+                <strong>${formatPrice(totals.subtotal)}</strong>
+            </div>
+            <div class="checkout-summary-row">
+                <span>Estimated Tax</span>
+                <strong>${formatPrice(totals.tax)}</strong>
+            </div>
+            <div class="checkout-summary-row final">
+                <span>Total</span>
+                <span>${formatPrice(totals.total)}</span>
+            </div>
+        </div>
+    `;
+
+    confirmBtn.disabled = false;
+    confirmBtn.textContent = "Confirm Checkout";
+    confirmBtn.onclick = completeMockCheckout;
+
+    const modal =
+        bootstrap.Modal.getInstance(modalEl) ||
+        new bootstrap.Modal(modalEl);
+
+    modal.show();
+}
+
+async function completeMockCheckout() {
+    const items = getBagItemsFromLastLoad();
+    const confirmBtn = document.getElementById("confirmCheckoutBtn");
+    const bodyEl = document.getElementById("checkoutModalBody");
+
+    if (!items.length) {
+        showToast("Your bag is empty.", "error");
+        return;
+    }
+
+    const originalText = confirmBtn?.textContent || "Confirm Checkout";
+
+    try {
+        if (confirmBtn) {
+            confirmBtn.disabled = true;
+            confirmBtn.textContent = "Processing...";
+        }
+
+        await new Promise(resolve => window.setTimeout(resolve, 700));
+
+        const totals = calculateCheckoutTotals(items);
+        const orderNumber = generateMockOrderNumber();
+
+        if (bodyEl) {
+            bodyEl.innerHTML = `
+                <div class="checkout-success-card">
+                    <div class="checkout-success-icon">✔</div>
+                    <div class="checkout-success-title">Checkout Complete</div>
+                    <p class="checkout-success-copy">
+                        This simulated order has been completed for the current store session.
+                        Backend order persistence and inventory deduction can be added next.
+                    </p>
+
+                    <div class="checkout-summary-box text-start mb-3">
+                        <div class="checkout-summary-row">
+                            <span>Items Purchased</span>
+                            <strong>${items.length}</strong>
+                        </div>
+                        <div class="checkout-summary-row">
+                            <span>Subtotal</span>
+                            <strong>${formatPrice(totals.subtotal)}</strong>
+                        </div>
+                        <div class="checkout-summary-row">
+                            <span>Estimated Tax</span>
+                            <strong>${formatPrice(totals.tax)}</strong>
+                        </div>
+                        <div class="checkout-summary-row final">
+                            <span>Total</span>
+                            <span>${formatPrice(totals.total)}</span>
+                        </div>
+                    </div>
+
+                    <div class="checkout-receipt-code">
+                        Receipt ${escapeHtml(orderNumber)}
+                    </div>
+                </div>
+            `;
+        }
+
+        if (confirmBtn) {
+            confirmBtn.disabled = true;
+            confirmBtn.textContent = "Checkout Complete";
+        }
+
+        showToast("Checkout simulation complete.", "success");
+    } catch (error) {
+        console.error("Checkout Simulation Error:", error);
+        showToast("Unable to complete checkout.", "error");
+
+        if (confirmBtn) {
+            confirmBtn.disabled = false;
+            confirmBtn.textContent = originalText;
+        }
+    }
+}
+
     async function loadBag() {
         const container = document.getElementById("bagContent");
         if (!container) return;
@@ -7643,6 +7999,7 @@ async function loadImportJobs() {
             await assertAuthorizedResponse(resp, `Bag request failed with status ${resp.status}`);
 
             const bag = await resp.json();
+            lastLoadedBag = bag;
             const items = Array.isArray(bag.items) ? bag.items : [];
 
             savedRfids = new Set(
@@ -7709,30 +8066,39 @@ async function loadImportJobs() {
                 `;
             }).join("");
 
-            const totals = `
-                <div class="premium-total-box">
-                    <div class="total-kicker">Order Summary</div>
-                    <div class="total-row">
-                        <span>Subtotal</span>
-                        <strong>$${Number(bag.subtotal || 0).toFixed(2)}</strong>
-                    </div>
-                    <div class="total-row">
-                        <span>Estimated Tax</span>
-                        <strong>$${Number(bag.tax || 0).toFixed(2)}</strong>
-                    </div>
-                    <div class="total-row final">
-                        <span>Total</span>
-                        <span>$${Number(bag.total || 0).toFixed(2)}</span>
-                    </div>
-                    <button
-                        class="btn btn-outline-dark w-100 clear-bag-btn"
-                        type="button"
-                        id="clearBagBtn"
-                    >
-                        Clear Bag
-                    </button>
-                </div>
-            `;
+                const totals = `
+                    <div class="premium-total-box">
+                        <div class="total-kicker">Checkout Summary</div>
+                        <div class="total-row">
+                            <span>Subtotal</span>
+                            <strong>$${Number(bag.subtotal || 0).toFixed(2)}</strong>
+                        </div>
+                        <div class="total-row">
+                            <span>Estimated Tax</span>
+                            <strong>$${Number(bag.tax || 0).toFixed(2)}</strong>
+                        </div>
+                        <div class="total-row final">
+                            <span>Total</span>
+                            <span>$${Number(bag.total || 0).toFixed(2)}</span>
+                        </div>
+
+                        <button
+                            class="btn top-button w-100 mt-3"
+                            type="button"
+                            id="checkoutBagBtn"
+                        >
+                            Checkout
+                        </button>
+
+                         <button
+                            class="btn btn-outline-dark w-100 clear-bag-btn mt-2"
+                            type="button"
+                            id="clearBagBtn"
+                         >
+                            Clear Bag
+                         </button>
+                         </div>
+                    `;
 
             container.innerHTML = `
                 <div class="bag-section-label">Saved Pieces</div>
@@ -7745,7 +8111,8 @@ async function loadImportJobs() {
             });
 
             container.querySelector("#clearBagBtn")?.addEventListener("click", clearBag);
-        } catch (error) {
+            container.querySelector("#checkoutBagBtn")?.addEventListener("click", openCheckoutModal);
+            } catch (error) {
             console.error("Bag Load Error:", error);
             container.innerHTML = `
                 <div class="bag-empty-shell">

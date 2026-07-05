@@ -2019,6 +2019,11 @@ function renderOutfitRiskDetector(fullOutfit) {
   `).join("");
 }
 
+/* =========================================================
+   Universal Stylist — Pixel Associate Intelligence v1
+   Product/outfit recommendation payloads for associate view
+   ========================================================= */
+
 function getPixelAssociateRecommendationStoreKey() {
   const runtime =
     typeof getMirrorRuntime === "function"
@@ -5443,6 +5448,11 @@ function updateMirrorConciergeForOutfit(outfit) {
 
    setMirrorConciergeMessage(message);
  }
+
+/* =========================================================
+   Universal Stylist — Pixel Mirror Debug Tools v1
+   Console diagnostics, demo helpers, and health reports
+   ========================================================= */
 
  function exposePixelMirrorDebugTools() {
    function evalSafeFunction(name) {

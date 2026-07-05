@@ -5410,13 +5410,15 @@ function updateMirrorConciergeForOutfit(outfit) {
 
    const message = messages[action] || messages.ready;
 
-   console.log("Pixel Concierge:", {
-     action,
-     message,
-     storeName,
-     vibe,
-     data
-   });
+   if (window.PIXEL_MIRROR_DEBUG === true) {
+     console.log("Pixel Concierge:", {
+       action,
+       message,
+       storeName,
+       vibe,
+       data
+     });
+   }
 
    const timelineActionLabels = {
      scanError: "Scan issue",

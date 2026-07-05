@@ -232,15 +232,6 @@ function applyLoggedInMirrorContext() {
  let ambientIdleTimer = null;
 const AMBIENT_IDLE_DELAY_MS = 90000;
 
-function getAmbientIdleDelayMs() {
-  const customDelay = Number(localStorage.getItem("pixelMirrorIdleDelayMs"));
-
-  if (Number.isFinite(customDelay) && customDelay >= 3000) {
-    return customDelay;
-  }
-
-  return AMBIENT_IDLE_DELAY_MS;
-}
 
   function escapeHtml(value) {
     return String(value ?? "")

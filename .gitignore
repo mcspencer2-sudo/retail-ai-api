@@ -35,3 +35,4 @@ build/
 data/*.db
 data/*.mv.db
 data/*.trace.db
+.DS_Store

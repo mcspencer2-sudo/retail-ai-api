@@ -7335,21 +7335,6 @@ function buildMirrorMainExperience() {
   return main;
 }
 
-function getMirrorMainBagItemImage(item) {
-  return safeImageUrl(
-    item.imageUrl ||
-      item.image_url ||
-      item.image ||
-      item.photoUrl ||
-      item.productImageUrl ||
-      item.product?.imageUrl ||
-      item.product?.image ||
-      item.inventoryItem?.imageUrl ||
-      item.inventoryItem?.image,
-    "https://placehold.co/180x180/f7f3ec/171411?text=Item"
-  );
-}
-
 function getMirrorMainBagItemCategory(item) {
   return (
     item.category ||

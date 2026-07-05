@@ -2,24 +2,13 @@ package com.retailai.dto;
 
 public class MerchantInventoryStockUpdateDTO {
 
-    private String retailerKey;
-    private String storeCode;
     private Integer stockQuantity;
 
-    public String getRetailerKey() {
-        return retailerKey;
+    public MerchantInventoryStockUpdateDTO() {
     }
 
-    public void setRetailerKey(String retailerKey) {
-        this.retailerKey = retailerKey;
-    }
-
-    public String getStoreCode() {
-        return storeCode;
-    }
-
-    public void setStoreCode(String storeCode) {
-        this.storeCode = storeCode;
+    public MerchantInventoryStockUpdateDTO(Integer stockQuantity) {
+        this.stockQuantity = stockQuantity;
     }
 
     public Integer getStockQuantity() {
@@ -28,5 +17,9 @@ public class MerchantInventoryStockUpdateDTO {
 
     public void setStockQuantity(Integer stockQuantity) {
         this.stockQuantity = stockQuantity;
+    }
+
+    public boolean hasValidStockQuantity() {
+        return stockQuantity != null && stockQuantity >= 0;
     }
 }

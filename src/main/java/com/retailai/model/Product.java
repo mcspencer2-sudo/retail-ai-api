@@ -1,23 +1,57 @@
 package com.retailai.model;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
+import jakarta.persistence.Table;
 
 @Entity
+@Table(
+        name = "products",
+        indexes = {
+                @Index(name = "idx_product_retailer_key", columnList = "retailerKey"),
+                @Index(name = "idx_product_store_code", columnList = "storeCode"),
+                @Index(name = "idx_product_retailer_store", columnList = "retailerKey,storeCode"),
+                @Index(name = "idx_product_category", columnList = "category"),
+                @Index(name = "idx_product_brand", columnList = "brand"),
+                @Index(name = "idx_product_active_available_stock", columnList = "active,available,stockQuantity"),
+                @Index(name = "idx_product_retailer_store_category", columnList = "retailerKey,storeCode,category")
+        }
+)
 public class Product {
 
     @Id
+    @Column(nullable = false, length = 120)
     private String rfid;
 
+    @Column(length = 80)
     private String retailerKey;
+
+    @Column(length = 160)
     private String retailerName;
+
+    @Column(length = 120)
     private String storeCode;
+
+    @Column(length = 180)
     private String storeName;
 
+    @Column(length = 220)
     private String itemName;
+
+    @Column(length = 160)
     private String brand;
+
+    @Column(length = 80)
     private String category;
+
+    @Column(length = 80)
     private String color;
+
+    @Column(length = 1000)
     private String imageUrl;
 
     private Double price;
@@ -26,17 +60,36 @@ public class Product {
     private Boolean inStoreOnly;
     private Boolean available;
 
-    // Styling intelligence fields
+    @Column(length = 80)
     private String size;
+
+    @Column(length = 120)
     private String fit;
+
+    @Column(length = 180)
     private String material;
+
+    @Column(length = 80)
     private String gender;
+
+    @Column(length = 120)
     private String season;
+
+    @Column(length = 220)
     private String occasion;
+
+    @Column(length = 1000)
     private String styleTags;
+
+    @Column(length = 120)
     private String pattern;
 
     public Product() {
+        this.price = 0.0;
+        this.stockQuantity = 0;
+        this.active = true;
+        this.inStoreOnly = false;
+        this.available = false;
     }
 
     public Product(
@@ -123,194 +176,280 @@ public class Product {
         this.pattern = pattern;
     }
 
+    @PrePersist
+    public void onCreate() {
+        normalizeForSave();
+    }
+
+    @PreUpdate
+    public void onUpdate() {
+        normalizeForSave();
+    }
+
+    private void normalizeForSave() {
+        rfid = cleanUpper(rfid);
+        retailerKey = cleanUpper(retailerKey);
+        storeCode = cleanUpper(storeCode);
+
+        retailerName = clean(retailerName);
+        storeName = clean(storeName);
+        itemName = clean(itemName);
+        brand = clean(brand);
+        category = normalizeCategoryForDisplay(category);
+        color = clean(color);
+        imageUrl = clean(imageUrl);
+
+        size = clean(size);
+        fit = clean(fit);
+        material = clean(material);
+        gender = clean(gender);
+        season = clean(season);
+        occasion = clean(occasion);
+        styleTags = clean(styleTags);
+        pattern = clean(pattern);
+
+        if (price == null || price < 0) {
+            price = 0.0;
+        }
+
+        if (stockQuantity == null || stockQuantity < 0) {
+            stockQuantity = 0;
+        }
+
+        if (active == null) {
+            active = true;
+        }
+
+        if (inStoreOnly == null) {
+            inStoreOnly = false;
+        }
+
+        available = Boolean.TRUE.equals(active) && stockQuantity > 0;
+    }
+
     public String getRfid() {
-        return rfid;
+        return clean(rfid);
     }
 
     public void setRfid(String rfid) {
-        this.rfid = rfid;
+        this.rfid = cleanUpper(rfid);
     }
 
     public String getRetailerKey() {
-        return retailerKey;
+        return clean(retailerKey);
     }
 
     public void setRetailerKey(String retailerKey) {
-        this.retailerKey = retailerKey;
+        this.retailerKey = cleanUpper(retailerKey);
     }
 
     public String getRetailerName() {
-        return retailerName;
+        return clean(retailerName);
     }
 
     public void setRetailerName(String retailerName) {
-        this.retailerName = retailerName;
+        this.retailerName = clean(retailerName);
     }
 
     public String getStoreCode() {
-        return storeCode;
+        return clean(storeCode);
     }
 
     public void setStoreCode(String storeCode) {
-        this.storeCode = storeCode;
+        this.storeCode = cleanUpper(storeCode);
     }
 
     public String getStoreName() {
-        return storeName;
+        return clean(storeName);
     }
 
     public void setStoreName(String storeName) {
-        this.storeName = storeName;
+        this.storeName = clean(storeName);
     }
 
     public String getItemName() {
-        return itemName;
+        return clean(itemName);
     }
 
     public void setItemName(String itemName) {
-        this.itemName = itemName;
+        this.itemName = clean(itemName);
     }
 
     public String getBrand() {
-        return brand;
+        return clean(brand);
     }
 
     public void setBrand(String brand) {
-        this.brand = brand;
+        this.brand = clean(brand);
     }
 
     public String getCategory() {
-        return category;
+        return clean(category);
     }
 
     public void setCategory(String category) {
-        this.category = category;
+        this.category = normalizeCategoryForDisplay(category);
     }
 
     public String getColor() {
-        return color;
+        return clean(color);
     }
 
     public void setColor(String color) {
-        this.color = color;
+        this.color = clean(color);
     }
 
     public String getImageUrl() {
-        return imageUrl;
+        return clean(imageUrl);
     }
 
     public void setImageUrl(String imageUrl) {
-        this.imageUrl = imageUrl;
+        this.imageUrl = clean(imageUrl);
     }
 
     public Double getPrice() {
-        return price;
+        return price == null ? 0.0 : price;
     }
 
     public void setPrice(Double price) {
-        this.price = price;
+        this.price = price == null ? 0.0 : Math.max(0.0, price);
     }
 
     public Integer getStockQuantity() {
-        return stockQuantity;
+        return stockQuantity == null ? 0 : stockQuantity;
     }
 
     public void setStockQuantity(Integer stockQuantity) {
-        this.stockQuantity = stockQuantity;
+        this.stockQuantity = stockQuantity == null ? 0 : Math.max(0, stockQuantity);
+        this.available = Boolean.TRUE.equals(getActive()) && this.stockQuantity > 0;
     }
 
     public Boolean getActive() {
-        return active;
+        return active == null ? Boolean.TRUE : active;
     }
 
     public void setActive(Boolean active) {
-        this.active = active;
+        this.active = active == null ? Boolean.TRUE : active;
+        this.available = Boolean.TRUE.equals(this.active) && getStockQuantity() > 0;
     }
 
     public Boolean getInStoreOnly() {
-        return inStoreOnly;
+        return inStoreOnly == null ? Boolean.FALSE : inStoreOnly;
     }
 
     public void setInStoreOnly(Boolean inStoreOnly) {
-        this.inStoreOnly = inStoreOnly;
+        this.inStoreOnly = inStoreOnly == null ? Boolean.FALSE : inStoreOnly;
     }
 
     public Boolean getAvailable() {
-        return available;
+        return available == null ? Boolean.FALSE : available;
     }
 
     public void setAvailable(Boolean available) {
-        this.available = available;
+        boolean requestedAvailable = Boolean.TRUE.equals(available);
+        this.available = requestedAvailable
+                && Boolean.TRUE.equals(getActive())
+                && getStockQuantity() > 0;
     }
 
     public String getSize() {
-        return size;
+        return clean(size);
     }
 
     public void setSize(String size) {
-        this.size = size;
+        this.size = clean(size);
     }
 
     public String getFit() {
-        return fit;
+        return clean(fit);
     }
 
     public void setFit(String fit) {
-        this.fit = fit;
+        this.fit = clean(fit);
     }
 
     public String getMaterial() {
-        return material;
+        return clean(material);
     }
 
     public void setMaterial(String material) {
-        this.material = material;
+        this.material = clean(material);
     }
 
     public String getGender() {
-        return gender;
+        return clean(gender);
     }
 
     public void setGender(String gender) {
-        this.gender = gender;
+        this.gender = clean(gender);
     }
 
     public String getSeason() {
-        return season;
+        return clean(season);
     }
 
     public void setSeason(String season) {
-        this.season = season;
+        this.season = clean(season);
     }
 
     public String getOccasion() {
-        return occasion;
+        return clean(occasion);
     }
 
     public void setOccasion(String occasion) {
-        this.occasion = occasion;
+        this.occasion = clean(occasion);
     }
 
     public String getStyleTags() {
-        return styleTags;
+        return clean(styleTags);
     }
 
     public void setStyleTags(String styleTags) {
-        this.styleTags = styleTags;
+        this.styleTags = clean(styleTags);
     }
 
     public String getPattern() {
-        return pattern;
+        return clean(pattern);
     }
 
     public void setPattern(String pattern) {
-        this.pattern = pattern;
+        this.pattern = clean(pattern);
     }
 
     public boolean isAvailableForStyling() {
-        return Boolean.TRUE.equals(active)
-                && Boolean.TRUE.equals(available)
-                && stockQuantity != null
-                && stockQuantity > 0;
+        return Boolean.TRUE.equals(getActive())
+                && Boolean.TRUE.equals(getAvailable())
+                && getStockQuantity() > 0;
+    }
+
+    public boolean isLowStock(int threshold) {
+        int safeThreshold = Math.max(0, threshold);
+        int stock = getStockQuantity();
+
+        return stock > 0 && stock <= safeThreshold;
+    }
+
+    public boolean isOutOfStock() {
+        return getStockQuantity() <= 0;
+    }
+
+    private String clean(String value) {
+        return value == null ? "" : value.trim();
+    }
+
+    private String cleanUpper(String value) {
+        return clean(value).toUpperCase();
+    }
+
+    private String normalizeCategoryForDisplay(String value) {
+        String normalized = clean(value).toLowerCase();
+
+        return switch (normalized) {
+            case "top", "tops", "shirt", "shirts", "tee", "t-shirt", "hoodie", "sweater", "knit", "blouse" -> "Tops";
+            case "bottom", "bottoms", "pants", "trousers", "jeans", "cargo", "shorts", "skirt" -> "Bottoms";
+            case "shoe", "shoes", "sneaker", "sneakers", "boot", "boots", "loafer", "loafers", "heel", "heels", "sandal", "sandals" -> "Shoes";
+            case "outerwear", "coat", "jacket", "blazer", "parka", "cardigan", "trench" -> "Outerwear";
+            default -> clean(value);
+        };
     }
 }

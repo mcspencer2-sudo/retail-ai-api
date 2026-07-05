@@ -23,6 +23,11 @@ public class StoreStaffDashboardDTO {
     private List<ActivityDTO> recentActivity = new ArrayList<>();
 
     public StoreStaffDashboardDTO() {
+        this.retailerKey = "";
+        this.storeCode = "";
+        this.storeName = "";
+        this.topScannedItem = "N/A";
+        this.topSavedItem = "N/A";
     }
 
     public String getRetailerKey() {
@@ -107,7 +112,7 @@ public class StoreStaffDashboardDTO {
     }
 
     public void setTopScannedItem(String topScannedItem) {
-        this.topScannedItem = clean(topScannedItem);
+        this.topScannedItem = cleanOrDefault(topScannedItem, "N/A");
     }
 
     public String getTopSavedItem() {
@@ -115,7 +120,7 @@ public class StoreStaffDashboardDTO {
     }
 
     public void setTopSavedItem(String topSavedItem) {
-        this.topSavedItem = clean(topSavedItem);
+        this.topSavedItem = cleanOrDefault(topSavedItem, "N/A");
     }
 
     public List<ActivityDTO> getRecentActivity() {
@@ -128,5 +133,10 @@ public class StoreStaffDashboardDTO {
 
     private String clean(String value) {
         return value == null ? "" : value.trim();
+    }
+
+    private String cleanOrDefault(String value, String fallback) {
+        String cleaned = clean(value);
+        return cleaned.isBlank() ? fallback : cleaned;
     }
 }

@@ -1,6 +1,7 @@
 package com.retailai.model;
 
 import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
@@ -8,6 +9,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Index;
 import jakarta.persistence.OneToMany;
+import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 
 import java.time.LocalDateTime;
@@ -21,7 +23,8 @@ import java.util.List;
                 @Index(name = "idx_retail_order_order_number", columnList = "orderNumber"),
                 @Index(name = "idx_retail_order_user_id", columnList = "userId"),
                 @Index(name = "idx_retail_order_tenant_store", columnList = "tenantId,storeCode"),
-                @Index(name = "idx_retail_order_retailer_store", columnList = "retailerKey,storeCode")
+                @Index(name = "idx_retail_order_retailer_store", columnList = "retailerKey,storeCode"),
+                @Index(name = "idx_retail_order_created_at", columnList = "createdAt")
         }
 )
 public class RetailOrder {
@@ -30,26 +33,49 @@ public class RetailOrder {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(nullable = false, unique = true, length = 80)
     private String orderNumber;
 
+    @Column(length = 80)
     private String userId;
+
+    @Column(length = 80)
     private String tenantId;
+
+    @Column(length = 80)
     private String storeId;
+
+    @Column(length = 180)
     private String email;
 
+    @Column(nullable = false, length = 80)
     private String retailerKey;
+
+    @Column(length = 160)
     private String retailerName;
+
+    @Column(nullable = false, length = 80)
     private String storeCode;
+
+    @Column(length = 160)
     private String storeName;
 
-    private Integer itemCount;
+    @Column(nullable = false)
+    private Integer itemCount = 0;
 
-    private Double subtotal;
-    private Double tax;
-    private Double total;
+    @Column(nullable = false)
+    private Double subtotal = 0.0;
 
-    private String status;
+    @Column(nullable = false)
+    private Double tax = 0.0;
 
+    @Column(nullable = false)
+    private Double total = 0.0;
+
+    @Column(nullable = false, length = 40)
+    private String status = "COMPLETED";
+
+    @Column(nullable = false)
     private LocalDateTime createdAt;
 
     @OneToMany(
@@ -61,6 +87,26 @@ public class RetailOrder {
     private List<RetailOrderItem> items = new ArrayList<>();
 
     public RetailOrder() {
+    }
+
+    @PrePersist
+    public void beforeCreate() {
+        if (createdAt == null) {
+            createdAt = LocalDateTime.now();
+        }
+
+        if (status == null || status.isBlank()) {
+            status = "COMPLETED";
+        }
+
+        if (items == null) {
+            items = new ArrayList<>();
+        }
+
+        itemCount = Math.max(0, itemCount == null ? items.size() : itemCount);
+        subtotal = money(subtotal);
+        tax = money(tax);
+        total = money(total);
     }
 
     public Long getId() {
@@ -140,7 +186,11 @@ public class RetailOrder {
     }
 
     public Integer getItemCount() {
-        return itemCount == null ? 0 : itemCount;
+        if (itemCount != null && itemCount >= 0) {
+            return itemCount;
+        }
+
+        return items == null ? 0 : items.size();
     }
 
     public void setItemCount(Integer itemCount) {
@@ -148,27 +198,27 @@ public class RetailOrder {
     }
 
     public Double getSubtotal() {
-        return subtotal == null ? 0.0 : subtotal;
+        return money(subtotal);
     }
 
     public void setSubtotal(Double subtotal) {
-        this.subtotal = subtotal == null ? 0.0 : subtotal;
+        this.subtotal = money(subtotal);
     }
 
     public Double getTax() {
-        return tax == null ? 0.0 : tax;
+        return money(tax);
     }
 
     public void setTax(Double tax) {
-        this.tax = tax == null ? 0.0 : tax;
+        this.tax = money(tax);
     }
 
     public Double getTotal() {
-        return total == null ? 0.0 : total;
+        return money(total);
     }
 
     public void setTotal(Double total) {
-        this.total = total == null ? 0.0 : total;
+        this.total = money(total);
     }
 
     public String getStatus() {
@@ -176,7 +226,8 @@ public class RetailOrder {
     }
 
     public void setStatus(String status) {
-        this.status = clean(status);
+        String cleaned = clean(status);
+        this.status = cleaned.isBlank() ? "COMPLETED" : cleaned;
     }
 
     public LocalDateTime getCreatedAt() {
@@ -184,15 +235,30 @@ public class RetailOrder {
     }
 
     public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
+        this.createdAt = createdAt == null ? LocalDateTime.now() : createdAt;
     }
 
     public List<RetailOrderItem> getItems() {
+        if (items == null) {
+            items = new ArrayList<>();
+        }
+
         return items;
     }
 
     public void setItems(List<RetailOrderItem> items) {
-        this.items = items == null ? new ArrayList<>() : items;
+        this.items = new ArrayList<>();
+
+        if (items == null) {
+            this.itemCount = 0;
+            return;
+        }
+
+        for (RetailOrderItem item : items) {
+            addItem(item);
+        }
+
+        this.itemCount = this.items.size();
     }
 
     public void addItem(RetailOrderItem item) {
@@ -201,10 +267,31 @@ public class RetailOrder {
         }
 
         item.setOrder(this);
-        this.items.add(item);
+        getItems().add(item);
+        this.itemCount = getItems().size();
+    }
+
+    public void removeItem(RetailOrderItem item) {
+        if (item == null || items == null) {
+            return;
+        }
+
+        if (items.remove(item)) {
+            item.setOrder(null);
+        }
+
+        this.itemCount = items.size();
     }
 
     private String clean(String value) {
         return value == null ? "" : value.trim();
+    }
+
+    private Double money(Double value) {
+        if (value == null || Double.isNaN(value) || Double.isInfinite(value)) {
+            return 0.0;
+        }
+
+        return Math.max(0.0, value);
     }
 }

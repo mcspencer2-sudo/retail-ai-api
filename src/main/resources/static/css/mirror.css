@@ -1,0 +1,5250 @@
+/* =========================================================
+   Universal Stylist — Clean Recovery CSS
+   Purpose: make mirror.html open reliably again
+   ========================================================= */
+
+:root {
+  --mirror-bg: #f7f3ec;
+  --mirror-bg-soft: #efe7dc;
+  --mirror-card: rgba(255, 255, 255, 0.78);
+  --mirror-card-strong: rgba(255, 255, 255, 0.92);
+  --mirror-line: rgba(23, 20, 17, 0.08);
+  --mirror-text: #171411;
+  --mirror-muted: rgba(23, 20, 17, 0.58);
+  --mirror-soft: rgba(23, 20, 17, 0.72);
+  --mirror-blue: #4a90d9;
+  --mirror-green: #72bf87;
+  --mirror-shadow: 0 28px 90px rgba(23, 20, 17, 0.12);
+  --mirror-radius-xl: 36px;
+  --mirror-radius-lg: 28px;
+  --mirror-radius-md: 20px;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  min-height: 100%;
+  margin: 0;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family:
+    Inter,
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Helvetica Neue",
+    Arial,
+    sans-serif;
+  color: var(--mirror-text);
+  background:
+    radial-gradient(circle at 16% 84%, rgba(74, 144, 217, 0.12), transparent 34%),
+    radial-gradient(circle at 84% 18%, rgba(195, 184, 232, 0.18), transparent 34%),
+    linear-gradient(135deg, #fbfaf7 0%, #f8f6f1 46%, #f7f8fb 100%);
+  overflow-x: hidden;
+}
+
+button,
+input,
+select {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+img {
+  max-width: 100%;
+  display: block;
+}
+
+/* =========================================================
+   Old mirror shell fallback
+   ========================================================= */
+
+.mirror-page {
+  position: relative;
+  z-index: 1;
+  width: min(1440px, calc(100% - 48px));
+  margin: 0 auto;
+  padding: 28px 0 80px;
+}
+
+.mirror-nav,
+.hero-copy,
+.scan-panel,
+.result-panel,
+.outfit-panel,
+.bag-panel,
+.shopper-intelligence-panel,
+.tryon-memory-panel {
+  background: var(--mirror-card);
+  border: 1px solid rgba(255, 255, 255, 0.82);
+  border-radius: var(--mirror-radius-xl);
+  box-shadow: var(--mirror-shadow);
+  backdrop-filter: blur(28px);
+  -webkit-backdrop-filter: blur(28px);
+}
+
+.mirror-nav {
+  position: sticky;
+  top: 16px;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  min-height: 76px;
+  margin-bottom: 34px;
+  padding: 12px 16px;
+  border-radius: 999px;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.brand-mark {
+  width: 48px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  border-radius: 18px;
+  color: #fff;
+  background: linear-gradient(135deg, #171411, var(--mirror-blue));
+  font-weight: 950;
+}
+
+.brand-copy strong,
+.brand-copy span {
+  display: block;
+}
+
+.brand-copy strong {
+  color: var(--mirror-text);
+  font-size: 0.98rem;
+  font-weight: 900;
+}
+
+.brand-copy span {
+  color: var(--mirror-muted);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.nav-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+/* =========================================================
+   Shared controls
+   ========================================================= */
+
+.mirror-btn,
+.scan-button,
+.quick-btn,
+.pill {
+  min-height: 46px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--mirror-line);
+  border-radius: 999px;
+  padding: 0 18px;
+  color: var(--mirror-text);
+  background: rgba(255, 255, 255, 0.76);
+  font-weight: 850;
+  text-decoration: none;
+  box-shadow:
+    0 12px 28px rgba(23, 20, 17, 0.055),
+    inset 0 1px 0 rgba(255, 255, 255, 0.88);
+}
+
+.mirror-btn.primary,
+.scan-button {
+  border: 0;
+  color: #fff;
+  background: linear-gradient(135deg, var(--mirror-blue), #2f7ed8);
+  box-shadow: 0 18px 42px rgba(74, 144, 217, 0.24);
+}
+
+.mirror-btn.success {
+  border: 0;
+  color: #fff;
+  background: linear-gradient(135deg, #5eb975, var(--mirror-green));
+}
+
+.mirror-btn:disabled,
+.scan-button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.mirror-input,
+.mirror-select {
+  width: 100%;
+  min-height: 56px;
+  border: 1px solid var(--mirror-line);
+  border-radius: 18px;
+  padding: 0 16px;
+  color: var(--mirror-text);
+  background: rgba(255, 255, 255, 0.84);
+  outline: none;
+  font-weight: 800;
+}
+
+/* =========================================================
+   Old mirror layout fallback
+   ========================================================= */
+
+.hero {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 28px;
+}
+
+.hero-copy,
+.scan-panel {
+  min-height: 560px;
+  padding: 34px;
+}
+
+.hero-title,
+.scan-title,
+.result-title,
+.section-head h2 {
+  margin: 0;
+  color: var(--mirror-text);
+  font-size: clamp(3.2rem, 7vw, 7rem);
+  line-height: 0.9;
+  letter-spacing: -0.065em;
+}
+
+.hero-subtitle,
+.scan-copy {
+  color: var(--mirror-muted);
+  font-size: 1.06rem;
+  line-height: 1.6;
+  font-weight: 700;
+}
+
+.mirror-stats,
+.info-grid,
+.outfit-grid,
+.shopper-profile-grid,
+.tryon-memory-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.stat-card,
+.info-card,
+.outfit-card,
+.shopper-profile-card,
+.tryon-memory-card {
+  padding: 18px;
+  border-radius: var(--mirror-radius-md);
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid var(--mirror-line);
+  box-shadow: 0 14px 34px rgba(23, 20, 17, 0.055);
+}
+
+.result-panel,
+.outfit-panel,
+.bag-panel {
+  display: none;
+  margin-top: 34px;
+  padding: 30px;
+}
+
+.result-panel.show,
+.outfit-panel.show,
+.bag-panel.show {
+  display: block;
+}
+
+.result-layout {
+  display: grid;
+  grid-template-columns: 0.9fr 1.1fr;
+  gap: 28px;
+}
+
+.image-box {
+  min-height: 560px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--mirror-radius-lg);
+  background: #fff;
+  overflow: hidden;
+}
+
+.image-box img,
+.outfit-card img,
+.bag-item img,
+.tryon-memory-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.outfit-card {
+  overflow: hidden;
+}
+
+.outfit-card img {
+  height: 260px;
+  padding: 18px;
+  background: #fff;
+}
+
+.outfit-body {
+  padding: 16px;
+}
+
+.role {
+  color: var(--mirror-blue);
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.outfit-name {
+  margin-top: 8px;
+  color: var(--mirror-text);
+  font-weight: 900;
+}
+
+.outfit-meta {
+  margin-top: 5px;
+  color: var(--mirror-muted);
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+
+.bag-list {
+  display: grid;
+  gap: 12px;
+}
+
+.bag-item {
+  display: grid;
+  grid-template-columns: 86px 1fr auto;
+  gap: 14px;
+  align-items: center;
+  padding: 14px;
+  border-radius: var(--mirror-radius-md);
+  background: rgba(255, 255, 255, 0.74);
+  border: 1px solid var(--mirror-line);
+}
+
+.bag-item img {
+  width: 86px;
+  height: 86px;
+  padding: 8px;
+  border-radius: 16px;
+  background: #fff;
+}
+
+.empty {
+  padding: 28px;
+  border-radius: var(--mirror-radius-md);
+  border: 1px dashed rgba(23, 20, 17, 0.18);
+  color: var(--mirror-muted);
+  text-align: center;
+  font-weight: 800;
+}
+
+/* =========================================================
+   Premium customer main experience
+   ========================================================= */
+
+html.mirror-main-booting,
+html.mirror-main-booting body,
+html.mirror-main-ready,
+html.mirror-main-ready body {
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+body.mirror-main-active {
+  overflow: hidden;
+}
+
+body.mirror-main-active > *:not(#mirrorMainExperience):not(#mirrorMainOutfitShowcase):not(#mirrorAssociateControl):not(#mirrorMainProfileDrawer):not(#mirrorMainShowroomOverlay):not(#toastShell):not(.toast-shell):not(#shortcutHelpOverlay):not(#ambientIdleOverlay) {
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+#mirrorMainExperience,
+.mirror-main-experience {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: none;
+  min-height: 100vh;
+  overflow: hidden;
+  color: var(--mirror-text);
+  background:
+    radial-gradient(circle at 18% 85%, rgba(137, 188, 255, 0.16), transparent 34%),
+    radial-gradient(circle at 78% 20%, rgba(212, 196, 255, 0.18), transparent 32%),
+    linear-gradient(135deg, #fbfaf8 0%, #f8f9fb 46%, #fbfaf8 100%);
+}
+
+body.mirror-main-active #mirrorMainExperience,
+#mirrorMainExperience.is-active,
+.mirror-main-experience.is-active {
+  display: block !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+}
+
+.mirror-main-nav {
+  position: relative;
+  z-index: 20;
+  height: 74px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 18px 28px 0;
+}
+
+.mirror-main-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 46px;
+  border: 0;
+  background: transparent;
+  color: var(--mirror-text);
+  font-weight: 900;
+}
+
+.mirror-main-mark {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border-radius: 17px;
+  color: #fff;
+  background: linear-gradient(135deg, #171411, var(--mirror-blue));
+  box-shadow: 0 18px 42px rgba(74, 144, 217, 0.2);
+}
+
+.mirror-main-store {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 42px;
+  padding: 0 15px;
+  border-radius: 999px;
+  color: var(--mirror-soft);
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  font-size: 0.84rem;
+  font-weight: 850;
+}
+
+.mirror-main-nav-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.mirror-main-icon-btn {
+  width: 42px;
+  height: 42px;
+  border: 0;
+  border-radius: 999px;
+  color: var(--mirror-text);
+  background: rgba(255, 255, 255, 0.76);
+  box-shadow: 0 12px 28px rgba(23, 20, 17, 0.06);
+}
+
+.mirror-main-layout {
+  position: relative;
+  z-index: 2;
+  height: calc(100vh - 74px);
+  display: grid;
+  grid-template-columns: 320px minmax(0, 1fr) 320px;
+  gap: 28px;
+  align-items: center;
+  padding: 24px 34px 34px;
+}
+
+.mirror-main-left,
+.mirror-main-center,
+.mirror-main-right {
+  min-width: 0;
+}
+
+.mirror-main-left,
+.mirror-main-right {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.mirror-main-card,
+.mirror-main-scan-card,
+.mirror-main-pixel-card,
+.mirror-main-editorial,
+.mirror-main-avatar-pill {
+  background: rgba(255, 255, 255, 0.76);
+  border: 1px solid rgba(255, 255, 255, 0.82);
+  box-shadow:
+    0 32px 90px rgba(15, 23, 42, 0.09),
+    inset 0 1px 0 rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(30px) saturate(1.16);
+  -webkit-backdrop-filter: blur(30px) saturate(1.16);
+}
+
+.mirror-main-scan-card,
+.mirror-main-pixel-card {
+  border-radius: 32px;
+  overflow: hidden;
+}
+
+.mirror-main-scan-inner,
+.mirror-main-pixel-card {
+  padding: 22px;
+}
+
+.mirror-main-card-top,
+.mirror-main-pixel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+.mirror-main-small-label {
+  color: rgba(23, 20, 17, 0.42);
+  font-size: 0.62rem;
+  font-weight: 900;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+}
+
+.mirror-main-scan-idle {
+  min-height: 250px;
+  display: grid;
+  place-items: center;
+  gap: 18px;
+  text-align: center;
+}
+
+.mirror-main-scan-ring {
+  width: 138px;
+  height: 138px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(23, 20, 17, 0.12);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.mirror-main-zap {
+  width: 72px;
+  height: 72px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  color: #fff;
+  background: linear-gradient(135deg, var(--mirror-blue), #8b7dd8);
+  font-size: 2rem;
+  box-shadow: 0 18px 44px rgba(74, 144, 217, 0.22);
+}
+
+.mirror-main-start,
+.mirror-main-primary,
+.mirror-main-secondary,
+.mirror-main-subtle {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 999px;
+  padding: 0 17px;
+  font-weight: 850;
+}
+
+.mirror-main-primary {
+  color: #fff;
+  background: linear-gradient(135deg, var(--mirror-blue), #2f7ed8);
+  box-shadow: 0 18px 40px rgba(47, 126, 216, 0.24);
+}
+
+.mirror-main-secondary,
+.mirror-main-subtle,
+.mirror-main-start {
+  color: var(--mirror-text);
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(23, 20, 17, 0.08);
+}
+
+.mirror-main-product {
+  display: none;
+}
+
+.mirror-main-product.is-visible {
+  display: block !important;
+}
+
+.mirror-main-product-image {
+  height: 172px;
+  min-height: 172px;
+  margin-bottom: 14px;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  border-radius: 24px;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 35% 18%, rgba(255, 255, 255, 0.95), transparent 34%),
+    linear-gradient(145deg, rgba(246, 241, 234, 0.95), rgba(232, 226, 218, 0.88));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.95),
+    0 22px 46px rgba(15, 23, 42, 0.08);
+}
+
+.mirror-main-product-image img {
+  max-width: 100%;
+  max-height: 152px;
+  object-fit: contain;
+}
+
+.mirror-main-product-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.mirror-main-product-store {
+  margin-bottom: 5px;
+  color: rgba(23, 20, 17, 0.44);
+  font-size: 0.62rem;
+  font-weight: 900;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+}
+
+.mirror-main-product-name {
+  margin: 0;
+  color: var(--mirror-text);
+  font-size: 17px;
+  line-height: 1.05;
+  font-weight: 900;
+}
+
+.mirror-main-product-price {
+  color: var(--mirror-text);
+  font-size: 23px;
+  font-weight: 900;
+}
+
+.mirror-main-product-meta {
+  margin: 8px 0 13px;
+  color: var(--mirror-muted);
+  font-size: 11px;
+  font-weight: 750;
+}
+
+.mirror-main-product-buttons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.mirror-main-product-buttons .mirror-main-subtle {
+  display: none;
+}
+
+/* Center editorial */
+
+.mirror-main-editorial {
+  min-height: 560px;
+  display: grid;
+  place-content: center;
+  text-align: center;
+  padding: 48px;
+  border-radius: 42px;
+  background:
+    radial-gradient(circle at 50% 0%, rgba(255, 255, 255, 0.82), transparent 36%),
+    rgba(255, 255, 255, 0.42);
+  box-shadow: none;
+  border: 0;
+}
+
+.mirror-main-eyebrow {
+  margin-bottom: 18px;
+  color: rgba(116, 99, 78, 0.64);
+  font-size: 0.68rem;
+  font-weight: 900;
+  letter-spacing: 0.36em;
+  text-transform: uppercase;
+}
+
+.mirror-main-title,
+.mirror-main-title-silence {
+  margin: 0;
+  color: #17130f;
+  font-family:
+    "Cormorant Garamond",
+    "Didot",
+    "Bodoni 72",
+    Georgia,
+    serif;
+  font-size: clamp(5rem, 8vw, 9rem);
+  font-weight: 300;
+  line-height: 0.82;
+  letter-spacing: -0.055em;
+  text-align: center;
+}
+
+.mirror-main-title span,
+.mirror-main-title em,
+.mirror-main-title-silence span,
+.mirror-main-title-silence em {
+  display: block;
+}
+
+.mirror-main-title em,
+.mirror-main-title-silence em {
+  color: #7a5c3e;
+  font-style: normal;
+}
+
+.mirror-main-editorial-copy {
+  max-width: 430px;
+  margin: 18px auto 0;
+  color: rgba(74, 65, 52, 0.68);
+  font-size: 1.05rem;
+  line-height: 1.55;
+  font-weight: 650;
+}
+
+/* Right Pixel card */
+
+.mirror-main-pixel-messages {
+  display: grid;
+  gap: 12px;
+}
+
+.mirror-main-pixel-msg {
+  margin: 0;
+  padding: 15px;
+  border-radius: 20px;
+  color: var(--mirror-soft);
+  background: rgba(247, 243, 236, 0.82);
+  font-size: 0.9rem;
+  font-weight: 750;
+  line-height: 1.4;
+}
+
+.mirror-main-pixel-msg.featured {
+  background: linear-gradient(135deg, rgba(236, 244, 255, 0.95), rgba(246, 242, 255, 0.9));
+}
+
+.mirror-main-avatar-pill {
+  position: fixed;
+  right: 34px;
+  bottom: 34px;
+  z-index: 30;
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 56px;
+  padding: 8px 16px 8px 8px;
+  border-radius: 999px;
+}
+
+.mirror-main-avatar {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  color: #fff;
+  background: linear-gradient(135deg, #171411, var(--mirror-blue));
+  font-weight: 900;
+}
+
+/* Timeline */
+
+.mirror-main-timeline {
+  position: fixed;
+  left: 34px;
+  right: 34px;
+  bottom: 24px;
+  z-index: 10;
+  min-height: 78px;
+  padding: 14px;
+  border-radius: 26px;
+  background: rgba(255, 255, 255, 0.42);
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(22px);
+  -webkit-backdrop-filter: blur(22px);
+}
+
+.mirror-main-timeline-row {
+  display: flex;
+  gap: 14px;
+  overflow-x: auto;
+}
+
+.mirror-main-timeline-item {
+  min-width: 220px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.74);
+}
+
+.mirror-main-timeline-title,
+.mirror-main-timeline-sub {
+  margin: 0;
+}
+
+.mirror-main-timeline-title {
+  color: var(--mirror-text);
+  font-size: 0.9rem;
+  font-weight: 850;
+}
+
+.mirror-main-timeline-sub {
+  margin-top: 3px;
+  color: var(--mirror-muted);
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+/* Building state */
+
+.mirror-main-look-building {
+  height: 100%;
+  display: grid;
+  place-items: center;
+  text-align: center;
+  padding: 34px;
+}
+
+.mirror-main-look-building-orb {
+  width: 108px;
+  height: 108px;
+  display: grid;
+  place-items: center;
+  margin: 0 auto 18px;
+  border-radius: 999px;
+  background:
+    conic-gradient(
+      from 0deg,
+      rgba(74, 144, 217, 0.08),
+      rgba(74, 144, 217, 0.62),
+      rgba(195, 184, 232, 0.24),
+      rgba(74, 144, 217, 0.08)
+    );
+  animation: mirrorSpin 1300ms linear infinite;
+}
+
+.mirror-main-look-building-orb span {
+  width: 74px;
+  height: 74px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.92);
+  color: var(--mirror-blue);
+  font-size: 28px;
+}
+
+@keyframes mirrorSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Toasts */
+
+.toast-shell {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  z-index: 10000;
+  display: grid;
+  gap: 10px;
+  width: min(380px, calc(100% - 40px));
+}
+
+.toast-card {
+  padding: 15px 16px;
+  border-radius: 19px;
+  color: #fff;
+  background: rgba(23, 20, 17, 0.96);
+  box-shadow: 0 24px 54px rgba(23, 20, 17, 0.18);
+  font-weight: 850;
+}
+
+.toast-card.success {
+  background: linear-gradient(135deg, #15803d, #22c55e);
+}
+
+.toast-card.error {
+  background: linear-gradient(135deg, #b91c1c, #ef4444);
+}
+
+.toast-card.info {
+  background: linear-gradient(135deg, #171411, #334155);
+}
+
+/* =========================================================
+   Responsive
+   ========================================================= */
+
+@media (max-width: 1180px) {
+  .mirror-main-layout {
+    grid-template-columns: 300px minmax(0, 1fr);
+  }
+
+  .mirror-main-right {
+    display: none;
+  }
+
+  .mirror-main-outfit-showcase {
+    left: 300px;
+  }
+
+  .hero,
+  .result-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .outfit-grid,
+  .shopper-profile-grid,
+  .tryon-memory-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 820px) {
+  body.mirror-main-active {
+    overflow: auto;
+  }
+
+  #mirrorMainExperience,
+  .mirror-main-experience {
+    overflow: auto;
+  }
+
+  .mirror-main-layout {
+    height: auto;
+    min-height: calc(100vh - 74px);
+    grid-template-columns: 1fr;
+    padding: 20px;
+  }
+
+  .mirror-main-editorial {
+    min-height: auto;
+    padding: 34px 18px;
+  }
+
+  .mirror-main-title,
+  .mirror-main-title-silence {
+    font-size: clamp(4rem, 15vw, 6.2rem);
+  }
+
+  .mirror-main-timeline {
+    position: relative;
+    left: auto;
+    right: auto;
+    bottom: auto;
+    margin: 20px;
+  }
+
+  .mirror-main-outfit-showcase {
+    position: fixed;
+    top: 74px;
+    left: 0;
+    right: 0;
+    bottom: 0;
+  }
+
+  .mirror-main-outfit-glass {
+    grid-template-rows: 76px 1fr 92px;
+  }
+
+  .mirror-main-outfit-head {
+    height: 76px;
+    padding: 0 18px;
+  }
+
+  .mirror-main-real-look-canvas {
+    grid-template-columns: 1fr;
+  }
+
+  .mirror-main-real-look-stage {
+    grid-template-columns: 1fr;
+    padding: 18px;
+  }
+
+  .mirror-main-look-rail {
+    display: none;
+  }
+
+  .mirror-main-outfit-actions {
+    padding: 0 18px;
+  }
+
+  .mirror-page {
+    width: min(100% - 24px, 1440px);
+  }
+
+  .mirror-nav {
+    border-radius: 28px;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .nav-actions {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .hero-copy,
+  .scan-panel {
+    min-height: auto;
+    padding: 26px;
+  }
+
+  .mirror-stats,
+  .info-grid,
+  .outfit-grid,
+  .shopper-profile-grid,
+  .tryon-memory-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+/* =========================================================
+   Universal Stylist — Final Mirror Main Stabilizer v2
+   Purpose:
+   - Keep current premium UI
+   - Hide old mirror page without breaking RFID JS
+   - Prevent image explosions
+   - Keep associate drawer controlled
+   - Make customer mirror the only visible experience
+   ========================================================= */
+
+/* ---------- page safety ---------- */
+
+html,
+body {
+  min-height: 100%;
+  margin: 0;
+  background:
+    radial-gradient(circle at 20% 10%, rgba(255, 255, 255, 0.96), transparent 34%),
+    radial-gradient(circle at 82% 18%, rgba(216, 199, 173, 0.32), transparent 34%),
+    linear-gradient(135deg, #f7f3ec 0%, #fbfaf7 48%, #eef2f7 100%);
+  color: #171411;
+  font-family:
+    Inter,
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Helvetica Neue",
+    Arial,
+    sans-serif;
+}
+
+body {
+  overflow-x: hidden;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+img {
+  display: block;
+  max-width: 100%;
+}
+
+/* =========================================================
+   Main active state
+   ========================================================= */
+
+body.mirror-main-active {
+  overflow: hidden !important;
+}
+
+/*
+   Important:
+   Do NOT display:none the old .mirror-page.
+   The real RFID input still lives there and mirror.js focuses it.
+   We move it offscreen instead.
+*/
+body.mirror-main-active .mirror-page {
+  position: fixed !important;
+  left: -10000px !important;
+  top: 0 !important;
+  width: 1px !important;
+  height: 1px !important;
+  min-height: 1px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  opacity: 0 !important;
+  visibility: visible !important;
+  pointer-events: none !important;
+  z-index: -1 !important;
+  display: block !important;
+}
+
+body.mirror-main-active .mirror-page * {
+  visibility: visible !important;
+}
+
+/* Hide global helper overlays unless explicitly opened */
+body.mirror-main-active #shortcutHelpOverlay:not(.show),
+body.mirror-main-active #ambientIdleOverlay:not(.show),
+body.mirror-main-active .mirror-command-dock {
+  display: none !important;
+}
+
+/* =========================================================
+   Premium customer mirror shell
+   ========================================================= */
+
+#mirrorMainExperience.mirror-main-experience {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 9000 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  min-height: 100vh !important;
+  display: grid !important;
+  grid-template-rows: auto minmax(0, 1fr) auto !important;
+  overflow: hidden !important;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  color: #171411;
+  background:
+    radial-gradient(circle at 18% 18%, rgba(255, 255, 255, 0.94), transparent 34%),
+    radial-gradient(circle at 82% 22%, rgba(216, 199, 173, 0.42), transparent 34%),
+    radial-gradient(circle at 12% 88%, rgba(74, 144, 217, 0.1), transparent 32%),
+    linear-gradient(135deg, #f7f3ec 0%, #fbfaf7 46%, #edf1f5 100%);
+}
+
+body.mirror-main-active #mirrorMainExperience.mirror-main-experience,
+#mirrorMainExperience.mirror-main-experience.is-active {
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+}
+
+/* ---------- top nav ---------- */
+
+.mirror-main-nav {
+  position: relative !important;
+  z-index: 20 !important;
+  width: min(88rem, calc(100vw - 3rem));
+  min-height: 4.35rem;
+  margin: 1rem auto 0;
+  padding: 0.75rem 0.9rem;
+  display: flex !important;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  border: 1px solid rgba(23, 20, 17, 0.08);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.78);
+  box-shadow:
+    0 24px 80px rgba(23, 20, 17, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(24px) saturate(1.12);
+  -webkit-backdrop-filter: blur(24px) saturate(1.12);
+}
+
+.mirror-main-brand {
+  min-height: 2.85rem;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 1.15rem;
+  border: 0;
+  border-radius: 999px;
+  color: #171411;
+  background: rgba(255, 255, 255, 0.88);
+  font-weight: 950;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.mirror-main-store {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  min-height: 2.85rem;
+  padding: 0 1rem;
+  border-radius: 999px;
+  color: rgba(23, 20, 17, 0.74);
+  background: rgba(247, 243, 236, 0.94);
+  font-size: 0.88rem;
+  font-weight: 900;
+}
+
+.mirror-main-store-dot {
+  width: 0.65rem;
+  height: 0.65rem;
+  flex: 0 0 auto;
+  border-radius: 999px;
+  background: #7dbf8e;
+  box-shadow: 0 0 0 0.35rem rgba(125, 191, 142, 0.18);
+}
+
+.mirror-main-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.mirror-main-icon-btn {
+  position: relative;
+  width: 2.85rem;
+  height: 2.85rem;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 999px;
+  color: #171411;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow:
+    0 12px 34px rgba(23, 20, 17, 0.07),
+    inset 0 0 0 1px rgba(23, 20, 17, 0.07);
+  font-weight: 950;
+  cursor: pointer;
+}
+
+.mirror-main-bag-count {
+  position: absolute;
+  right: -0.25rem;
+  top: -0.25rem;
+  min-width: 1.25rem;
+  height: 1.25rem;
+  padding: 0 0.35rem;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  color: #ffffff;
+  background: #171411;
+  font-size: 0.72rem;
+  line-height: 1;
+  font-weight: 950;
+}
+
+/* =========================================================
+   Three-column customer layout
+   ========================================================= */
+
+.mirror-main-layout {
+  position: relative !important;
+  z-index: 2;
+  width: min(88rem, calc(100vw - 3rem));
+  min-height: 0;
+  height: auto;
+  margin: 1.25rem auto;
+  display: grid !important;
+  grid-template-columns: minmax(17rem, 0.9fr) minmax(28rem, 1.35fr) minmax(18rem, 0.95fr);
+  gap: 1.2rem;
+  align-items: stretch;
+  overflow: visible;
+}
+
+.mirror-main-left,
+.mirror-main-center,
+.mirror-main-right {
+  min-width: 0;
+  min-height: 0;
+}
+
+.mirror-main-left,
+.mirror-main-right {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.mirror-main-card,
+.mirror-main-scan-card,
+.mirror-main-pixel-card,
+.mirror-main-editorial {
+  border: 1px solid rgba(23, 20, 17, 0.08);
+  border-radius: 2rem;
+  background: rgba(255, 255, 255, 0.68);
+  box-shadow:
+    0 26px 90px rgba(23, 20, 17, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(22px) saturate(1.1);
+  -webkit-backdrop-filter: blur(22px) saturate(1.1);
+}
+
+/* ---------- editorial center ---------- */
+
+.mirror-main-editorial {
+  min-height: calc(100vh - 12rem);
+  padding: clamp(2rem, 5vw, 5rem);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  text-align: left;
+}
+
+.mirror-main-eyebrow,
+.mirror-main-small-label,
+.mirror-main-recent-label {
+  margin: 0 0 1rem;
+  color: rgba(23, 20, 17, 0.46);
+  font-size: 0.72rem;
+  font-weight: 950;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+}
+
+.mirror-main-title,
+.mirror-main-title-silence {
+  margin: 0;
+  display: grid;
+  gap: 0.1em;
+  color: #171411;
+  font-family:
+    "Cormorant Garamond",
+    "Didot",
+    "Bodoni 72",
+    Georgia,
+    serif;
+  font-size: clamp(4.8rem, 9vw, 9rem);
+  line-height: 0.82;
+  letter-spacing: -0.075em;
+  font-weight: 500;
+}
+
+.mirror-main-title span,
+.mirror-main-title em,
+.mirror-main-title-silence span,
+.mirror-main-title-silence em {
+  display: block;
+}
+
+.mirror-main-title em,
+.mirror-main-title-silence em {
+  color: #7a5c3e;
+  font-style: normal;
+}
+
+.mirror-main-editorial-copy {
+  max-width: 34rem;
+  margin: 1.8rem 0 0;
+  color: rgba(23, 20, 17, 0.62);
+  font-size: 1.1rem;
+  line-height: 1.55;
+  font-weight: 750;
+}
+
+.mirror-main-start,
+.mirror-main-primary {
+  width: fit-content;
+  min-height: 3rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 1.7rem;
+  padding: 0 1.35rem;
+  border: 0;
+  border-radius: 999px;
+  color: #ffffff;
+  background: #171411;
+  box-shadow: 0 18px 40px rgba(23, 20, 17, 0.18);
+  font-weight: 950;
+  cursor: pointer;
+}
+
+.mirror-main-secondary,
+.mirror-main-subtle {
+  min-height: 2.8rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 1.15rem;
+  border: 0;
+  border-radius: 999px;
+  color: #171411;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: inset 0 0 0 1px rgba(23, 20, 17, 0.08);
+  font-weight: 900;
+  cursor: pointer;
+}
+
+/* =========================================================
+   Scan/product card
+   ========================================================= */
+
+.mirror-main-recent {
+  min-height: 3.8rem;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.mirror-main-recent-thumb {
+  width: 3.5rem;
+  height: 3.5rem;
+  overflow: hidden;
+  flex: 0 0 auto;
+  border-radius: 1.1rem;
+  background: #ffffff;
+  box-shadow: 0 14px 34px rgba(23, 20, 17, 0.1);
+}
+
+.mirror-main-recent-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.mirror-main-scan-card,
+.mirror-main-pixel-card {
+  padding: 1rem;
+}
+
+.mirror-main-scan-inner {
+  min-height: 28rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.mirror-main-card-top,
+.mirror-main-pixel-header,
+.mirror-main-product-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.mirror-main-close-mini,
+.mirror-main-pixel-close {
+  width: 2.35rem;
+  height: 2.35rem;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 999px;
+  color: #171411;
+  background: rgba(23, 20, 17, 0.06);
+  font-size: 1.1rem;
+  font-weight: 950;
+  cursor: pointer;
+}
+
+.mirror-main-scan-idle {
+  flex: 1;
+  display: grid;
+  place-items: center;
+  gap: 1rem;
+  text-align: center;
+}
+
+.mirror-main-scan-ring {
+  width: 9rem;
+  height: 9rem;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 999px;
+  color: #171411;
+  background:
+    radial-gradient(circle, #ffffff 0 42%, rgba(255, 255, 255, 0.36) 43% 100%),
+    linear-gradient(135deg, rgba(216, 199, 173, 0.55), rgba(255, 255, 255, 0.65));
+  box-shadow:
+    inset 0 0 0 1px rgba(23, 20, 17, 0.08),
+    0 24px 70px rgba(23, 20, 17, 0.14);
+  cursor: pointer;
+}
+
+.mirror-main-zap {
+  font-size: 2.2rem;
+}
+
+.mirror-main-scan-copy {
+  max-width: 16rem;
+  margin: 0;
+  color: rgba(23, 20, 17, 0.62);
+  font-weight: 850;
+  line-height: 1.45;
+}
+
+.mirror-main-product {
+  display: none;
+  margin-top: 1rem;
+}
+
+.mirror-main-product.is-visible {
+  display: block !important;
+}
+
+.mirror-main-product-image {
+  overflow: hidden;
+  border-radius: 1.5rem;
+  background: #f7f3ec;
+  aspect-ratio: 4 / 5;
+}
+
+.mirror-main-product-image img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: contain;
+  padding: 1rem;
+}
+
+.mirror-main-product-store,
+.mirror-main-product-meta {
+  margin: 0.75rem 0 0;
+  color: rgba(23, 20, 17, 0.52);
+  font-weight: 800;
+}
+
+.mirror-main-product-name {
+  margin: 0.2rem 0 0;
+  color: #171411;
+  font-size: 1.35rem;
+  line-height: 1.05;
+  font-weight: 950;
+}
+
+.mirror-main-product-price {
+  color: #171411;
+  font-size: 1.15rem;
+  font-weight: 950;
+}
+
+.mirror-main-product-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  margin-top: 1rem;
+}
+
+/* =========================================================
+   Pixel card
+   ========================================================= */
+
+.mirror-main-pixel-title {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  color: #171411;
+  font-weight: 950;
+}
+
+.mirror-main-glyph {
+  width: 2.1rem;
+  height: 2.1rem;
+}
+
+.mirror-main-pixel-messages {
+  display: grid;
+  gap: 0.8rem;
+  margin-top: 1rem;
+}
+
+.mirror-main-pixel-msg {
+  margin: 0;
+  padding: 1rem;
+  border-radius: 1.25rem;
+  color: rgba(23, 20, 17, 0.68);
+  background: rgba(255, 255, 255, 0.7);
+  font-weight: 780;
+  line-height: 1.45;
+}
+
+.mirror-main-pixel-msg.featured {
+  color: #171411;
+  background: rgba(247, 243, 236, 0.92);
+}
+
+/* =========================================================
+   Timeline
+   ========================================================= */
+
+.mirror-main-timeline {
+  position: relative !important;
+  z-index: 5;
+  width: min(88rem, calc(100vw - 3rem));
+  min-height: 4.8rem;
+  margin: 0 auto 1rem;
+  padding: 0.75rem;
+  border-radius: 1.6rem;
+  background: rgba(255, 255, 255, 0.72);
+  box-shadow: 0 20px 65px rgba(23, 20, 17, 0.1);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+
+.mirror-main-timeline-row {
+  display: flex;
+  gap: 0.75rem;
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+.mirror-main-timeline-item {
+  min-width: 14rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.65rem;
+  border-radius: 1.1rem;
+  background: rgba(247, 243, 236, 0.82);
+}
+
+.mirror-main-timeline-thumb {
+  width: 3rem;
+  height: 3rem;
+  overflow: hidden;
+  flex: 0 0 auto;
+  border-radius: 0.9rem;
+  background: #ffffff;
+}
+
+.mirror-main-timeline-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.mirror-main-timeline-title,
+.mirror-main-timeline-sub {
+  margin: 0;
+}
+
+.mirror-main-timeline-title {
+  color: #171411;
+  font-weight: 950;
+}
+
+.mirror-main-timeline-sub {
+  color: rgba(23, 20, 17, 0.52);
+  font-size: 0.82rem;
+  font-weight: 750;
+}
+
+/* =========================================================
+   Profile drawer / showroom
+   ========================================================= */
+
+.mirror-main-profile-drawer,
+.mirror-main-showroom-overlay {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 9300 !important;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.mirror-main-profile-drawer.is-active,
+.mirror-main-showroom-overlay.is-active {
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+}
+
+.mirror-main-dim {
+  position: absolute;
+  inset: 0;
+  border: 0;
+  background: rgba(23, 20, 17, 0.28);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.mirror-main-profile-panel {
+  position: absolute;
+  right: 1.5rem;
+  top: 1.5rem;
+  bottom: 1.5rem;
+  width: min(30rem, calc(100vw - 3rem));
+  padding: 1.25rem;
+  overflow: auto;
+  border-radius: 2rem;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 30px 100px rgba(23, 20, 17, 0.2);
+}
+
+.mirror-main-profile-title {
+  margin: 2rem 0 1rem;
+  color: #171411;
+  font-size: 3rem;
+  line-height: 0.9;
+  letter-spacing: -0.06em;
+}
+
+.mirror-main-profile-grid {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.mirror-main-profile-card {
+  padding: 1rem;
+  border-radius: 1.25rem;
+  background: #f7f3ec;
+}
+
+.mirror-main-profile-card small,
+.mirror-main-profile-card strong {
+  display: block;
+}
+
+.mirror-main-profile-card small {
+  color: rgba(23, 20, 17, 0.5);
+  font-weight: 950;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.mirror-main-profile-card strong {
+  margin-top: 0.3rem;
+  color: #171411;
+  font-weight: 900;
+}
+
+.mirror-main-showroom-content {
+  height: 100%;
+  display: grid;
+  place-items: center;
+  color: #ffffff;
+  text-align: center;
+  background: rgba(23, 20, 17, 0.86);
+}
+
+.mirror-main-showroom-content h2 {
+  margin: 0;
+  font-size: clamp(4rem, 10vw, 10rem);
+  line-height: 0.85;
+  letter-spacing: -0.08em;
+}
+
+/* =========================================================
+   Floating Pixel pill
+   ========================================================= */
+
+.mirror-main-avatar-pill {
+  position: fixed !important;
+  right: 1.25rem;
+  bottom: 1.25rem;
+  z-index: 9100;
+  min-height: 3.1rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.65rem 0.85rem;
+  border: 0;
+  border-radius: 999px;
+  color: #171411;
+  background: rgba(255, 255, 255, 0.84);
+  box-shadow: 0 20px 60px rgba(23, 20, 17, 0.14);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  font-weight: 950;
+  cursor: pointer;
+}
+
+.mirror-main-live-dot {
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 999px;
+  background: #7dbf8e;
+}
+
+/* =========================================================
+   Associate drawer
+   ========================================================= */
+
+#mirrorAssociateControl.mirror-associate-control {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 9400 !important;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+#mirrorAssociateControl.mirror-associate-control.is-open {
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+}
+
+.mirror-associate-trigger {
+  position: fixed;
+  left: 1.25rem;
+  bottom: 1.25rem;
+  z-index: 9401;
+  border: 0;
+  border-radius: 999px;
+  padding: 0.75rem 1rem;
+  color: #171411;
+  background: rgba(255, 255, 255, 0.88);
+  box-shadow: 0 18px 50px rgba(23, 20, 17, 0.14);
+  font-weight: 950;
+  cursor: pointer;
+}
+
+#mirrorAssociateControl.is-open .mirror-associate-trigger {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.mirror-associate-backdrop {
+  position: absolute;
+  inset: 0;
+  border: 0;
+  background: rgba(23, 20, 17, 0.24);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.mirror-associate-panel {
+  position: absolute;
+  right: 1.25rem;
+  top: 1.25rem;
+  bottom: 1.25rem;
+  width: min(29rem, calc(100vw - 2.5rem));
+  overflow: auto;
+  padding: 1.15rem;
+  border-radius: 2rem;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 30px 100px rgba(23, 20, 17, 0.22);
+}
+
+.mirror-associate-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.mirror-associate-header h2 {
+  margin: 0.35rem 0 0;
+  color: #171411;
+  font-size: 2rem;
+  letter-spacing: -0.05em;
+}
+
+.mirror-associate-header p,
+.mirror-associate-kicker {
+  margin: 0;
+  color: rgba(23, 20, 17, 0.55);
+  font-weight: 800;
+}
+
+.mirror-associate-close {
+  width: 2.35rem;
+  height: 2.35rem;
+  border: 0;
+  border-radius: 999px;
+  color: #171411;
+  background: rgba(23, 20, 17, 0.07);
+  font-size: 1.25rem;
+  font-weight: 950;
+  cursor: pointer;
+}
+
+.mirror-associate-session,
+.mirror-associate-footer {
+  margin-top: 1rem;
+  padding: 1rem;
+  border-radius: 1.35rem;
+  background: #f7f3ec;
+}
+
+.mirror-associate-session-metrics {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+}
+
+.mirror-associate-session-metrics div {
+  padding: 0.75rem;
+  border-radius: 1rem;
+  background: #ffffff;
+}
+
+.mirror-associate-session-metrics strong,
+.mirror-associate-session-metrics span {
+  display: block;
+}
+
+.mirror-associate-actions {
+  display: grid;
+  gap: 0.65rem;
+  margin-top: 1rem;
+}
+
+.mirror-associate-section-label {
+  color: rgba(23, 20, 17, 0.5);
+  font-size: 0.75rem;
+  font-weight: 950;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.mirror-associate-action {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.85rem;
+  border: 0;
+  border-radius: 1.35rem;
+  color: #171411;
+  background: #f7f3ec;
+  text-align: left;
+  cursor: pointer;
+}
+
+.mirror-associate-action strong,
+.mirror-associate-action small {
+  display: block;
+}
+
+.mirror-associate-action strong {
+  font-weight: 950;
+}
+
+.mirror-associate-action small {
+  color: rgba(23, 20, 17, 0.56);
+  font-weight: 750;
+}
+
+.mirror-associate-return {
+  width: 100%;
+  border: 0;
+  border-radius: 999px;
+  padding: 0.9rem 1rem;
+  color: #ffffff;
+  background: #171411;
+  font-weight: 950;
+  cursor: pointer;
+}
+
+/* =========================================================
+   Image clamps for old/base sections when visible
+   ========================================================= */
+
+.bag-item img,
+.tryon-memory-item img,
+.outfit-card img,
+#resultImage,
+.image-box img,
+.mirror-page img {
+  max-width: 100% !important;
+  object-fit: contain !important;
+}
+
+.bag-item img,
+.tryon-memory-item img {
+  width: 4.5rem !important;
+  height: 4.5rem !important;
+  border-radius: 1rem !important;
+}
+
+.tryon-timeline-event img,
+.mirror-main-timeline-item img {
+  max-width: 4rem !important;
+  max-height: 4rem !important;
+}
+
+/* =========================================================
+   Responsive
+   ========================================================= */
+
+@media (max-width: 1080px) {
+  body.mirror-main-active {
+    overflow: auto !important;
+  }
+
+  #mirrorMainExperience.mirror-main-experience {
+    overflow: auto !important;
+    grid-template-rows: auto auto auto !important;
+  }
+
+  .mirror-main-layout {
+    grid-template-columns: 1fr !important;
+    overflow-y: visible;
+    padding-bottom: 2rem;
+  }
+
+  .mirror-main-editorial {
+    min-height: auto;
+  }
+
+  .mirror-main-right {
+    order: 3;
+  }
+
+  .mirror-main-real-look-canvas,
+  .mirror-main-look-canvas,
+  .mirror-main-composite-look {
+    grid-template-columns: 1fr;
+  }
+
+  .mirror-main-real-look-stage,
+  .mirror-main-composite-stage {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 720px) {
+  .mirror-main-nav {
+    width: calc(100vw - 1rem);
+    border-radius: 1.5rem;
+    flex-wrap: wrap;
+  }
+
+  .mirror-main-layout,
+  .mirror-main-timeline {
+    width: calc(100vw - 1rem);
+  }
+
+  .mirror-main-title,
+  .mirror-main-title-silence {
+    font-size: clamp(3.5rem, 18vw, 5rem);
+  }
+
+  .mirror-main-real-look-stage,
+  .mirror-main-composite-stage {
+    grid-template-columns: 1fr;
+  }
+
+  .mirror-main-outfit-showcase {
+    padding: 0.75rem;
+  }
+
+  .mirror-main-outfit-glass {
+    width: calc(100vw - 1rem);
+    max-height: calc(100vh - 1.5rem);
+  }
+}
+/* =========================================================
+   Premium Mirror RFID Entry
+   ========================================================= */
+
+.mirror-main-rfid-entry {
+  width: min(100%, 17rem);
+  display: grid;
+  gap: 0.7rem;
+  margin-top: 0.4rem;
+}
+
+.mirror-main-rfid-input {
+  width: 100%;
+  min-height: 3rem;
+  border: 1px solid rgba(23, 20, 17, 0.08);
+  border-radius: 999px;
+  padding: 0 1rem;
+  color: #171411;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow:
+    0 12px 34px rgba(23, 20, 17, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.92);
+  font-weight: 850;
+  text-align: center;
+  outline: none;
+}
+
+.mirror-main-rfid-input::placeholder {
+  color: rgba(23, 20, 17, 0.42);
+}
+
+.mirror-main-rfid-input:focus {
+  border-color: rgba(74, 144, 217, 0.55);
+  box-shadow:
+    0 0 0 4px rgba(74, 144, 217, 0.12),
+    0 14px 36px rgba(23, 20, 17, 0.08);
+}
+
+/* =========================================================
+   Universal Stylist — Customer Mirror Main Screen Polish v1
+   Progress item: ✅ Main customer mirror screen polish
+   Purpose:
+   - Cleaner premium showroom layout
+   - Better nav spacing
+   - Stronger editorial center
+   - More polished scan card and Pixel card
+   - Better timeline presentation
+   ========================================================= */
+
+/* ---------- main screen shell ---------- */
+
+body.mirror-main-active #mirrorMainExperience.mirror-main-experience {
+  background:
+    radial-gradient(circle at 14% 16%, rgba(255, 255, 255, 0.92), transparent 32%),
+    radial-gradient(circle at 82% 18%, rgba(216, 199, 173, 0.34), transparent 34%),
+    radial-gradient(circle at 16% 82%, rgba(74, 144, 217, 0.08), transparent 34%),
+    linear-gradient(135deg, #f6f1e8 0%, #fbfaf7 45%, #eef2f5 100%) !important;
+}
+
+#mirrorMainExperience::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0.32),
+      transparent 18%,
+      transparent 82%,
+      rgba(255, 255, 255, 0.34)
+    ),
+    radial-gradient(circle at 50% 42%, rgba(255, 255, 255, 0.5), transparent 38%);
+}
+
+#mirrorMainExperience::after {
+  content: "";
+  position: fixed;
+  inset: auto 0 0;
+  z-index: 0;
+  height: 36%;
+  pointer-events: none;
+  background:
+    linear-gradient(
+      180deg,
+      transparent,
+      rgba(255, 255, 255, 0.42)
+    );
+}
+
+/* ---------- premium nav ---------- */
+
+#mirrorMainExperience .mirror-main-nav {
+  width: min(90rem, calc(100vw - 3rem)) !important;
+  min-height: 4.6rem !important;
+  margin-top: 1.15rem !important;
+  padding: 0.72rem 0.82rem !important;
+  border-radius: 999px !important;
+  border: 1px solid rgba(23, 20, 17, 0.065) !important;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.82), rgba(255, 255, 255, 0.66)) !important;
+  box-shadow:
+    0 28px 90px rgba(23, 20, 17, 0.105),
+    inset 0 1px 0 rgba(255, 255, 255, 0.92) !important;
+}
+
+#mirrorMainExperience .mirror-main-brand {
+  min-height: 3.05rem !important;
+  padding: 0 1.2rem !important;
+  border-radius: 999px !important;
+  color: #171411 !important;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.94), rgba(247, 243, 236, 0.88)) !important;
+  box-shadow:
+    inset 0 0 0 1px rgba(23, 20, 17, 0.055),
+    0 12px 30px rgba(23, 20, 17, 0.045) !important;
+  text-decoration: none !important;
+  letter-spacing: -0.02em !important;
+}
+
+#mirrorMainExperience .mirror-main-brand::before {
+  content: "✦";
+  width: 2rem;
+  height: 2rem;
+  display: grid;
+  place-items: center;
+  margin-right: 0.25rem;
+  border-radius: 999px;
+  color: #ffffff;
+  background:
+    linear-gradient(135deg, #171411, #7a5c3e);
+  box-shadow: 0 12px 28px rgba(23, 20, 17, 0.16);
+  font-size: 0.9rem;
+}
+
+#mirrorMainExperience .mirror-main-store {
+  min-height: 3.05rem !important;
+  padding: 0 1.15rem !important;
+  color: rgba(23, 20, 17, 0.7) !important;
+  background:
+    linear-gradient(135deg, rgba(247, 243, 236, 0.96), rgba(255, 255, 255, 0.78)) !important;
+  border: 1px solid rgba(23, 20, 17, 0.055) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.86) !important;
+}
+
+#mirrorMainExperience .mirror-main-actions {
+  gap: 0.6rem !important;
+}
+
+#mirrorMainExperience .mirror-main-icon-btn {
+  width: 3.05rem !important;
+  height: 3.05rem !important;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.94), rgba(247, 243, 236, 0.86)) !important;
+  border: 1px solid rgba(23, 20, 17, 0.055) !important;
+  box-shadow:
+    0 13px 34px rgba(23, 20, 17, 0.065),
+    inset 0 1px 0 rgba(255, 255, 255, 0.92) !important;
+  transition:
+    transform 180ms ease,
+    box-shadow 180ms ease,
+    background 180ms ease !important;
+}
+
+#mirrorMainExperience .mirror-main-icon-btn:hover {
+  transform: translateY(-1px) !important;
+  background: rgba(255, 255, 255, 0.98) !important;
+  box-shadow:
+    0 18px 44px rgba(23, 20, 17, 0.095),
+    inset 0 1px 0 rgba(255, 255, 255, 0.94) !important;
+}
+
+/* ---------- three-column stage ---------- */
+
+#mirrorMainExperience .mirror-main-layout {
+  width: min(90rem, calc(100vw - 3rem)) !important;
+  height: auto !important;
+  margin: 1.35rem auto 1rem !important;
+  grid-template-columns: minmax(18rem, 0.88fr) minmax(30rem, 1.45fr) minmax(18rem, 0.9fr) !important;
+  gap: 1.35rem !important;
+  align-items: stretch !important;
+}
+
+#mirrorMainExperience .mirror-main-left,
+#mirrorMainExperience .mirror-main-right {
+  justify-content: center !important;
+}
+
+#mirrorMainExperience .mirror-main-card,
+#mirrorMainExperience .mirror-main-scan-card,
+#mirrorMainExperience .mirror-main-pixel-card,
+#mirrorMainExperience .mirror-main-editorial {
+  border: 1px solid rgba(23, 20, 17, 0.065) !important;
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.74), rgba(255, 255, 255, 0.52)) !important;
+  box-shadow:
+    0 30px 95px rgba(23, 20, 17, 0.105),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
+  backdrop-filter: blur(26px) saturate(1.12) !important;
+  -webkit-backdrop-filter: blur(26px) saturate(1.12) !important;
+}
+
+/* ---------- editorial hero ---------- */
+
+#mirrorMainExperience .mirror-main-editorial {
+  position: relative !important;
+  min-height: calc(100vh - 13.6rem) !important;
+  overflow: hidden !important;
+  padding: clamp(2.4rem, 5vw, 5.4rem) !important;
+  border-radius: 2.4rem !important;
+  text-align: left !important;
+  justify-content: center !important;
+}
+
+#mirrorMainExperience .mirror-main-editorial::before {
+  content: "";
+  position: absolute;
+  inset: 1.1rem;
+  z-index: -1;
+  border-radius: 2rem;
+  background:
+    radial-gradient(circle at 48% 20%, rgba(255, 255, 255, 0.82), transparent 34%),
+    radial-gradient(circle at 75% 74%, rgba(216, 199, 173, 0.22), transparent 32%);
+  border: 1px solid rgba(255, 255, 255, 0.48);
+}
+
+#mirrorMainExperience .mirror-main-eyebrow {
+  margin-bottom: 1.2rem !important;
+  color: rgba(94, 77, 58, 0.68) !important;
+  font-size: 0.72rem !important;
+  letter-spacing: 0.34em !important;
+}
+
+#mirrorMainExperience .mirror-main-title,
+#mirrorMainExperience .mirror-main-title-silence {
+  max-width: 44rem !important;
+  color: #171411 !important;
+  font-size: clamp(5.6rem, 8.8vw, 9.8rem) !important;
+  line-height: 0.78 !important;
+  letter-spacing: -0.078em !important;
+  filter: drop-shadow(0 22px 42px rgba(23, 20, 17, 0.055));
+}
+
+#mirrorMainExperience .mirror-main-title em,
+#mirrorMainExperience .mirror-main-title-silence em {
+  color: #7a5c3e !important;
+}
+
+#mirrorMainExperience .mirror-main-editorial-copy {
+  max-width: 35rem !important;
+  margin-top: 1.7rem !important;
+  color: rgba(23, 20, 17, 0.64) !important;
+  font-size: 1.08rem !important;
+  line-height: 1.58 !important;
+  font-weight: 760 !important;
+}
+
+#mirrorMainExperience .mirror-main-start {
+  min-height: 3.15rem !important;
+  margin-top: 1.8rem !important;
+  padding: 0 1.55rem !important;
+  border-radius: 999px !important;
+  color: #ffffff !important;
+  background:
+    linear-gradient(135deg, #171411, #3b3128) !important;
+  box-shadow:
+    0 18px 42px rgba(23, 20, 17, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.14) !important;
+  letter-spacing: -0.01em !important;
+  transition:
+    transform 180ms ease,
+    box-shadow 180ms ease !important;
+}
+
+#mirrorMainExperience .mirror-main-start:hover {
+  transform: translateY(-1px) !important;
+  box-shadow:
+    0 24px 54px rgba(23, 20, 17, 0.25),
+    inset 0 1px 0 rgba(255, 255, 255, 0.14) !important;
+}
+
+/* ---------- scan card polish ---------- */
+
+#mirrorMainExperience .mirror-main-recent {
+  min-height: 4rem !important;
+  margin-bottom: 1rem !important;
+  padding: 0 0.15rem !important;
+}
+
+#mirrorMainExperience .mirror-main-recent-label {
+  margin: 0 !important;
+  color: rgba(23, 20, 17, 0.45) !important;
+  font-size: 0.66rem !important;
+  letter-spacing: 0.22em !important;
+}
+
+#mirrorMainExperience .mirror-main-recent-thumb {
+  width: 3.65rem !important;
+  height: 3.65rem !important;
+  border-radius: 1.15rem !important;
+  background:
+    radial-gradient(circle at 50% 15%, #ffffff, #f7f3ec) !important;
+  box-shadow:
+    0 16px 38px rgba(23, 20, 17, 0.105),
+    inset 0 0 0 1px rgba(23, 20, 17, 0.045) !important;
+}
+
+#mirrorMainExperience .mirror-main-recent-thumb img {
+  object-fit: contain !important;
+  padding: 0.32rem !important;
+}
+
+#mirrorMainExperience .mirror-main-scan-card {
+  border-radius: 2rem !important;
+  padding: 1rem !important;
+}
+
+#mirrorMainExperience .mirror-main-scan-inner {
+  min-height: 29.5rem !important;
+  padding: 1.1rem !important;
+  border-radius: 1.55rem !important;
+  background:
+    radial-gradient(circle at 50% 0%, rgba(255, 255, 255, 0.76), transparent 40%),
+    rgba(247, 243, 236, 0.38) !important;
+}
+
+#mirrorMainExperience .mirror-main-card-top {
+  margin-bottom: 1.1rem !important;
+}
+
+#mirrorMainExperience .mirror-main-small-label {
+  color: rgba(23, 20, 17, 0.44) !important;
+  font-size: 0.66rem !important;
+  letter-spacing: 0.24em !important;
+}
+
+#mirrorMainExperience .mirror-main-close-mini {
+  width: 2.45rem !important;
+  height: 2.45rem !important;
+  color: rgba(23, 20, 17, 0.62) !important;
+  background: rgba(255, 255, 255, 0.72) !important;
+  box-shadow: inset 0 0 0 1px rgba(23, 20, 17, 0.055) !important;
+}
+
+#mirrorMainExperience .mirror-main-scan-idle {
+  min-height: 23rem !important;
+  gap: 1.05rem !important;
+}
+
+#mirrorMainExperience .mirror-main-scan-ring {
+  width: 9.4rem !important;
+  height: 9.4rem !important;
+  background:
+    radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.96) 0 38%, rgba(255, 255, 255, 0.42) 39% 100%),
+    conic-gradient(
+      from 160deg,
+      rgba(216, 199, 173, 0.12),
+      rgba(216, 199, 173, 0.58),
+      rgba(74, 144, 217, 0.16),
+      rgba(216, 199, 173, 0.12)
+    ) !important;
+  box-shadow:
+    0 28px 76px rgba(23, 20, 17, 0.16),
+    inset 0 0 0 1px rgba(23, 20, 17, 0.065) !important;
+}
+
+#mirrorMainExperience .mirror-main-scan-ring:hover {
+  transform: translateY(-1px) scale(1.01) !important;
+}
+
+#mirrorMainExperience .mirror-main-zap {
+  width: 4.6rem !important;
+  height: 4.6rem !important;
+  display: grid !important;
+  place-items: center !important;
+  border-radius: 999px !important;
+  color: #ffffff !important;
+  background:
+    linear-gradient(135deg, #171411, #7a5c3e) !important;
+  box-shadow:
+    0 18px 44px rgba(23, 20, 17, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.18) !important;
+  font-size: 1.7rem !important;
+}
+
+#mirrorMainExperience .mirror-main-scan-copy {
+  max-width: 16.5rem !important;
+  color: rgba(23, 20, 17, 0.62) !important;
+  font-size: 0.94rem !important;
+  line-height: 1.48 !important;
+  font-weight: 820 !important;
+}
+
+#mirrorMainExperience .mirror-main-rfid-entry {
+  width: min(100%, 17.5rem) !important;
+  gap: 0.72rem !important;
+}
+
+#mirrorMainExperience .mirror-main-rfid-input {
+  min-height: 3.12rem !important;
+  border-radius: 999px !important;
+  border: 1px solid rgba(23, 20, 17, 0.07) !important;
+  background: rgba(255, 255, 255, 0.92) !important;
+  box-shadow:
+    0 14px 36px rgba(23, 20, 17, 0.055),
+    inset 0 1px 0 rgba(255, 255, 255, 0.94) !important;
+}
+
+/* ---------- product reveal card polish ---------- */
+
+#mirrorMainExperience .mirror-main-product {
+  margin-top: 0.7rem !important;
+}
+
+#mirrorMainExperience .mirror-main-product-image {
+  aspect-ratio: 4 / 4.45 !important;
+  border-radius: 1.45rem !important;
+  background:
+    radial-gradient(circle at 50% 15%, #ffffff, transparent 42%),
+    linear-gradient(180deg, #f8f4ed, #efe6d9) !important;
+  box-shadow:
+    0 18px 46px rgba(23, 20, 17, 0.075),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
+}
+
+#mirrorMainExperience .mirror-main-product-image img {
+  padding: 1rem !important;
+  object-fit: contain !important;
+  filter: drop-shadow(0 18px 22px rgba(23, 20, 17, 0.105)) !important;
+}
+
+#mirrorMainExperience .mirror-main-product-store {
+  color: rgba(23, 20, 17, 0.42) !important;
+  font-size: 0.63rem !important;
+  letter-spacing: 0.2em !important;
+  text-transform: uppercase !important;
+}
+
+#mirrorMainExperience .mirror-main-product-name {
+  color: #171411 !important;
+  font-size: 1.28rem !important;
+  line-height: 1.02 !important;
+  letter-spacing: -0.04em !important;
+}
+
+#mirrorMainExperience .mirror-main-product-price {
+  color: #171411 !important;
+  font-size: 1.06rem !important;
+}
+
+#mirrorMainExperience .mirror-main-product-meta {
+  color: rgba(23, 20, 17, 0.56) !important;
+  font-size: 0.84rem !important;
+  line-height: 1.28 !important;
+}
+
+#mirrorMainExperience .mirror-main-product-buttons {
+  gap: 0.7rem !important;
+}
+
+#mirrorMainExperience .mirror-main-primary,
+#mirrorMainExperience .mirror-main-secondary,
+#mirrorMainExperience .mirror-main-subtle {
+  min-height: 2.95rem !important;
+  border-radius: 999px !important;
+  font-size: 0.9rem !important;
+  font-weight: 950 !important;
+}
+
+#mirrorMainExperience .mirror-main-primary {
+  color: #ffffff !important;
+  background:
+    linear-gradient(135deg, #171411, #3b3128) !important;
+  box-shadow:
+    0 16px 38px rgba(23, 20, 17, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.14) !important;
+}
+
+#mirrorMainExperience .mirror-main-secondary,
+#mirrorMainExperience .mirror-main-subtle {
+  color: #171411 !important;
+  background: rgba(255, 255, 255, 0.86) !important;
+  border: 1px solid rgba(23, 20, 17, 0.065) !important;
+  box-shadow:
+    0 12px 30px rgba(23, 20, 17, 0.05),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
+}
+
+/* ---------- Pixel concierge card ---------- */
+
+#mirrorMainExperience .mirror-main-pixel-card {
+  border-radius: 2rem !important;
+  padding: 1.25rem !important;
+}
+
+#mirrorMainExperience .mirror-main-pixel-header {
+  align-items: center !important;
+}
+
+#mirrorMainExperience .mirror-main-pixel-title {
+  color: #171411 !important;
+  font-weight: 950 !important;
+  letter-spacing: -0.02em !important;
+}
+
+#mirrorMainExperience .mirror-main-glyph {
+  width: 2.25rem !important;
+  height: 2.25rem !important;
+  filter: drop-shadow(0 12px 22px rgba(74, 144, 217, 0.12));
+}
+
+#mirrorMainExperience .mirror-main-pixel-close {
+  width: 2.4rem !important;
+  height: 2.4rem !important;
+  background: rgba(23, 20, 17, 0.055) !important;
+}
+
+#mirrorMainExperience .mirror-main-pixel-messages {
+  gap: 0.85rem !important;
+  margin-top: 1rem !important;
+}
+
+#mirrorMainExperience .mirror-main-pixel-msg {
+  padding: 1rem !important;
+  border-radius: 1.25rem !important;
+  color: rgba(23, 20, 17, 0.66) !important;
+  background: rgba(255, 255, 255, 0.68) !important;
+  border: 1px solid rgba(23, 20, 17, 0.045) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.76) !important;
+  font-size: 0.9rem !important;
+  line-height: 1.42 !important;
+  font-weight: 780 !important;
+}
+
+#mirrorMainExperience .mirror-main-pixel-msg.featured {
+  color: #171411 !important;
+  background:
+    linear-gradient(135deg, rgba(247, 243, 236, 0.98), rgba(255, 255, 255, 0.82)) !important;
+}
+
+/* ---------- bottom timeline ---------- */
+
+#mirrorMainExperience .mirror-main-timeline {
+  width: min(90rem, calc(100vw - 3rem)) !important;
+  min-height: 5rem !important;
+  margin: 0 auto 1.15rem !important;
+  padding: 0.75rem !important;
+  border-radius: 1.65rem !important;
+  border: 1px solid rgba(23, 20, 17, 0.055) !important;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.76), rgba(255, 255, 255, 0.58)) !important;
+  box-shadow:
+    0 24px 75px rgba(23, 20, 17, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.86) !important;
+}
+
+#mirrorMainExperience .mirror-main-timeline-row {
+  gap: 0.8rem !important;
+  padding-bottom: 0.1rem !important;
+}
+
+#mirrorMainExperience .mirror-main-timeline-item {
+  min-width: 15.5rem !important;
+  min-height: 3.7rem !important;
+  padding: 0.65rem 0.8rem !important;
+  border-radius: 1.15rem !important;
+  background:
+    linear-gradient(135deg, rgba(247, 243, 236, 0.9), rgba(255, 255, 255, 0.82)) !important;
+  border: 1px solid rgba(23, 20, 17, 0.045) !important;
+  box-shadow:
+    0 12px 32px rgba(23, 20, 17, 0.05),
+    inset 0 1px 0 rgba(255, 255, 255, 0.88) !important;
+}
+
+#mirrorMainExperience .mirror-main-timeline-thumb {
+  width: 3.15rem !important;
+  height: 3.15rem !important;
+  border-radius: 0.95rem !important;
+  background: #ffffff !important;
+}
+
+#mirrorMainExperience .mirror-main-timeline-thumb img {
+  object-fit: contain !important;
+  padding: 0.25rem !important;
+}
+
+#mirrorMainExperience .mirror-main-timeline-title {
+  color: #171411 !important;
+  font-size: 0.9rem !important;
+  line-height: 1.05 !important;
+  font-weight: 950 !important;
+}
+
+#mirrorMainExperience .mirror-main-timeline-sub {
+  margin-top: 0.2rem !important;
+  color: rgba(23, 20, 17, 0.52) !important;
+  font-size: 0.78rem !important;
+  font-weight: 760 !important;
+}
+
+/* ---------- floating Pixel pill ---------- */
+
+#mirrorMainExperience .mirror-main-avatar-pill {
+  right: 1.35rem !important;
+  bottom: 1.35rem !important;
+  min-height: 3.25rem !important;
+  padding: 0.62rem 0.95rem 0.62rem 0.68rem !important;
+  border: 1px solid rgba(23, 20, 17, 0.06) !important;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.9), rgba(247, 243, 236, 0.84)) !important;
+  box-shadow:
+    0 22px 64px rgba(23, 20, 17, 0.14),
+    inset 0 1px 0 rgba(255, 255, 255, 0.92) !important;
+}
+
+#mirrorMainExperience .mirror-main-avatar-pill:hover {
+  transform: translateY(-1px) !important;
+}
+
+#mirrorMainExperience .mirror-main-avatar-pill .mirror-main-glyph {
+  width: 2.1rem !important;
+  height: 2.1rem !important;
+}
+
+#mirrorMainExperience .mirror-main-live-dot {
+  width: 0.58rem !important;
+  height: 0.58rem !important;
+  background: #7dbf8e !important;
+  box-shadow: 0 0 0 0.32rem rgba(125, 191, 142, 0.14) !important;
+}
+
+/* ---------- active scanning state ---------- */
+
+#mirrorMainExperience.is-scanning .mirror-main-scan-ring {
+  animation: mirrorMainScanPulse 1300ms ease-in-out infinite !important;
+}
+
+#mirrorMainExperience.is-scanning .mirror-main-zap {
+  animation: mirrorMainScanGlow 1300ms ease-in-out infinite !important;
+}
+
+@keyframes mirrorMainScanPulse {
+  0%,
+  100% {
+    transform: scale(1);
+    box-shadow:
+      0 28px 76px rgba(23, 20, 17, 0.16),
+      inset 0 0 0 1px rgba(23, 20, 17, 0.065);
+  }
+
+  50% {
+    transform: scale(1.035);
+    box-shadow:
+      0 32px 86px rgba(74, 144, 217, 0.18),
+      0 0 0 0.7rem rgba(74, 144, 217, 0.075),
+      inset 0 0 0 1px rgba(74, 144, 217, 0.18);
+  }
+}
+
+@keyframes mirrorMainScanGlow {
+  0%,
+  100% {
+    background: linear-gradient(135deg, #171411, #7a5c3e);
+  }
+
+  50% {
+    background: linear-gradient(135deg, #4a90d9, #8b7dd8);
+  }
+}
+
+/* ---------- responsive polish ---------- */
+
+@media (max-width: 1180px) {
+  #mirrorMainExperience .mirror-main-layout {
+    grid-template-columns: minmax(18rem, 0.9fr) minmax(26rem, 1.25fr) !important;
+  }
+
+  #mirrorMainExperience .mirror-main-right {
+    display: none !important;
+  }
+
+  #mirrorMainExperience .mirror-main-editorial {
+    min-height: calc(100vh - 13.6rem) !important;
+  }
+}
+
+@media (max-width: 900px) {
+  body.mirror-main-active {
+    overflow: auto !important;
+  }
+
+  #mirrorMainExperience.mirror-main-experience {
+    overflow: auto !important;
+  }
+
+  #mirrorMainExperience .mirror-main-nav,
+  #mirrorMainExperience .mirror-main-layout,
+  #mirrorMainExperience .mirror-main-timeline {
+    width: calc(100vw - 1.5rem) !important;
+  }
+
+  #mirrorMainExperience .mirror-main-nav {
+    border-radius: 1.45rem !important;
+    flex-wrap: wrap !important;
+  }
+
+  #mirrorMainExperience .mirror-main-layout {
+    grid-template-columns: 1fr !important;
+    margin-top: 1rem !important;
+  }
+
+  #mirrorMainExperience .mirror-main-editorial {
+    min-height: auto !important;
+    padding: 2rem !important;
+  }
+
+  #mirrorMainExperience .mirror-main-title,
+  #mirrorMainExperience .mirror-main-title-silence {
+    font-size: clamp(4rem, 17vw, 6.4rem) !important;
+  }
+
+  #mirrorMainExperience .mirror-main-timeline {
+    margin-bottom: 5.2rem !important;
+  }
+}
+/* =========================================================
+   Universal Stylist — Scanned Product Card Polish
+   Improves product reveal card, image size, hierarchy, buttons.
+   Paste at absolute bottom of mirror.css.
+   ========================================================= */
+
+.mirror-main-scan-card {
+  border-radius: 2.15rem !important;
+  background:
+    radial-gradient(circle at 18% 10%, rgba(255, 255, 255, 0.96), transparent 34%),
+    linear-gradient(145deg, rgba(255, 255, 255, 0.84), rgba(247, 243, 236, 0.66)) !important;
+  box-shadow:
+    0 34px 110px rgba(23, 20, 17, 0.11),
+    inset 0 1px 0 rgba(255, 255, 255, 0.92) !important;
+}
+
+.mirror-main-scan-inner {
+  min-height: 31rem !important;
+  padding: 0.4rem !important;
+}
+
+.mirror-main-product.is-visible {
+  display: grid !important;
+  grid-template-rows: auto auto auto auto;
+  gap: 0.9rem;
+  margin-top: 1.1rem !important;
+}
+
+.mirror-main-product-image {
+  width: 100% !important;
+  aspect-ratio: 1 / 1 !important;
+  min-height: 12.5rem !important;
+  border-radius: 1.55rem !important;
+  background:
+    radial-gradient(circle at 50% 18%, rgba(255, 255, 255, 1), transparent 42%),
+    linear-gradient(180deg, #f8f4ed, #ece2d5) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.95),
+    0 18px 46px rgba(23, 20, 17, 0.08) !important;
+}
+
+.mirror-main-product-image img {
+  width: 100% !important;
+  height: 100% !important;
+  max-height: 13.5rem !important;
+  object-fit: contain !important;
+  padding: 1rem !important;
+  filter: drop-shadow(0 16px 22px rgba(23, 20, 17, 0.12));
+}
+
+.mirror-main-product-row {
+  align-items: flex-start !important;
+  gap: 1rem !important;
+}
+
+.mirror-main-product-store {
+  margin: 0 !important;
+  color: rgba(23, 20, 17, 0.46) !important;
+  font-size: 0.64rem !important;
+  font-weight: 950 !important;
+  letter-spacing: 0.22em !important;
+  text-transform: uppercase !important;
+}
+
+.mirror-main-product-name {
+  margin-top: 0.25rem !important;
+  color: #171411 !important;
+  font-size: 1.28rem !important;
+  line-height: 1.02 !important;
+  letter-spacing: -0.045em !important;
+  font-weight: 950 !important;
+}
+
+.mirror-main-product-price {
+  flex: 0 0 auto !important;
+  min-height: 2.25rem !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 0 0.8rem !important;
+  border-radius: 999px !important;
+  color: #171411 !important;
+  background: rgba(255, 255, 255, 0.92) !important;
+  box-shadow:
+    0 12px 30px rgba(23, 20, 17, 0.07),
+    inset 0 0 0 1px rgba(23, 20, 17, 0.06) !important;
+  font-size: 0.98rem !important;
+  font-weight: 950 !important;
+}
+
+.mirror-main-product-meta {
+  width: fit-content !important;
+  margin: 0 !important;
+  padding: 0.5rem 0.75rem !important;
+  border-radius: 999px !important;
+  color: rgba(23, 20, 17, 0.62) !important;
+  background: rgba(247, 243, 236, 0.88) !important;
+  font-size: 0.82rem !important;
+  font-weight: 850 !important;
+}
+
+.mirror-main-product-buttons {
+  display: grid !important;
+  grid-template-columns: 1fr !important;
+  gap: 0.75rem !important;
+  margin-top: 0.3rem !important;
+}
+
+.mirror-main-product-buttons .mirror-main-primary,
+.mirror-main-product-buttons .mirror-main-secondary {
+  width: 100% !important;
+  min-height: 3.05rem !important;
+  margin: 0 !important;
+  border-radius: 999px !important;
+  font-size: 0.92rem !important;
+  font-weight: 950 !important;
+}
+
+.mirror-main-product-buttons .mirror-main-primary {
+  color: #ffffff !important;
+  background: #171411 !important;
+  box-shadow: 0 18px 42px rgba(23, 20, 17, 0.2) !important;
+}
+
+.mirror-main-product-buttons .mirror-main-secondary {
+  color: #171411 !important;
+  background: rgba(255, 255, 255, 0.92) !important;
+  border: 1px solid rgba(23, 20, 17, 0.07) !important;
+  box-shadow: 0 14px 34px rgba(23, 20, 17, 0.06) !important;
+}
+
+.mirror-main-product-buttons .mirror-main-primary:hover,
+.mirror-main-product-buttons .mirror-main-secondary:hover {
+  transform: translateY(-1px);
+}
+
+.mirror-main-card-top {
+  margin-bottom: 0.75rem !important;
+}
+
+.mirror-main-close-mini {
+  background: rgba(23, 20, 17, 0.055) !important;
+  color: rgba(23, 20, 17, 0.62) !important;
+}
+
+.mirror-main-close-mini:hover {
+  background: rgba(23, 20, 17, 0.1) !important;
+  color: #171411 !important;
+}
+/* =========================================================
+   Universal Stylist — Pixel Concierge Premium Polish
+   Makes Pixel card feel intentional, intelligent, and premium.
+   Paste at absolute bottom of mirror.css.
+   ========================================================= */
+
+.mirror-main-pixel-card {
+  width: 100% !important;
+  max-width: 25rem !important;
+  padding: 1.15rem !important;
+  border-radius: 2rem !important;
+  background:
+    radial-gradient(circle at 14% 8%, rgba(255, 255, 255, 0.96), transparent 34%),
+    linear-gradient(145deg, rgba(255, 255, 255, 0.84), rgba(247, 243, 236, 0.68)) !important;
+  border: 1px solid rgba(23, 20, 17, 0.075) !important;
+  box-shadow:
+    0 34px 100px rgba(23, 20, 17, 0.11),
+    inset 0 1px 0 rgba(255, 255, 255, 0.92) !important;
+}
+
+.mirror-main-pixel-header {
+  min-height: 2.7rem !important;
+  align-items: center !important;
+  margin-bottom: 0.85rem !important;
+}
+
+.mirror-main-pixel-title {
+  gap: 0.7rem !important;
+  color: #171411 !important;
+  font-size: 0.98rem !important;
+  font-weight: 950 !important;
+  letter-spacing: -0.02em !important;
+}
+
+.mirror-main-glyph {
+  width: 2.15rem !important;
+  height: 2.15rem !important;
+  flex: 0 0 auto !important;
+  padding: 0.2rem !important;
+  border-radius: 999px !important;
+  background:
+    radial-gradient(circle, rgba(255, 255, 255, 0.95), rgba(236, 244, 255, 0.8)) !important;
+  box-shadow:
+    0 12px 30px rgba(74, 144, 217, 0.16),
+    inset 0 0 0 1px rgba(74, 144, 217, 0.16) !important;
+}
+
+.mirror-main-pixel-close {
+  width: 2.35rem !important;
+  height: 2.35rem !important;
+  background: rgba(23, 20, 17, 0.055) !important;
+  color: rgba(23, 20, 17, 0.62) !important;
+  transition:
+    background 160ms ease,
+    color 160ms ease,
+    transform 160ms ease;
+}
+
+.mirror-main-pixel-close:hover {
+  background: rgba(23, 20, 17, 0.1) !important;
+  color: #171411 !important;
+  transform: scale(1.03);
+}
+
+.mirror-main-pixel-messages {
+  display: grid !important;
+  gap: 0.75rem !important;
+}
+
+.mirror-main-pixel-msg {
+  position: relative !important;
+  margin: 0 !important;
+  padding: 1rem 1rem 1rem 1.15rem !important;
+  border-radius: 1.25rem !important;
+  color: rgba(23, 20, 17, 0.7) !important;
+  background: rgba(255, 255, 255, 0.74) !important;
+  border: 1px solid rgba(23, 20, 17, 0.055) !important;
+  box-shadow:
+    0 14px 34px rgba(23, 20, 17, 0.055),
+    inset 0 1px 0 rgba(255, 255, 255, 0.92) !important;
+  font-size: 0.9rem !important;
+  font-weight: 820 !important;
+  line-height: 1.42 !important;
+}
+
+.mirror-main-pixel-msg::before {
+  content: "";
+  position: absolute;
+  left: 0.7rem;
+  top: 1.08rem;
+  width: 0.32rem;
+  height: 0.32rem;
+  border-radius: 999px;
+  background: rgba(125, 191, 142, 0.9);
+  box-shadow: 0 0 0 0.28rem rgba(125, 191, 142, 0.12);
+  opacity: 0;
+}
+
+.mirror-main-pixel-msg.featured {
+  color: #171411 !important;
+  background:
+    linear-gradient(135deg, rgba(247, 243, 236, 0.96), rgba(255, 255, 255, 0.92)) !important;
+  border-color: rgba(122, 92, 62, 0.11) !important;
+  font-weight: 900 !important;
+}
+
+.mirror-main-pixel-msg.featured::before {
+  opacity: 1;
+}
+
+.mirror-main-pixel-msg.featured {
+  padding-left: 1.55rem !important;
+}
+
+.mirror-main-avatar-pill {
+  min-height: 3.2rem !important;
+  padding: 0.58rem 0.95rem 0.58rem 0.65rem !important;
+  border: 1px solid rgba(23, 20, 17, 0.07) !important;
+  background: rgba(255, 255, 255, 0.88) !important;
+  box-shadow:
+    0 22px 70px rgba(23, 20, 17, 0.14),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
+}
+
+.mirror-main-avatar-pill .mirror-main-glyph {
+  width: 2.05rem !important;
+  height: 2.05rem !important;
+}
+
+.mirror-main-live-dot {
+  width: 0.55rem !important;
+  height: 0.55rem !important;
+  background: #7dbf8e !important;
+  box-shadow:
+    0 0 0 0.32rem rgba(125, 191, 142, 0.16),
+    0 0 1.2rem rgba(125, 191, 142, 0.42) !important;
+}
+
+@media (max-width: 1080px) {
+  .mirror-main-pixel-card {
+    max-width: 100% !important;
+  }
+}
+/* =========================================================
+   Universal Stylist — Top Navigation Premium Polish
+   Makes the header feel like a luxury smart-mirror control bar.
+   Paste at absolute bottom of mirror.css.
+   ========================================================= */
+
+.mirror-main-nav {
+  width: min(84rem, calc(100vw - 3rem)) !important;
+  min-height: 4.15rem !important;
+  padding: 0.65rem 0.75rem !important;
+  border-radius: 999px !important;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.88), rgba(247, 243, 236, 0.7)) !important;
+  border: 1px solid rgba(23, 20, 17, 0.075) !important;
+  box-shadow:
+    0 26px 90px rgba(23, 20, 17, 0.11),
+    inset 0 1px 0 rgba(255, 255, 255, 0.96) !important;
+  backdrop-filter: blur(26px) saturate(1.12) !important;
+  -webkit-backdrop-filter: blur(26px) saturate(1.12) !important;
+}
+
+.mirror-main-brand {
+  min-height: 2.75rem !important;
+  padding: 0 1.1rem 0 0.65rem !important;
+  gap: 0.72rem !important;
+  border-radius: 999px !important;
+  background: rgba(255, 255, 255, 0.82) !important;
+  box-shadow:
+    0 12px 34px rgba(23, 20, 17, 0.06),
+    inset 0 0 0 1px rgba(23, 20, 17, 0.055) !important;
+  text-decoration: none !important;
+  letter-spacing: -0.025em !important;
+}
+
+.mirror-main-brand::before {
+  content: "✦";
+  width: 2.15rem;
+  height: 2.15rem;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  color: #ffffff;
+  background:
+    radial-gradient(circle at 36% 26%, rgba(255, 255, 255, 0.35), transparent 32%),
+    linear-gradient(135deg, #171411, #6f4f31);
+  box-shadow: 0 12px 28px rgba(23, 20, 17, 0.16);
+  font-size: 0.92rem;
+  line-height: 1;
+}
+
+.mirror-main-store {
+  min-height: 2.75rem !important;
+  padding: 0 1.05rem !important;
+  border-radius: 999px !important;
+  background: rgba(247, 243, 236, 0.92) !important;
+  border: 1px solid rgba(23, 20, 17, 0.055) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.82),
+    0 10px 28px rgba(23, 20, 17, 0.045) !important;
+}
+
+.mirror-main-store-dot {
+  width: 0.58rem !important;
+  height: 0.58rem !important;
+  background: #7dbf8e !important;
+  box-shadow:
+    0 0 0 0.34rem rgba(125, 191, 142, 0.15),
+    0 0 1rem rgba(125, 191, 142, 0.28) !important;
+}
+
+.mirror-main-actions {
+  gap: 0.5rem !important;
+}
+
+.mirror-main-icon-btn {
+  width: 2.75rem !important;
+  height: 2.75rem !important;
+  border-radius: 999px !important;
+  background: rgba(255, 255, 255, 0.82) !important;
+  color: rgba(23, 20, 17, 0.72) !important;
+  box-shadow:
+    0 12px 32px rgba(23, 20, 17, 0.06),
+    inset 0 0 0 1px rgba(23, 20, 17, 0.055),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
+  transition:
+    transform 160ms ease,
+    background 160ms ease,
+    color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.mirror-main-icon-btn:hover {
+  transform: translateY(-1px);
+  color: #171411 !important;
+  background: rgba(255, 255, 255, 0.96) !important;
+  box-shadow:
+    0 16px 38px rgba(23, 20, 17, 0.09),
+    inset 0 0 0 1px rgba(23, 20, 17, 0.075) !important;
+}
+
+.mirror-main-icon-btn:active {
+  transform: translateY(0) scale(0.98);
+}
+
+.mirror-main-bag-count {
+  right: -0.18rem !important;
+  top: -0.18rem !important;
+  min-width: 1.2rem !important;
+  height: 1.2rem !important;
+  background: #171411 !important;
+  color: #ffffff !important;
+  border: 2px solid rgba(255, 255, 255, 0.95) !important;
+  box-shadow: 0 8px 20px rgba(23, 20, 17, 0.18) !important;
+  font-size: 0.68rem !important;
+}
+
+#mirrorMainExitBtn {
+  color: rgba(23, 20, 17, 0.82) !important;
+}
+
+#mirrorMainExitBtn:hover {
+  background: rgba(23, 20, 17, 0.08) !important;
+}
+
+@media (max-width: 720px) {
+  .mirror-main-nav {
+    width: calc(100vw - 1rem) !important;
+    border-radius: 1.4rem !important;
+  }
+
+  .mirror-main-brand,
+  .mirror-main-store,
+  .mirror-main-icon-btn {
+    min-height: 2.55rem !important;
+  }
+
+  .mirror-main-icon-btn {
+    width: 2.55rem !important;
+    height: 2.55rem !important;
+  }
+}
+/* =========================================================
+   Universal Stylist — Left Scan/Product Card Premium Polish
+   Status: Checklist Item 12
+   Purpose:
+   - Make the scan/product card feel more intentional
+   - Improve product image presentation
+   - Align product metadata and action buttons
+   - Keep RFID scanning behavior unchanged
+   ========================================================= */
+
+.mirror-main-left {
+  position: relative !important;
+}
+
+/* Recent scan strip */
+.mirror-main-recent {
+  width: 100% !important;
+  min-height: 4.25rem !important;
+  margin-bottom: 1.05rem !important;
+  padding-left: 0.2rem !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.72rem !important;
+}
+
+.mirror-main-recent-thumb {
+  width: 3.75rem !important;
+  height: 3.75rem !important;
+  border-radius: 1.12rem !important;
+  background:
+    radial-gradient(circle at 50% 20%, #ffffff, #f5efe6 72%) !important;
+  box-shadow:
+    0 18px 42px rgba(23, 20, 17, 0.11),
+    inset 0 0 0 1px rgba(23, 20, 17, 0.055) !important;
+}
+
+.mirror-main-recent-thumb img {
+  width: 100% !important;
+  height: 100% !important;
+  padding: 0.32rem !important;
+  object-fit: contain !important;
+}
+
+.mirror-main-recent-label {
+  margin: 0 !important;
+  color: rgba(23, 20, 17, 0.42) !important;
+  font-size: 0.68rem !important;
+  font-weight: 950 !important;
+  letter-spacing: 0.34em !important;
+  text-transform: uppercase !important;
+}
+
+/* Main scan card shell */
+.mirror-main-scan-card {
+  position: relative !important;
+  overflow: hidden !important;
+  border-radius: 2.15rem !important;
+  background:
+    radial-gradient(circle at 50% 0%, rgba(255, 255, 255, 0.98), transparent 42%),
+    linear-gradient(145deg, rgba(255, 255, 255, 0.76), rgba(248, 244, 238, 0.76)) !important;
+  border: 1px solid rgba(255, 255, 255, 0.9) !important;
+  box-shadow:
+    0 34px 100px rgba(23, 20, 17, 0.13),
+    0 10px 34px rgba(23, 20, 17, 0.055),
+    inset 0 1px 0 rgba(255, 255, 255, 0.94) !important;
+}
+
+.mirror-main-scan-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.72),
+      transparent 32%,
+      rgba(216, 199, 173, 0.08) 68%,
+      rgba(255, 255, 255, 0.42)
+    );
+}
+
+.mirror-main-scan-inner {
+  position: relative !important;
+  z-index: 1 !important;
+  min-height: 29.5rem !important;
+  padding: 1.45rem !important;
+}
+
+/* Header inside scan card */
+.mirror-main-card-top {
+  margin-bottom: 1.15rem !important;
+}
+
+.mirror-main-small-label {
+  margin: 0 !important;
+  color: rgba(23, 20, 17, 0.46) !important;
+  font-size: 0.67rem !important;
+  font-weight: 950 !important;
+  letter-spacing: 0.32em !important;
+  text-transform: uppercase !important;
+}
+
+.mirror-main-close-mini {
+  width: 2.45rem !important;
+  height: 2.45rem !important;
+  flex: 0 0 auto !important;
+  display: grid !important;
+  place-items: center !important;
+  border: 0 !important;
+  border-radius: 999px !important;
+  color: rgba(23, 20, 17, 0.56) !important;
+  background: rgba(255, 255, 255, 0.74) !important;
+  box-shadow:
+    0 12px 30px rgba(23, 20, 17, 0.065),
+    inset 0 0 0 1px rgba(23, 20, 17, 0.06) !important;
+  font-size: 1.15rem !important;
+  font-weight: 950 !important;
+}
+
+/* Idle scan state */
+.mirror-main-scan-idle {
+  min-height: 23.5rem !important;
+  display: grid !important;
+  place-items: center !important;
+  align-content: center !important;
+  gap: 1.2rem !important;
+  text-align: center !important;
+}
+
+.mirror-main-scan-ring {
+  position: relative !important;
+  width: 9.65rem !important;
+  height: 9.65rem !important;
+  border: 0 !important;
+  border-radius: 999px !important;
+  background:
+    radial-gradient(circle at 50% 50%, #ffffff 0 38%, rgba(255, 255, 255, 0.32) 39% 100%),
+    conic-gradient(
+      from 180deg,
+      rgba(216, 199, 173, 0.2),
+      rgba(255, 255, 255, 0.9),
+      rgba(74, 144, 217, 0.11),
+      rgba(216, 199, 173, 0.2)
+    ) !important;
+  box-shadow:
+    0 28px 76px rgba(23, 20, 17, 0.16),
+    inset 0 0 0 1px rgba(23, 20, 17, 0.06) !important;
+}
+
+.mirror-main-scan-ring::after {
+  content: "";
+  position: absolute;
+  inset: 1.15rem;
+  border-radius: inherit;
+  background:
+    radial-gradient(circle at 50% 38%, rgba(255, 255, 255, 0.92), rgba(247, 243, 236, 0.88)) !important;
+  box-shadow:
+    inset 0 0 0 1px rgba(23, 20, 17, 0.055),
+    0 14px 36px rgba(23, 20, 17, 0.08);
+}
+
+.mirror-main-zap {
+  position: relative !important;
+  z-index: 1 !important;
+  width: 4.7rem !important;
+  height: 4.7rem !important;
+  display: grid !important;
+  place-items: center !important;
+  border-radius: 999px !important;
+  color: #ffffff !important;
+  background:
+    radial-gradient(circle at 38% 22%, rgba(255, 255, 255, 0.28), transparent 34%),
+    linear-gradient(135deg, #31261d, #171411) !important;
+  box-shadow:
+    0 18px 42px rgba(23, 20, 17, 0.26),
+    inset 0 1px 0 rgba(255, 255, 255, 0.18) !important;
+  font-size: 2rem !important;
+}
+
+.mirror-main-scan-copy {
+  max-width: 16.5rem !important;
+  margin: 0 !important;
+  color: rgba(23, 20, 17, 0.64) !important;
+  font-size: 0.95rem !important;
+  line-height: 1.45 !important;
+  font-weight: 850 !important;
+}
+
+/* RFID input */
+.mirror-main-rfid-entry {
+  width: min(100%, 18rem) !important;
+  display: grid !important;
+  gap: 0.72rem !important;
+  margin-top: 0.15rem !important;
+}
+
+.mirror-main-rfid-input {
+  width: 100% !important;
+  min-height: 3.15rem !important;
+  border: 1px solid rgba(23, 20, 17, 0.075) !important;
+  border-radius: 999px !important;
+  padding: 0 1.15rem !important;
+  color: #171411 !important;
+  background: rgba(255, 255, 255, 0.92) !important;
+  box-shadow:
+    0 16px 42px rgba(23, 20, 17, 0.075),
+    inset 0 1px 0 rgba(255, 255, 255, 0.95) !important;
+  font-size: 0.94rem !important;
+  font-weight: 900 !important;
+  text-align: center !important;
+  outline: none !important;
+}
+
+.mirror-main-rfid-input::placeholder {
+  color: rgba(23, 20, 17, 0.42) !important;
+}
+
+.mirror-main-rfid-input:focus {
+  border-color: rgba(122, 92, 62, 0.36) !important;
+  box-shadow:
+    0 0 0 5px rgba(122, 92, 62, 0.09),
+    0 18px 46px rgba(23, 20, 17, 0.09) !important;
+}
+
+/* Product state */
+.mirror-main-product {
+  margin-top: 0.5rem !important;
+}
+
+.mirror-main-product.is-visible {
+  display: flex !important;
+  flex-direction: column !important;
+  min-height: 23.5rem !important;
+}
+
+.mirror-main-product-image {
+  position: relative !important;
+  width: 100% !important;
+  height: 13.9rem !important;
+  min-height: 13.9rem !important;
+  display: grid !important;
+  place-items: center !important;
+  overflow: hidden !important;
+  padding: 1.05rem !important;
+  border-radius: 1.55rem !important;
+  background:
+    radial-gradient(circle at 50% 20%, rgba(255, 255, 255, 1), transparent 42%),
+    linear-gradient(180deg, #f7f1e7, #ebe0cf) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.95),
+    inset 0 0 0 1px rgba(23, 20, 17, 0.045),
+    0 18px 48px rgba(23, 20, 17, 0.085) !important;
+}
+
+.mirror-main-product-image img {
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  object-fit: contain !important;
+  object-position: center !important;
+  filter: drop-shadow(0 16px 22px rgba(23, 20, 17, 0.1)) !important;
+}
+
+.mirror-main-product-row {
+  margin-top: 1rem !important;
+  align-items: flex-start !important;
+}
+
+.mirror-main-product-store {
+  margin: 0 0 0.35rem !important;
+  color: rgba(23, 20, 17, 0.42) !important;
+  font-size: 0.64rem !important;
+  font-weight: 950 !important;
+  letter-spacing: 0.22em !important;
+  text-transform: uppercase !important;
+}
+
+.mirror-main-product-name {
+  max-width: 13.5rem !important;
+  margin: 0 !important;
+  color: #171411 !important;
+  font-size: 1.26rem !important;
+  line-height: 1.04 !important;
+  letter-spacing: -0.045em !important;
+  font-weight: 950 !important;
+}
+
+.mirror-main-product-price {
+  min-width: max-content !important;
+  padding: 0.55rem 0.75rem !important;
+  border-radius: 999px !important;
+  color: #171411 !important;
+  background: rgba(255, 255, 255, 0.88) !important;
+  box-shadow:
+    0 12px 28px rgba(23, 20, 17, 0.075),
+    inset 0 0 0 1px rgba(23, 20, 17, 0.055) !important;
+  font-size: 1rem !important;
+  line-height: 1 !important;
+  font-weight: 950 !important;
+}
+
+.mirror-main-product-meta {
+  margin: 0.7rem 0 0 !important;
+  color: rgba(23, 20, 17, 0.56) !important;
+  font-size: 0.9rem !important;
+  font-weight: 850 !important;
+}
+
+.mirror-main-product-buttons {
+  margin-top: auto !important;
+  padding-top: 1.25rem !important;
+  display: grid !important;
+  grid-template-columns: 1fr !important;
+  gap: 0.7rem !important;
+}
+
+.mirror-main-product-buttons .mirror-main-primary,
+.mirror-main-product-buttons .mirror-main-secondary {
+  width: 100% !important;
+  min-height: 3.15rem !important;
+  margin: 0 !important;
+  border-radius: 999px !important;
+  font-size: 0.92rem !important;
+  font-weight: 950 !important;
+}
+
+.mirror-main-product-buttons .mirror-main-primary {
+  color: #ffffff !important;
+  background:
+    radial-gradient(circle at 28% 18%, rgba(255, 255, 255, 0.2), transparent 32%),
+    linear-gradient(135deg, #2a211a, #171411) !important;
+  box-shadow:
+    0 18px 46px rgba(23, 20, 17, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.14) !important;
+}
+
+.mirror-main-product-buttons .mirror-main-secondary {
+  color: #171411 !important;
+  background: rgba(255, 255, 255, 0.88) !important;
+  border: 1px solid rgba(23, 20, 17, 0.07) !important;
+  box-shadow: 0 12px 32px rgba(23, 20, 17, 0.065) !important;
+}
+
+/* Scanning visual state */
+#mirrorMainExperience.is-scanning .mirror-main-scan-card {
+  box-shadow:
+    0 38px 110px rgba(23, 20, 17, 0.15),
+    0 0 0 1px rgba(122, 92, 62, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.94) !important;
+}
+
+#mirrorMainExperience.is-scanning .mirror-main-scan-ring {
+  animation: mirrorScanPulse 1400ms ease-in-out infinite;
+}
+
+@keyframes mirrorScanPulse {
+  0%,
+  100% {
+    transform: scale(1);
+    box-shadow:
+      0 28px 76px rgba(23, 20, 17, 0.16),
+      inset 0 0 0 1px rgba(23, 20, 17, 0.06);
+  }
+
+  50% {
+    transform: scale(1.035);
+    box-shadow:
+      0 34px 90px rgba(122, 92, 62, 0.18),
+      0 0 0 8px rgba(122, 92, 62, 0.055),
+      inset 0 0 0 1px rgba(23, 20, 17, 0.06);
+  }
+}
+
+/* Mobile safety */
+@media (max-width: 1080px) {
+  .mirror-main-scan-inner {
+    min-height: auto !important;
+  }
+
+  .mirror-main-product.is-visible {
+    min-height: auto !important;
+  }
+
+  .mirror-main-product-image {
+    height: 15rem !important;
+    min-height: 15rem !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #mirrorMainExperience.is-scanning .mirror-main-scan-ring {
+    animation: none !important;
+  }
+}
+/* =========================================================
+   Universal Stylist — Scan Card State Fix
+   Status: Checklist Item 12 refinement
+   Fix:
+   - Product state must replace idle scan state
+   - Prevent product card from dropping below fold
+   - Keep scan input visible only when no product is active
+   ========================================================= */
+
+/* When a product is visible, hide the idle scanner area */
+.mirror-main-scan-card:has(.mirror-main-product.is-visible) .mirror-main-scan-idle {
+  display: none !important;
+}
+
+/* Product state should use the whole card cleanly */
+.mirror-main-scan-card:has(.mirror-main-product.is-visible) .mirror-main-scan-inner {
+  min-height: 29.5rem !important;
+  justify-content: flex-start !important;
+}
+
+/* Keep product card fully inside the left panel */
+.mirror-main-product.is-visible {
+  display: flex !important;
+  flex-direction: column !important;
+  min-height: 24.5rem !important;
+  height: auto !important;
+  margin-top: 0.75rem !important;
+}
+
+/* Product image should be premium but not too tall */
+.mirror-main-product.is-visible .mirror-main-product-image {
+  height: 14.25rem !important;
+  min-height: 14.25rem !important;
+  max-height: 14.25rem !important;
+}
+
+/* Tighten product text spacing */
+.mirror-main-product.is-visible .mirror-main-product-row {
+  margin-top: 0.95rem !important;
+}
+
+.mirror-main-product.is-visible .mirror-main-product-meta {
+  margin-top: 0.65rem !important;
+}
+
+/* Keep buttons inside the card */
+.mirror-main-product.is-visible .mirror-main-product-buttons {
+  margin-top: auto !important;
+  padding-top: 1rem !important;
+}
+
+/* If browser does not support :has, this class-based fallback still helps */
+body:not(.mirror-main-outfit-active) #mirrorMainProductCard.is-visible ~ .mirror-main-scan-idle {
+  display: none !important;
+}
+
+/* Saved/customer journey state should not force scan UI above product */
+body[data-mirror-customer-stage="saved"] .mirror-main-product.is-visible,
+body[data-mirror-customer-stage="product"] .mirror-main-product.is-visible {
+  display: flex !important;
+}
+
+body[data-mirror-customer-stage="saved"] .mirror-main-scan-card:has(.mirror-main-product.is-visible) .mirror-main-scan-idle,
+body[data-mirror-customer-stage="product"] .mirror-main-scan-card:has(.mirror-main-product.is-visible) .mirror-main-scan-idle {
+  display: none !important;
+}
+
+/* Smaller laptop safety */
+@media (max-height: 820px) {
+  .mirror-main-scan-inner {
+    min-height: 26.5rem !important;
+  }
+
+  .mirror-main-product.is-visible {
+    min-height: 21.75rem !important;
+  }
+
+  .mirror-main-product.is-visible .mirror-main-product-image {
+    height: 11.75rem !important;
+    min-height: 11.75rem !important;
+    max-height: 11.75rem !important;
+  }
+
+  .mirror-main-product-buttons .mirror-main-primary,
+  .mirror-main-product-buttons .mirror-main-secondary {
+    min-height: 2.85rem !important;
+  }
+}
+/* =========================================================
+   Universal Stylist — Outfit Board Consolidated Fix v6
+   Purpose:
+   - One source of truth for outfit modal
+   - Removes half-card / blank split behavior
+   - Makes product image cards balanced and premium
+   - Keeps right rail compact
+   - Keeps footer buttons aligned
+   ========================================================= */
+
+#mirrorMainOutfitShowcase.mirror-main-outfit-showcase {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 9200 !important;
+  display: grid !important;
+  place-items: center !important;
+  padding: clamp(1.25rem, 2.2vw, 2rem) !important;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 18% 16%, rgba(255, 255, 255, 0.82), transparent 34%),
+    radial-gradient(circle at 82% 22%, rgba(216, 199, 173, 0.26), transparent 34%),
+    rgba(247, 243, 236, 0.68) !important;
+  backdrop-filter: blur(22px) saturate(1.08) !important;
+  -webkit-backdrop-filter: blur(22px) saturate(1.08) !important;
+}
+
+#mirrorMainOutfitShowcase.mirror-main-outfit-showcase.is-active {
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+}
+
+#mirrorMainOutfitShowcase .mirror-main-outfit-glass {
+  width: min(74rem, calc(100vw - 3rem)) !important;
+  max-height: calc(100vh - 3rem) !important;
+  display: grid !important;
+  grid-template-rows: auto minmax(0, 1fr) auto !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  border: 1px solid rgba(23, 20, 17, 0.065) !important;
+  border-radius: 2.15rem !important;
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.95), rgba(250, 247, 241, 0.9)) !important;
+  box-shadow:
+    0 38px 120px rgba(23, 20, 17, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.92) !important;
+}
+
+#mirrorMainOutfitShowcase .mirror-main-outfit-head {
+  min-height: 5.75rem !important;
+  padding: 1.15rem 1.9rem !important;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto auto !important;
+  align-items: center !important;
+  gap: 1rem !important;
+  border-bottom: 1px solid rgba(23, 20, 17, 0.06) !important;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.88), rgba(255, 255, 255, 0.7)) !important;
+}
+
+#mirrorMainOutfitShowcase .mirror-main-outfit-head .mirror-main-small-label {
+  margin: 0 0 0.45rem !important;
+  color: rgba(23, 20, 17, 0.42) !important;
+  font-size: 0.66rem !important;
+  letter-spacing: 0.24em !important;
+  line-height: 1 !important;
+}
+
+#mirrorMainOutfitShowcase .mirror-main-outfit-head h2 {
+  margin: 0 !important;
+  color: #171411 !important;
+  font-size: clamp(1.35rem, 1.8vw, 1.75rem) !important;
+  line-height: 0.95 !important;
+  letter-spacing: -0.055em !important;
+  font-weight: 950 !important;
+}
+
+#mirrorMainOutfitShowcase .mirror-main-outfit-score {
+  min-width: 4.2rem !important;
+  min-height: 2.8rem !important;
+  display: grid !important;
+  place-items: center !important;
+  padding: 0 0.85rem !important;
+  border-radius: 999px !important;
+  color: #171411 !important;
+  background:
+    linear-gradient(135deg, #f7f3ec, #eee5d8) !important;
+  box-shadow:
+    inset 0 0 0 1px rgba(23, 20, 17, 0.075),
+    0 12px 32px rgba(23, 20, 17, 0.065) !important;
+  font-size: 1rem !important;
+  font-weight: 950 !important;
+}
+
+#mirrorMainOutfitShowcase .mirror-main-close-mini {
+  width: 2.65rem !important;
+  height: 2.65rem !important;
+  display: grid !important;
+  place-items: center !important;
+  border: 0 !important;
+  border-radius: 999px !important;
+  color: rgba(23, 20, 17, 0.62) !important;
+  background: rgba(23, 20, 17, 0.055) !important;
+  box-shadow: none !important;
+  font-size: 1.2rem !important;
+  line-height: 1 !important;
+}
+
+#mirrorMainOutfitShowcase .mirror-main-outfit-grid {
+  min-height: 0 !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+}
+
+#mirrorMainOutfitShowcase .mirror-main-real-look-canvas,
+#mirrorMainOutfitShowcase .mirror-main-look-canvas {
+  height: 100% !important;
+  min-height: 0 !important;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1.58fr) minmax(17.75rem, 0.72fr) !important;
+  gap: 1.15rem !important;
+  margin: 0 !important;
+  padding: 1.25rem !important;
+  overflow: hidden !important;
+  background:
+    radial-gradient(circle at 38% 8%, rgba(255, 255, 255, 0.82), transparent 36%),
+    linear-gradient(180deg, rgba(249, 246, 240, 0.92), rgba(239, 231, 219, 0.88)) !important;
+}
+
+/* Main 2x2 outfit cards */
+#mirrorMainOutfitShowcase .mirror-main-real-look-stage {
+  min-height: 0 !important;
+  height: 100% !important;
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  grid-auto-rows: minmax(0, 1fr) !important;
+  gap: 1rem !important;
+  padding: 0 !important;
+  overflow: auto !important;
+  align-items: stretch !important;
+  align-content: stretch !important;
+  background: transparent !important;
+  scrollbar-width: thin !important;
+}
+
+#mirrorMainOutfitShowcase .mirror-main-real-look-piece {
+  width: 100% !important;
+  min-width: 0 !important;
+  min-height: 16.25rem !important;
+  height: 100% !important;
+  display: grid !important;
+  grid-template-columns: 1fr !important;
+  grid-template-rows: minmax(11.35rem, 1fr) auto !important;
+  overflow: hidden !important;
+  border-radius: 1.55rem !important;
+  background: rgba(255, 255, 255, 0.96) !important;
+  border: 1px solid rgba(23, 20, 17, 0.055) !important;
+  box-shadow:
+    0 18px 52px rgba(23, 20, 17, 0.075),
+    inset 0 1px 0 rgba(255, 255, 255, 0.92) !important;
+}
+
+#mirrorMainOutfitShowcase .mirror-main-real-look-piece > .mirror-main-real-look-image {
+  grid-column: 1 / -1 !important;
+  grid-row: 1 !important;
+  width: 100% !important;
+  max-width: none !important;
+  min-width: 0 !important;
+  height: 100% !important;
+  min-height: 11.35rem !important;
+  display: grid !important;
+  place-items: center !important;
+  margin: 0 !important;
+  padding: 1rem !important;
+  overflow: hidden !important;
+  border-radius: 0 !important;
+  aspect-ratio: auto !important;
+  background:
+    radial-gradient(circle at 50% 14%, rgba(255, 255, 255, 1), transparent 42%),
+    linear-gradient(180deg, #f6f0e6, #ebe1d1) !important;
+}
+
+#mirrorMainOutfitShowcase .mirror-main-real-look-piece > .mirror-main-real-look-image img {
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 13rem !important;
+  max-height: 10.75rem !important;
+  display: block !important;
+  object-fit: contain !important;
+  object-position: center !important;
+  padding: 0 !important;
+  margin: 0 auto !important;
+  filter: drop-shadow(0 14px 18px rgba(23, 20, 17, 0.1)) !important;
+}
+
+#mirrorMainOutfitShowcase .mirror-main-real-look-piece > .mirror-main-real-look-copy {
+  grid-column: 1 / -1 !important;
+  grid-row: 2 !important;
+  width: 100% !important;
+  max-width: none !important;
+  min-width: 0 !important;
+  min-height: 4.8rem !important;
+  display: block !important;
+  margin: 0 !important;
+  padding: 0.85rem 1rem 0.95rem !important;
+  overflow: hidden !important;
+  background: rgba(255, 255, 255, 0.98) !important;
+  border-top: 1px solid rgba(23, 20, 17, 0.045) !important;
+}
+
+#mirrorMainOutfitShowcase .mirror-main-real-look-copy p {
+  margin: 0 0 0.35rem !important;
+  color: rgba(23, 20, 17, 0.45) !important;
+  font-size: 0.64rem !important;
+  line-height: 1 !important;
+  font-weight: 950 !important;
+  letter-spacing: 0.24em !important;
+  text-transform: uppercase !important;
+}
+
+#mirrorMainOutfitShowcase .mirror-main-real-look-copy strong {
+  display: block !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  overflow: hidden !important;
+  color: #171411 !important;
+  font-size: 1rem !important;
+  line-height: 1.05 !important;
+  font-weight: 950 !important;
+  white-space: nowrap !important;
+  text-overflow: ellipsis !important;
+}
+
+#mirrorMainOutfitShowcase .mirror-main-real-look-copy span {
+  display: block !important;
+  margin-top: 0.25rem !important;
+  color: rgba(23, 20, 17, 0.62) !important;
+  font-size: 0.84rem !important;
+  line-height: 1.1 !important;
+  font-weight: 800 !important;
+}
+
+/* Right rail */
+#mirrorMainOutfitShowcase .mirror-main-look-rail {
+  min-height: 0 !important;
+  height: 100% !important;
+  min-width: 0 !important;
+  display: grid !important;
+  grid-auto-rows: max-content !important;
+  align-content: start !important;
+  gap: 0.75rem !important;
+  padding: 0 !important;
+  overflow: auto !important;
+  background: transparent !important;
+  scrollbar-width: thin !important;
+}
+
+#mirrorMainOutfitShowcase .mirror-main-look-rail-item {
+  width: 100% !important;
+  min-width: 0 !important;
+  min-height: 4.75rem !important;
+  display: grid !important;
+  grid-template-columns: 3.45rem minmax(0, 1fr) 0.5rem !important;
+  align-items: center !important;
+  gap: 0.75rem !important;
+  padding: 0.65rem !important;
+  border-radius: 1.15rem !important;
+  background: rgba(255, 255, 255, 0.92) !important;
+  border: 1px solid rgba(23, 20, 17, 0.055) !important;
+  box-shadow:
+    0 14px 34px rgba(23, 20, 17, 0.055),
+    inset 0 1px 0 rgba(255, 255, 255, 0.86) !important;
+}
+
+#mirrorMainOutfitShowcase .mirror-main-look-rail-thumb {
+  width: 3.45rem !important;
+  height: 3.45rem !important;
+  display: grid !important;
+  place-items: center !important;
+  overflow: hidden !important;
+  border-radius: 0.9rem !important;
+  background:
+    radial-gradient(circle at 50% 15%, #ffffff, #f6f0e6) !important;
+}
+
+#mirrorMainOutfitShowcase .mirror-main-look-rail-thumb img {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: contain !important;
+  padding: 0.25rem !important;
+}
+
+#mirrorMainOutfitShowcase .mirror-main-look-rail-copy {
+  min-width: 0 !important;
+}
+
+#mirrorMainOutfitShowcase .mirror-main-look-rail-copy p {
+  margin: 0 0 0.25rem !important;
+  color: rgba(23, 20, 17, 0.42) !important;
+  font-size: 0.61rem !important;
+  line-height: 1 !important;
+  font-weight: 950 !important;
+  letter-spacing: 0.18em !important;
+  text-transform: uppercase !important;
+}
+
+#mirrorMainOutfitShowcase .mirror-main-look-rail-copy strong {
+  display: block !important;
+  max-width: 100% !important;
+  overflow: hidden !important;
+  color: #171411 !important;
+  font-size: 0.9rem !important;
+  line-height: 1.02 !important;
+  font-weight: 950 !important;
+  white-space: nowrap !important;
+  text-overflow: ellipsis !important;
+}
+
+#mirrorMainOutfitShowcase .mirror-main-look-rail-copy span {
+  display: block !important;
+  margin-top: 0.22rem !important;
+  color: rgba(23, 20, 17, 0.58) !important;
+  font-size: 0.78rem !important;
+  line-height: 1 !important;
+  font-weight: 800 !important;
+}
+
+#mirrorMainOutfitShowcase .mirror-main-look-rail-dot {
+  width: 0.5rem !important;
+  height: 0.5rem !important;
+  border-radius: 999px !important;
+  background: #7dbf8e !important;
+  box-shadow: 0 0 0 0.28rem rgba(125, 191, 142, 0.16) !important;
+}
+
+#mirrorMainOutfitShowcase .mirror-main-look-note {
+  min-height: 7.25rem !important;
+  display: block !important;
+  margin: 0 !important;
+  padding: 1rem !important;
+  border-radius: 1.2rem !important;
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.88), rgba(247, 243, 236, 0.92)) !important;
+  border: 1px solid rgba(23, 20, 17, 0.055) !important;
+  box-shadow:
+    0 16px 42px rgba(23, 20, 17, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.86) !important;
+}
+
+#mirrorMainOutfitShowcase .mirror-main-look-note p {
+  margin: 0 0 0.55rem !important;
+  color: rgba(23, 20, 17, 0.5) !important;
+  font-size: 0.62rem !important;
+  font-weight: 950 !important;
+  letter-spacing: 0.18em !important;
+  text-transform: uppercase !important;
+}
+
+#mirrorMainOutfitShowcase .mirror-main-look-note span {
+  display: block !important;
+  margin: 0 !important;
+  color: rgba(23, 20, 17, 0.68) !important;
+  font-family: Georgia, "Times New Roman", serif !important;
+  font-size: 0.9rem !important;
+  font-style: italic !important;
+  line-height: 1.35 !important;
+  font-weight: 700 !important;
+}
+
+#mirrorMainOutfitShowcase .mirror-main-outfit-explain {
+  display: none !important;
+}
+
+/* Footer actions */
+#mirrorMainOutfitShowcase .mirror-main-outfit-actions {
+  min-height: 5.4rem !important;
+  margin: 0 !important;
+  padding: 1rem 1.9rem !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  gap: 0.9rem !important;
+  border-top: 1px solid rgba(23, 20, 17, 0.06) !important;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.76), rgba(255, 255, 255, 0.9)) !important;
+}
+
+#mirrorMainOutfitShowcase .mirror-main-outfit-actions .mirror-main-primary,
+#mirrorMainOutfitShowcase .mirror-main-outfit-actions .mirror-main-secondary {
+  min-height: 3rem !important;
+  height: 3rem !important;
+  min-width: 9rem !important;
+  margin: 0 !important;
+  padding: 0 1.45rem !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-radius: 999px !important;
+  font-size: 0.94rem !important;
+  line-height: 1 !important;
+  font-weight: 950 !important;
+  white-space: nowrap !important;
+  transform: none !important;
+}
+
+#mirrorMainOutfitShowcase .mirror-main-outfit-actions .mirror-main-primary {
+  color: #ffffff !important;
+  background:
+    linear-gradient(135deg, #78c98d, #5dae73) !important;
+  border: 0 !important;
+  box-shadow:
+    0 16px 38px rgba(78, 153, 94, 0.26),
+    inset 0 1px 0 rgba(255, 255, 255, 0.22) !important;
+}
+
+#mirrorMainOutfitShowcase .mirror-main-outfit-actions .mirror-main-secondary {
+  color: #171411 !important;
+  background: rgba(255, 255, 255, 0.88) !important;
+  border: 1px solid rgba(23, 20, 17, 0.075) !important;
+  box-shadow:
+    0 12px 30px rgba(23, 20, 17, 0.055),
+    inset 0 1px 0 rgba(255, 255, 255, 0.88) !important;
+}
+
+#mirrorMainOutfitShowcase #mirrorMainSaveLookBtn.is-saved,
+#mirrorMainOutfitShowcase #mirrorMainSaveLookBtn:disabled.is-saved {
+  opacity: 1 !important;
+  cursor: default !important;
+  color: #ffffff !important;
+  background:
+    linear-gradient(135deg, #7dbf8e, #5fae77) !important;
+  box-shadow:
+    0 16px 38px rgba(78, 153, 94, 0.26),
+    inset 0 1px 0 rgba(255, 255, 255, 0.22) !important;
+}
+
+/* Neutralize older grid/flex mistakes */
+#mirrorMainOutfitShowcase .mirror-main-real-look-piece > * {
+  grid-column: auto !important;
+  grid-row: auto !important;
+}
+
+/* Smaller laptop safety */
+@media (max-height: 820px) {
+  #mirrorMainOutfitShowcase .mirror-main-outfit-glass {
+    max-height: calc(100vh - 2rem) !important;
+  }
+
+  #mirrorMainOutfitShowcase .mirror-main-real-look-canvas,
+  #mirrorMainOutfitShowcase .mirror-main-look-canvas {
+    padding: 1rem !important;
+  }
+
+  #mirrorMainOutfitShowcase .mirror-main-real-look-piece {
+    min-height: 14.5rem !important;
+  }
+
+  #mirrorMainOutfitShowcase .mirror-main-real-look-piece > .mirror-main-real-look-image {
+    min-height: 9.7rem !important;
+  }
+
+  #mirrorMainOutfitShowcase .mirror-main-real-look-piece > .mirror-main-real-look-image img {
+    max-height: 9rem !important;
+  }
+
+  #mirrorMainOutfitShowcase .mirror-main-real-look-piece > .mirror-main-real-look-copy {
+    min-height: 4.4rem !important;
+    padding: 0.75rem 0.9rem 0.85rem !important;
+  }
+}
+
+/* Responsive */
+@media (max-width: 1040px) {
+  #mirrorMainOutfitShowcase .mirror-main-real-look-canvas,
+  #mirrorMainOutfitShowcase .mirror-main-look-canvas {
+    grid-template-columns: 1fr !important;
+    overflow: auto !important;
+  }
+
+  #mirrorMainOutfitShowcase .mirror-main-look-rail {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    display: grid !important;
+    overflow: visible !important;
+  }
+
+  #mirrorMainOutfitShowcase .mirror-main-look-note {
+    grid-column: 1 / -1 !important;
+  }
+}
+
+@media (max-width: 720px) {
+  #mirrorMainOutfitShowcase.mirror-main-outfit-showcase {
+    padding: 0.65rem !important;
+  }
+
+  #mirrorMainOutfitShowcase .mirror-main-outfit-glass {
+    width: calc(100vw - 1.3rem) !important;
+    max-height: calc(100vh - 1.3rem) !important;
+    border-radius: 1.55rem !important;
+  }
+
+  #mirrorMainOutfitShowcase .mirror-main-outfit-head {
+    min-height: auto !important;
+    grid-template-columns: 1fr auto !important;
+    padding: 1rem !important;
+  }
+
+  #mirrorMainOutfitShowcase .mirror-main-outfit-score {
+    grid-column: 1 / 2 !important;
+    grid-row: 2 !important;
+    width: fit-content !important;
+    margin-top: 0.65rem !important;
+  }
+
+  #mirrorMainOutfitShowcase .mirror-main-real-look-canvas,
+  #mirrorMainOutfitShowcase .mirror-main-look-canvas {
+    padding: 0.85rem !important;
+  }
+
+  #mirrorMainOutfitShowcase .mirror-main-real-look-stage {
+    grid-template-columns: 1fr !important;
+  }
+
+  #mirrorMainOutfitShowcase .mirror-main-look-rail {
+    grid-template-columns: 1fr !important;
+  }
+
+  #mirrorMainOutfitShowcase .mirror-main-outfit-actions {
+    padding: 0.85rem 1rem !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+
+  #mirrorMainOutfitShowcase .mirror-main-outfit-actions .mirror-main-primary,
+  #mirrorMainOutfitShowcase .mirror-main-outfit-actions .mirror-main-secondary {
+    width: 100% !important;
+  }
+}
+/* =========================================================
+   Universal Stylist — Premium Mirror Bag Drawer v1
+   Purpose:
+   - Opens bag inside the new customer mirror
+   - Stops bag button from leaving premium mirror
+   - Uses existing /api/v1/macy-stylist/bag backend
+   ========================================================= */
+
+.mirror-main-bag-drawer {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 9350 !important;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.mirror-main-bag-drawer.is-active {
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+}
+
+.mirror-main-bag-dim {
+  position: absolute;
+  inset: 0;
+  border: 0;
+  background:
+    radial-gradient(circle at 18% 14%, rgba(255, 255, 255, 0.72), transparent 34%),
+    rgba(23, 20, 17, 0.26);
+  backdrop-filter: blur(16px) saturate(1.05);
+  -webkit-backdrop-filter: blur(16px) saturate(1.05);
+}
+
+.mirror-main-bag-panel {
+  position: absolute;
+  right: 1.35rem;
+  top: 1.35rem;
+  bottom: 1.35rem;
+  width: min(31rem, calc(100vw - 2.7rem));
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
+  overflow: hidden;
+  border-radius: 2.1rem;
+  border: 1px solid rgba(23, 20, 17, 0.075);
+  background:
+    radial-gradient(circle at 18% 10%, rgba(255, 255, 255, 0.98), transparent 34%),
+    linear-gradient(145deg, rgba(255, 255, 255, 0.96), rgba(247, 243, 236, 0.92));
+  box-shadow:
+    0 38px 120px rgba(23, 20, 17, 0.24),
+    inset 0 1px 0 rgba(255, 255, 255, 0.92);
+}
+
+.mirror-main-bag-head {
+  min-height: 5.6rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.15rem 1.25rem;
+  border-bottom: 1px solid rgba(23, 20, 17, 0.06);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.86), rgba(255, 255, 255, 0.62));
+}
+
+.mirror-main-bag-kicker {
+  margin: 0 0 0.35rem;
+  color: rgba(23, 20, 17, 0.44);
+  font-size: 0.64rem;
+  line-height: 1;
+  font-weight: 950;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+}
+
+.mirror-main-bag-title {
+  margin: 0;
+  color: #171411;
+  font-size: 1.65rem;
+  line-height: 0.95;
+  letter-spacing: -0.055em;
+  font-weight: 950;
+}
+
+.mirror-main-bag-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid rgba(23, 20, 17, 0.055);
+}
+
+.mirror-main-bag-stat {
+  min-width: 0;
+  padding: 0.8rem;
+  border-radius: 1.15rem;
+  background: rgba(247, 243, 236, 0.88);
+  border: 1px solid rgba(23, 20, 17, 0.05);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.82);
+}
+
+.mirror-main-bag-stat span,
+.mirror-main-bag-stat strong {
+  display: block;
+}
+
+.mirror-main-bag-stat span {
+  margin-bottom: 0.28rem;
+  color: rgba(23, 20, 17, 0.48);
+  font-size: 0.58rem;
+  font-weight: 950;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.mirror-main-bag-stat strong {
+  overflow: hidden;
+  color: #171411;
+  font-size: 1rem;
+  line-height: 1.05;
+  font-weight: 950;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.mirror-main-bag-content {
+  min-height: 0;
+  display: grid;
+  align-content: start;
+  gap: 0.8rem;
+  padding: 1rem 1.25rem 1.15rem;
+  overflow: auto;
+  scrollbar-width: thin;
+}
+
+.mirror-main-bag-empty {
+  min-height: 13rem;
+  display: grid;
+  place-items: center;
+  padding: 1.2rem;
+  border-radius: 1.35rem;
+  color: rgba(23, 20, 17, 0.56);
+  background:
+    radial-gradient(circle at 50% 12%, rgba(255, 255, 255, 0.96), transparent 38%),
+    rgba(247, 243, 236, 0.88);
+  border: 1px dashed rgba(23, 20, 17, 0.16);
+  text-align: center;
+  font-weight: 850;
+  line-height: 1.45;
+}
+
+.mirror-main-bag-row {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 4.3rem minmax(0, 1fr) auto;
+  gap: 0.85rem;
+  align-items: center;
+  padding: 0.75rem;
+  border-radius: 1.35rem;
+  background: rgba(255, 255, 255, 0.86);
+  border: 1px solid rgba(23, 20, 17, 0.055);
+  box-shadow:
+    0 14px 38px rgba(23, 20, 17, 0.065),
+    inset 0 1px 0 rgba(255, 255, 255, 0.88);
+}
+
+.mirror-main-bag-thumb {
+  width: 4.3rem;
+  height: 4.3rem;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border-radius: 1rem;
+  background:
+    radial-gradient(circle at 50% 15%, #ffffff, #f6f0e6);
+}
+
+.mirror-main-bag-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  padding: 0.35rem;
+}
+
+.mirror-main-bag-copy {
+  min-width: 0;
+}
+
+.mirror-main-bag-copy p,
+.mirror-main-bag-copy strong,
+.mirror-main-bag-copy span {
+  display: block;
+  margin: 0;
+}
+
+.mirror-main-bag-copy p {
+  margin-bottom: 0.25rem;
+  color: rgba(23, 20, 17, 0.42);
+  font-size: 0.6rem;
+  line-height: 1;
+  font-weight: 950;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.mirror-main-bag-copy strong {
+  overflow: hidden;
+  color: #171411;
+  font-size: 0.98rem;
+  line-height: 1.05;
+  font-weight: 950;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.mirror-main-bag-copy span {
+  margin-top: 0.28rem;
+  overflow: hidden;
+  color: rgba(23, 20, 17, 0.58);
+  font-size: 0.78rem;
+  line-height: 1.15;
+  font-weight: 780;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.mirror-main-bag-remove {
+  min-width: 4.7rem;
+  min-height: 2.45rem;
+  border: 0;
+  border-radius: 999px;
+  padding: 0 0.85rem;
+  color: rgba(23, 20, 17, 0.72);
+  background: rgba(23, 20, 17, 0.055);
+  font-size: 0.78rem;
+  font-weight: 950;
+  cursor: pointer;
+}
+
+.mirror-main-bag-remove:hover {
+  color: #171411;
+  background: rgba(23, 20, 17, 0.095);
+}
+
+.mirror-main-bag-foot {
+  min-height: 5.1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem 1.25rem;
+  border-top: 1px solid rgba(23, 20, 17, 0.06);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.62), rgba(255, 255, 255, 0.86));
+}
+
+.mirror-main-bag-foot .mirror-main-primary,
+.mirror-main-bag-foot .mirror-main-secondary {
+  min-height: 3rem !important;
+  margin: 0 !important;
+}
+
+.mirror-main-bag-loading {
+  display: grid;
+  place-items: center;
+  min-height: 13rem;
+  color: rgba(23, 20, 17, 0.56);
+  font-weight: 900;
+}
+
+@media (max-width: 720px) {
+  .mirror-main-bag-panel {
+    right: 0.65rem;
+    top: 0.65rem;
+    bottom: 0.65rem;
+    width: calc(100vw - 1.3rem);
+    border-radius: 1.55rem;
+  }
+
+  .mirror-main-bag-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .mirror-main-bag-row {
+    grid-template-columns: 3.8rem minmax(0, 1fr);
+  }
+
+  .mirror-main-bag-remove {
+    grid-column: 1 / -1;
+    width: 100%;
+  }
+
+  .mirror-main-bag-foot {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .mirror-main-bag-foot .mirror-main-primary,
+  .mirror-main-bag-foot .mirror-main-secondary {
+    width: 100% !important;
+  }
+}
+/* =========================================================
+   Universal Stylist — Associate Control Premium Polish v1
+   Status: Associate Control Finalization Step 1
+   Purpose:
+   - Makes associate drawer match premium customer mirror
+   - Improves drawer depth, cards, actions, inline inventory/activity
+   - Does not change JS behavior
+   ========================================================= */
+
+#mirrorAssociateControl.mirror-associate-control {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 9400 !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+  color: #171411 !important;
+}
+
+#mirrorAssociateControl.mirror-associate-control.is-open {
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+}
+
+#mirrorAssociateControl .mirror-associate-backdrop {
+  position: absolute !important;
+  inset: 0 !important;
+  border: 0 !important;
+  background:
+    radial-gradient(circle at 18% 14%, rgba(255, 255, 255, 0.58), transparent 34%),
+    radial-gradient(circle at 78% 18%, rgba(216, 199, 173, 0.22), transparent 34%),
+    rgba(23, 20, 17, 0.32) !important;
+  backdrop-filter: blur(18px) saturate(1.08) !important;
+  -webkit-backdrop-filter: blur(18px) saturate(1.08) !important;
+}
+
+#mirrorAssociateControl .mirror-associate-panel {
+  position: absolute !important;
+  right: 1.35rem !important;
+  top: 1.35rem !important;
+  bottom: 1.35rem !important;
+  width: min(32rem, calc(100vw - 2.7rem)) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 1rem !important;
+  overflow: auto !important;
+  padding: 1.25rem !important;
+  border-radius: 2.2rem !important;
+  border: 1px solid rgba(23, 20, 17, 0.075) !important;
+  background:
+    radial-gradient(circle at 16% 8%, rgba(255, 255, 255, 0.98), transparent 34%),
+    linear-gradient(145deg, rgba(255, 255, 255, 0.96), rgba(247, 243, 236, 0.92)) !important;
+  box-shadow:
+    0 42px 130px rgba(23, 20, 17, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.94) !important;
+  scrollbar-width: thin !important;
+}
+
+#mirrorAssociateControl .mirror-associate-panel-line {
+  width: 3.4rem !important;
+  height: 0.28rem !important;
+  flex: 0 0 auto !important;
+  margin: 0 auto 0.1rem !important;
+  border-radius: 999px !important;
+  background: rgba(23, 20, 17, 0.12) !important;
+}
+
+#mirrorAssociateControl .mirror-associate-header {
+  min-height: 5.5rem !important;
+  display: flex !important;
+  align-items: flex-start !important;
+  justify-content: space-between !important;
+  gap: 1rem !important;
+  padding: 1.15rem !important;
+  border-radius: 1.55rem !important;
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.86), rgba(247, 243, 236, 0.82)) !important;
+  border: 1px solid rgba(23, 20, 17, 0.055) !important;
+  box-shadow:
+    0 18px 52px rgba(23, 20, 17, 0.075),
+    inset 0 1px 0 rgba(255, 255, 255, 0.88) !important;
+}
+
+#mirrorAssociateControl .mirror-associate-kicker {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 0.5rem !important;
+  margin: 0 !important;
+  color: rgba(23, 20, 17, 0.46) !important;
+  font-size: 0.66rem !important;
+  line-height: 1 !important;
+  font-weight: 950 !important;
+  letter-spacing: 0.24em !important;
+  text-transform: uppercase !important;
+}
+
+#mirrorAssociateControl .mirror-associate-live-dot {
+  width: 0.58rem !important;
+  height: 0.58rem !important;
+  border-radius: 999px !important;
+  background: #7dbf8e !important;
+  box-shadow:
+    0 0 0 0.32rem rgba(125, 191, 142, 0.14),
+    0 0 1rem rgba(125, 191, 142, 0.34) !important;
+}
+
+#mirrorAssociateControl .mirror-associate-header h2 {
+  margin: 0.48rem 0 0 !important;
+  color: #171411 !important;
+  font-size: clamp(2.1rem, 4vw, 3rem) !important;
+  line-height: 0.86 !important;
+  letter-spacing: -0.075em !important;
+  font-weight: 950 !important;
+}
+
+#mirrorAssociateControl .mirror-associate-header p {
+  margin: 0.55rem 0 0 !important;
+  color: rgba(23, 20, 17, 0.58) !important;
+  font-size: 0.9rem !important;
+  line-height: 1.25 !important;
+  font-weight: 820 !important;
+}
+
+#mirrorAssociateControl .mirror-associate-close,
+#mirrorAssociateControl .mirror-associate-inline-close {
+  width: 2.65rem !important;
+  height: 2.65rem !important;
+  min-width: 2.65rem !important;
+  display: grid !important;
+  place-items: center !important;
+  border: 0 !important;
+  border-radius: 999px !important;
+  color: rgba(23, 20, 17, 0.62) !important;
+  background: rgba(23, 20, 17, 0.06) !important;
+  box-shadow: inset 0 0 0 1px rgba(23, 20, 17, 0.045) !important;
+  font-size: 1.22rem !important;
+  line-height: 1 !important;
+  font-weight: 950 !important;
+  cursor: pointer !important;
+  transition:
+    transform 160ms ease,
+    background 160ms ease,
+    color 160ms ease !important;
+}
+
+#mirrorAssociateControl .mirror-associate-close:hover,
+#mirrorAssociateControl .mirror-associate-inline-close:hover {
+  transform: scale(1.03) !important;
+  color: #171411 !important;
+  background: rgba(23, 20, 17, 0.1) !important;
+}
+
+/* Session cards */
+
+#mirrorAssociateControl .mirror-associate-session {
+  margin: 0 !important;
+  padding: 1rem !important;
+  border-radius: 1.55rem !important;
+  background:
+    radial-gradient(circle at 14% 10%, rgba(255, 255, 255, 0.9), transparent 38%),
+    linear-gradient(145deg, rgba(247, 243, 236, 0.94), rgba(255, 255, 255, 0.76)) !important;
+  border: 1px solid rgba(23, 20, 17, 0.055) !important;
+  box-shadow:
+    0 18px 52px rgba(23, 20, 17, 0.07),
+    inset 0 1px 0 rgba(255, 255, 255, 0.86) !important;
+}
+
+#mirrorAssociateControl .mirror-associate-session > div:first-child span {
+  display: block !important;
+  margin-bottom: 0.35rem !important;
+  color: rgba(23, 20, 17, 0.45) !important;
+  font-size: 0.64rem !important;
+  line-height: 1 !important;
+  font-weight: 950 !important;
+  letter-spacing: 0.2em !important;
+  text-transform: uppercase !important;
+}
+
+#mirrorAssociateControl .mirror-associate-session > div:first-child strong {
+  display: block !important;
+  color: #171411 !important;
+  font-size: 1.05rem !important;
+  line-height: 1.08 !important;
+  font-weight: 950 !important;
+}
+
+#mirrorAssociateControl .mirror-associate-session > div:first-child small {
+  display: block !important;
+  margin-top: 0.35rem !important;
+  color: rgba(23, 20, 17, 0.55) !important;
+  font-size: 0.78rem !important;
+  line-height: 1.25 !important;
+  font-weight: 780 !important;
+}
+
+#mirrorAssociateControl .mirror-associate-session-metrics {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 0.75rem !important;
+  margin-top: 0.9rem !important;
+}
+
+#mirrorAssociateControl .mirror-associate-session-metrics div {
+  min-width: 0 !important;
+  padding: 0.85rem !important;
+  border-radius: 1.15rem !important;
+  background: rgba(255, 255, 255, 0.88) !important;
+  border: 1px solid rgba(23, 20, 17, 0.045) !important;
+  box-shadow:
+    0 12px 32px rgba(23, 20, 17, 0.045),
+    inset 0 1px 0 rgba(255, 255, 255, 0.88) !important;
+}
+
+#mirrorAssociateControl .mirror-associate-session-metrics strong {
+  display: block !important;
+  overflow: hidden !important;
+  color: #171411 !important;
+  font-size: 1.15rem !important;
+  line-height: 1.05 !important;
+  font-weight: 950 !important;
+  white-space: nowrap !important;
+  text-overflow: ellipsis !important;
+}
+
+#mirrorAssociateControl .mirror-associate-session-metrics span {
+  display: block !important;
+  margin-top: 0.28rem !important;
+  color: rgba(23, 20, 17, 0.48) !important;
+  font-size: 0.62rem !important;
+  font-weight: 950 !important;
+  letter-spacing: 0.16em !important;
+  text-transform: uppercase !important;
+}
+
+/* Sections */
+
+#mirrorAssociateControl .mirror-associate-actions {
+  display: grid !important;
+  gap: 0.72rem !important;
+  margin: 0 !important;
+}
+
+#mirrorAssociateControl .mirror-associate-section-label {
+  margin: 0.15rem 0 0.1rem !important;
+  color: rgba(23, 20, 17, 0.46) !important;
+  font-size: 0.66rem !important;
+  line-height: 1 !important;
+  font-weight: 950 !important;
+  letter-spacing: 0.24em !important;
+  text-transform: uppercase !important;
+}
+
+/* Action buttons */
+
+#mirrorAssociateControl .mirror-associate-action {
+  width: 100% !important;
+  min-height: 4.85rem !important;
+  display: grid !important;
+  grid-template-columns: 2.65rem minmax(0, 1fr) auto !important;
+  align-items: center !important;
+  gap: 0.85rem !important;
+  padding: 0.82rem !important;
+  border: 1px solid rgba(23, 20, 17, 0.055) !important;
+  border-radius: 1.35rem !important;
+  color: #171411 !important;
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.86), rgba(247, 243, 236, 0.82)) !important;
+  box-shadow:
+    0 15px 38px rgba(23, 20, 17, 0.055),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
+  text-align: left !important;
+  cursor: pointer !important;
+  transition:
+    transform 160ms ease,
+    box-shadow 160ms ease,
+    background 160ms ease !important;
+}
+
+#mirrorAssociateControl .mirror-associate-action:hover {
+  transform: translateY(-1px) !important;
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.96), rgba(247, 243, 236, 0.9)) !important;
+  box-shadow:
+    0 20px 48px rgba(23, 20, 17, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.92) !important;
+}
+
+#mirrorAssociateControl .mirror-associate-action:disabled {
+  opacity: 0.72 !important;
+  cursor: default !important;
+  transform: none !important;
+}
+
+#mirrorAssociateControl .mirror-associate-action.accent {
+  background:
+    radial-gradient(circle at 18% 15%, rgba(255, 255, 255, 0.95), transparent 36%),
+    linear-gradient(135deg, rgba(238, 247, 240, 0.96), rgba(255, 255, 255, 0.88)) !important;
+  border-color: rgba(125, 191, 142, 0.26) !important;
+  box-shadow:
+    0 18px 48px rgba(87, 151, 103, 0.13),
+    inset 0 1px 0 rgba(255, 255, 255, 0.92) !important;
+}
+
+#mirrorAssociateControl .mirror-associate-action-icon {
+  width: 2.65rem !important;
+  height: 2.65rem !important;
+  display: grid !important;
+  place-items: center !important;
+  border-radius: 999px !important;
+  color: #ffffff !important;
+  background:
+    radial-gradient(circle at 34% 24%, rgba(255, 255, 255, 0.28), transparent 34%),
+    linear-gradient(135deg, #31261d, #171411) !important;
+  box-shadow:
+    0 12px 28px rgba(23, 20, 17, 0.16),
+    inset 0 1px 0 rgba(255, 255, 255, 0.16) !important;
+  font-size: 0.92rem !important;
+  font-weight: 950 !important;
+}
+
+#mirrorAssociateControl .mirror-associate-action.accent .mirror-associate-action-icon {
+  background:
+    radial-gradient(circle at 34% 24%, rgba(255, 255, 255, 0.3), transparent 34%),
+    linear-gradient(135deg, #7dbf8e, #5fae77) !important;
+}
+
+#mirrorAssociateControl .mirror-associate-action strong,
+#mirrorAssociateControl .mirror-associate-action small {
+  display: block !important;
+}
+
+#mirrorAssociateControl .mirror-associate-action strong {
+  overflow: hidden !important;
+  color: #171411 !important;
+  font-size: 0.98rem !important;
+  line-height: 1.08 !important;
+  font-weight: 950 !important;
+  white-space: nowrap !important;
+  text-overflow: ellipsis !important;
+}
+
+#mirrorAssociateControl .mirror-associate-action small {
+  margin-top: 0.28rem !important;
+  color: rgba(23, 20, 17, 0.58) !important;
+  font-size: 0.78rem !important;
+  line-height: 1.25 !important;
+  font-weight: 780 !important;
+}
+
+#mirrorAssociateControl .mirror-associate-action em {
+  color: rgba(23, 20, 17, 0.32) !important;
+  font-style: normal !important;
+  font-size: 1.4rem !important;
+  line-height: 1 !important;
+  font-weight: 950 !important;
+}
+
+/* Empty/status notes */
+
+#mirrorAssociateControl .mirror-associate-inline-empty {
+  padding: 1rem !important;
+  border-radius: 1.25rem !important;
+  color: rgba(23, 20, 17, 0.58) !important;
+  background:
+    linear-gradient(145deg, rgba(247, 243, 236, 0.9), rgba(255, 255, 255, 0.78)) !important;
+  border: 1px dashed rgba(23, 20, 17, 0.13) !important;
+  font-size: 0.88rem !important;
+  line-height: 1.4 !important;
+  font-weight: 820 !important;
+}
+
+/* Inline inventory/activity views */
+
+#mirrorAssociateControl .mirror-associate-inline-view {
+  display: grid !important;
+  gap: 1rem !important;
+}
+
+#mirrorAssociateControl .mirror-associate-inline-head {
+  min-height: 5.2rem !important;
+  display: flex !important;
+  align-items: flex-start !important;
+  justify-content: space-between !important;
+  gap: 1rem !important;
+  padding: 1.1rem !important;
+  border-radius: 1.55rem !important;
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.88), rgba(247, 243, 236, 0.84)) !important;
+  border: 1px solid rgba(23, 20, 17, 0.055) !important;
+  box-shadow:
+    0 18px 52px rgba(23, 20, 17, 0.07),
+    inset 0 1px 0 rgba(255, 255, 255, 0.88) !important;
+}
+
+#mirrorAssociateControl .mirror-associate-inline-head p {
+  margin: 0 0 0.42rem !important;
+  color: rgba(23, 20, 17, 0.46) !important;
+  font-size: 0.66rem !important;
+  line-height: 1 !important;
+  font-weight: 950 !important;
+  letter-spacing: 0.24em !important;
+  text-transform: uppercase !important;
+}
+
+#mirrorAssociateControl .mirror-associate-inline-head h3 {
+  margin: 0 !important;
+  color: #171411 !important;
+  font-size: 1.75rem !important;
+  line-height: 0.94 !important;
+  letter-spacing: -0.055em !important;
+  font-weight: 950 !important;
+}
+
+#mirrorAssociateControl .mirror-associate-inline-stats {
+  display: grid !important;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  gap: 0.65rem !important;
+}
+
+#mirrorAssociateControl .mirror-associate-inline-stats div {
+  min-width: 0 !important;
+  padding: 0.82rem 0.7rem !important;
+  border-radius: 1.1rem !important;
+  background: rgba(255, 255, 255, 0.86) !important;
+  border: 1px solid rgba(23, 20, 17, 0.05) !important;
+  box-shadow:
+    0 12px 32px rgba(23, 20, 17, 0.045),
+    inset 0 1px 0 rgba(255, 255, 255, 0.88) !important;
+}
+
+#mirrorAssociateControl .mirror-associate-inline-stats span,
+#mirrorAssociateControl .mirror-associate-inline-stats strong {
+  display: block !important;
+}
+
+#mirrorAssociateControl .mirror-associate-inline-stats span {
+  margin-bottom: 0.3rem !important;
+  overflow: hidden !important;
+  color: rgba(23, 20, 17, 0.45) !important;
+  font-size: 0.56rem !important;
+  font-weight: 950 !important;
+  letter-spacing: 0.14em !important;
+  text-transform: uppercase !important;
+  white-space: nowrap !important;
+  text-overflow: ellipsis !important;
+}
+
+#mirrorAssociateControl .mirror-associate-inline-stats strong {
+  overflow: hidden !important;
+  color: #171411 !important;
+  font-size: 1.02rem !important;
+  line-height: 1.05 !important;
+  font-weight: 950 !important;
+  white-space: nowrap !important;
+  text-overflow: ellipsis !important;
+}
+
+#mirrorAssociateControl .mirror-associate-inline-section {
+  display: grid !important;
+  gap: 0.7rem !important;
+  padding: 1rem !important;
+  border-radius: 1.55rem !important;
+  background:
+    linear-gradient(145deg, rgba(247, 243, 236, 0.88), rgba(255, 255, 255, 0.72)) !important;
+  border: 1px solid rgba(23, 20, 17, 0.055) !important;
+  box-shadow:
+    0 16px 44px rgba(23, 20, 17, 0.055),
+    inset 0 1px 0 rgba(255, 255, 255, 0.82) !important;
+}
+
+#mirrorAssociateControl .mirror-associate-inline-section h4 {
+  margin: 0 !important;
+  color: rgba(23, 20, 17, 0.48) !important;
+  font-size: 0.66rem !important;
+  line-height: 1 !important;
+  font-weight: 950 !important;
+  letter-spacing: 0.22em !important;
+  text-transform: uppercase !important;
+}
+
+#mirrorAssociateControl .mirror-associate-activity-row {
+  min-width: 0 !important;
+  display: grid !important;
+  grid-template-columns: 4rem minmax(0, 1fr) !important;
+  gap: 0.8rem !important;
+  align-items: center !important;
+  padding: 0.72rem !important;
+  border-radius: 1.2rem !important;
+  background: rgba(255, 255, 255, 0.86) !important;
+  border: 1px solid rgba(23, 20, 17, 0.05) !important;
+  box-shadow:
+    0 12px 32px rgba(23, 20, 17, 0.045),
+    inset 0 1px 0 rgba(255, 255, 255, 0.86) !important;
+}
+
+#mirrorAssociateControl .mirror-associate-activity-row img {
+  width: 4rem !important;
+  height: 4rem !important;
+  display: block !important;
+  object-fit: contain !important;
+  padding: 0.32rem !important;
+  border-radius: 1rem !important;
+  background:
+    radial-gradient(circle at 50% 14%, #ffffff, #f6f0e6) !important;
+}
+
+#mirrorAssociateControl .mirror-associate-activity-row strong,
+#mirrorAssociateControl .mirror-associate-activity-row span {
+  display: block !important;
+  min-width: 0 !important;
+}
+
+#mirrorAssociateControl .mirror-associate-activity-row strong {
+  overflow: hidden !important;
+  color: #171411 !important;
+  font-size: 0.95rem !important;
+  line-height: 1.08 !important;
+  font-weight: 950 !important;
+  white-space: nowrap !important;
+  text-overflow: ellipsis !important;
+}
+
+#mirrorAssociateControl .mirror-associate-activity-row span {
+  margin-top: 0.28rem !important;
+  overflow: hidden !important;
+  color: rgba(23, 20, 17, 0.58) !important;
+  font-size: 0.76rem !important;
+  line-height: 1.2 !important;
+  font-weight: 780 !important;
+  white-space: nowrap !important;
+  text-overflow: ellipsis !important;
+}
+
+#mirrorAssociateControl .mirror-associate-timeline-row {
+  padding: 0.9rem !important;
+  border-radius: 1.15rem !important;
+  background: rgba(255, 255, 255, 0.84) !important;
+  border: 1px solid rgba(23, 20, 17, 0.05) !important;
+  box-shadow:
+    0 12px 30px rgba(23, 20, 17, 0.04),
+    inset 0 1px 0 rgba(255, 255, 255, 0.84) !important;
+}
+
+#mirrorAssociateControl .mirror-associate-timeline-row strong,
+#mirrorAssociateControl .mirror-associate-timeline-row span {
+  display: block !important;
+}
+
+#mirrorAssociateControl .mirror-associate-timeline-row strong {
+  color: #171411 !important;
+  font-size: 0.94rem !important;
+  line-height: 1.08 !important;
+  font-weight: 950 !important;
+}
+
+#mirrorAssociateControl .mirror-associate-timeline-row span {
+  margin-top: 0.35rem !important;
+  color: rgba(23, 20, 17, 0.6) !important;
+  font-size: 0.8rem !important;
+  line-height: 1.35 !important;
+  font-weight: 780 !important;
+}
+
+/* Footer */
+
+#mirrorAssociateControl .mirror-associate-footer {
+  margin: 0 !important;
+  padding: 1rem !important;
+  border-radius: 1.55rem !important;
+  background:
+    linear-gradient(145deg, rgba(23, 20, 17, 0.96), rgba(49, 38, 29, 0.96)) !important;
+  box-shadow:
+    0 18px 52px rgba(23, 20, 17, 0.16),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12) !important;
+}
+
+#mirrorAssociateControl .mirror-associate-return {
+  width: 100% !important;
+  min-height: 3rem !important;
+  border: 0 !important;
+  border-radius: 999px !important;
+  padding: 0 1rem !important;
+  color: #171411 !important;
+  background: rgba(255, 255, 255, 0.92) !important;
+  box-shadow:
+    0 14px 34px rgba(0, 0, 0, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.92) !important;
+  font-size: 0.92rem !important;
+  font-weight: 950 !important;
+  cursor: pointer !important;
+}
+
+#mirrorAssociateControl .mirror-associate-footer p {
+  margin: 0.75rem 0 0 !important;
+  color: rgba(255, 255, 255, 0.62) !important;
+  font-size: 0.78rem !important;
+  line-height: 1.3 !important;
+  font-weight: 760 !important;
+  text-align: center !important;
+}
+
+/* Floating trigger */
+
+#mirrorAssociateControl .mirror-associate-trigger {
+  position: fixed !important;
+  left: 1.25rem !important;
+  bottom: 1.25rem !important;
+  z-index: 9401 !important;
+  min-height: 3.1rem !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 0.55rem !important;
+  border: 1px solid rgba(23, 20, 17, 0.065) !important;
+  border-radius: 999px !important;
+  padding: 0.65rem 1rem 0.65rem 0.72rem !important;
+  color: #171411 !important;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.9), rgba(247, 243, 236, 0.84)) !important;
+  box-shadow:
+    0 22px 64px rgba(23, 20, 17, 0.14),
+    inset 0 1px 0 rgba(255, 255, 255, 0.92) !important;
+  backdrop-filter: blur(18px) !important;
+  -webkit-backdrop-filter: blur(18px) !important;
+  font-weight: 950 !important;
+  cursor: pointer !important;
+}
+
+#mirrorAssociateControl .mirror-associate-trigger-icon {
+  width: 2rem !important;
+  height: 2rem !important;
+  display: grid !important;
+  place-items: center !important;
+  border-radius: 999px !important;
+  color: #ffffff !important;
+  background:
+    radial-gradient(circle at 34% 24%, rgba(255, 255, 255, 0.28), transparent 34%),
+    linear-gradient(135deg, #31261d, #171411) !important;
+  font-size: 0.9rem !important;
+}
+
+#mirrorAssociateControl.is-open .mirror-associate-trigger {
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+/* Mobile safety */
+
+@media (max-width: 720px) {
+  #mirrorAssociateControl .mirror-associate-panel {
+    right: 0.65rem !important;
+    top: 0.65rem !important;
+    bottom: 0.65rem !important;
+    width: calc(100vw - 1.3rem) !important;
+    padding: 1rem !important;
+    border-radius: 1.55rem !important;
+  }
+
+  #mirrorAssociateControl .mirror-associate-header {
+    border-radius: 1.35rem !important;
+  }
+
+  #mirrorAssociateControl .mirror-associate-header h2 {
+    font-size: 2.25rem !important;
+  }
+
+  #mirrorAssociateControl .mirror-associate-inline-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  #mirrorAssociateControl .mirror-associate-action {
+    grid-template-columns: 2.45rem minmax(0, 1fr) !important;
+  }
+
+  #mirrorAssociateControl .mirror-associate-action em {
+    display: none !important;
+  }
+
+  #mirrorAssociateControl .mirror-associate-activity-row {
+    grid-template-columns: 3.6rem minmax(0, 1fr) !important;
+  }
+
+  #mirrorAssociateControl .mirror-associate-activity-row img {
+    width: 3.6rem !important;
+    height: 3.6rem !important;
+  }
+}

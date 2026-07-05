@@ -8,7 +8,22 @@ import java.util.Optional;
 
 public interface SavedLookRepository extends JpaRepository<SavedLook, Long> {
 
-    List<SavedLook> findByTenantIdAndUserEmailOrderBySavedAtDesc(Long tenantId, String userEmail);
+    List<SavedLook> findByTenantIdAndUserEmailOrderBySavedAtDesc(
+            Long tenantId,
+            String userEmail
+    );
 
-    Optional<SavedLook> findByIdAndTenantIdAndUserEmail(Long id, Long tenantId, String userEmail);
+    Optional<SavedLook> findByIdAndTenantIdAndUserEmail(
+            Long id,
+            Long tenantId,
+            String userEmail
+    );
+
+    Optional<SavedLook> findByShareTokenAndPublicShareEnabledTrue(
+            String shareToken
+    );
+
+    boolean existsByShareToken(
+            String shareToken
+    );
 }

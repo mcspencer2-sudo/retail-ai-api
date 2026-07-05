@@ -6,12 +6,25 @@ import com.retailai.dto.ScanResultDTO;
 import com.retailai.model.Product;
 import org.springframework.stereotype.Service;
 
+import java.lang.reflect.Method;
 import java.util.Comparator;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
 @Service
 public class AIStylistService {
+
+    private static final String PLACEHOLDER_IMAGE =
+            "https://placehold.co/500x620?text=No+Image";
+
+    private static final List<String> OUTFIT_CATEGORY_ORDER = List.of(
+            "tops",
+            "bottoms",
+            "shoes",
+            "outerwear"
+    );
 
     public String generateAdvice(Product product, String vibe) {
         String category = normalizeCategory(product != null ? product.getCategory() : null);
@@ -32,18 +45,56 @@ public class AIStylistService {
             return null;
         }
 
-        List<RecommendationItemDTO> suggestions = scanResultDTO.getSuggestions();
-        if (suggestions == null) {
-            suggestions = List.of();
-        }
+        List<RecommendationItemDTO> suggestions = scanResultDTO.getSuggestions() == null
+                ? List.of()
+                : scanResultDTO.getSuggestions();
 
         RecommendationItemDTO anchorItem = toAnchorRecommendation(scanResultDTO);
         String anchorCategory = normalizeCategory(scanResultDTO.getCategory());
 
-        RecommendationItemDTO top = isTopCategory(anchorCategory) ? anchorItem : findBestTop(suggestions);
-        RecommendationItemDTO bottom = isBottomCategory(anchorCategory) ? anchorItem : findBestBottom(suggestions);
-        RecommendationItemDTO shoes = isShoeCategory(anchorCategory) ? anchorItem : findBestShoes(suggestions);
-        RecommendationItemDTO outerwear = isOuterwearCategory(anchorCategory) ? anchorItem : findBestOuterwear(suggestions);
+        Set<String> usedRfids = new LinkedHashSet<>();
+        addUsedRfid(usedRfids, anchorItem);
+
+        RecommendationItemDTO top = null;
+        RecommendationItemDTO bottom = null;
+        RecommendationItemDTO shoes = null;
+        RecommendationItemDTO outerwear = null;
+
+        if ("tops".equals(anchorCategory)) {
+            top = anchorItem;
+        }
+
+        if ("bottoms".equals(anchorCategory)) {
+            bottom = anchorItem;
+        }
+
+        if ("shoes".equals(anchorCategory)) {
+            shoes = anchorItem;
+        }
+
+        if ("outerwear".equals(anchorCategory)) {
+            outerwear = anchorItem;
+        }
+
+        if (top == null) {
+            top = findBestByCategory(suggestions, "tops", usedRfids, anchorItem);
+            addUsedRfid(usedRfids, top);
+        }
+
+        if (bottom == null) {
+            bottom = findBestByCategory(suggestions, "bottoms", usedRfids, anchorItem);
+            addUsedRfid(usedRfids, bottom);
+        }
+
+        if (shoes == null) {
+            shoes = findBestByCategory(suggestions, "shoes", usedRfids, anchorItem);
+            addUsedRfid(usedRfids, shoes);
+        }
+
+        if (outerwear == null) {
+            outerwear = findBestByCategory(suggestions, "outerwear", usedRfids, anchorItem);
+            addUsedRfid(usedRfids, outerwear);
+        }
 
         if (top == null && bottom == null && shoes == null && outerwear == null) {
             return null;
@@ -55,38 +106,10 @@ public class AIStylistService {
         outfit.setShoes(shoes);
         outfit.setOuterwear(outerwear);
 
-        int styleScore = averageScores(
-                scoreOrNull(top != null ? top.getStyleMatch() : null),
-                scoreOrNull(bottom != null ? bottom.getStyleMatch() : null),
-                scoreOrNull(shoes != null ? shoes.getStyleMatch() : null),
-                scoreOrNull(outerwear != null ? outerwear.getStyleMatch() : null)
+        applyScoresAndExplanation(
+                outfit,
+                generateOutfitExplanation(scanResultDTO, top, bottom, shoes, outerwear)
         );
-
-        int colorScore = averageScores(
-                scoreOrNull(top != null ? top.getColorMatch() : null),
-                scoreOrNull(bottom != null ? bottom.getColorMatch() : null),
-                scoreOrNull(shoes != null ? shoes.getColorMatch() : null),
-                scoreOrNull(outerwear != null ? outerwear.getColorMatch() : null)
-        );
-
-        int occasionScore = averageScores(
-                scoreOrNull(top != null ? top.getOccasionMatch() : null),
-                scoreOrNull(bottom != null ? bottom.getOccasionMatch() : null),
-                scoreOrNull(shoes != null ? shoes.getOccasionMatch() : null),
-                scoreOrNull(outerwear != null ? outerwear.getOccasionMatch() : null)
-        );
-
-        int overallScore = clampScore(Math.round(
-                (styleScore * 0.5f) +
-                        (colorScore * 0.3f) +
-                        (occasionScore * 0.2f)
-        ));
-
-        outfit.setStyleScore(styleScore);
-        outfit.setColorScore(colorScore);
-        outfit.setOccasionScore(occasionScore);
-        outfit.setOverallScore(overallScore);
-        outfit.setExplanation(generateOutfitExplanation(scanResultDTO, top, bottom, shoes, outerwear));
 
         return outfit;
     }
@@ -107,21 +130,61 @@ public class AIStylistService {
 
         RecommendationItemDTO scannedAnchor = toOutfitItemDto(scannedProduct, scannedProduct, vibe);
 
-        RecommendationItemDTO top = "tops".equals(scannedCategory)
-                ? scannedAnchor
-                : (topProduct != null ? toOutfitItemDto(scannedProduct, topProduct, vibe) : null);
+        Set<String> usedRfids = new LinkedHashSet<>();
+        addUsedRfid(usedRfids, scannedAnchor);
 
-        RecommendationItemDTO bottom = "bottoms".equals(scannedCategory)
-                ? scannedAnchor
-                : (bottomProduct != null ? toOutfitItemDto(scannedProduct, bottomProduct, vibe) : null);
+        RecommendationItemDTO top = null;
+        RecommendationItemDTO bottom = null;
+        RecommendationItemDTO shoes = null;
+        RecommendationItemDTO outerwear = null;
 
-        RecommendationItemDTO shoes = "shoes".equals(scannedCategory)
-                ? scannedAnchor
-                : (shoesProduct != null ? toOutfitItemDto(scannedProduct, shoesProduct, vibe) : null);
+        if ("tops".equals(scannedCategory)) {
+            top = scannedAnchor;
+        } else if (isProductAvailable(topProduct)) {
+            top = toOutfitItemDto(scannedProduct, topProduct, vibe);
 
-        RecommendationItemDTO outerwear = "outerwear".equals(scannedCategory)
-                ? scannedAnchor
-                : (outerwearProduct != null ? toOutfitItemDto(scannedProduct, outerwearProduct, vibe) : null);
+            if (isUsedRfid(usedRfids, top)) {
+                top = null;
+            }
+
+            addUsedRfid(usedRfids, top);
+        }
+
+        if ("bottoms".equals(scannedCategory)) {
+            bottom = scannedAnchor;
+        } else if (isProductAvailable(bottomProduct)) {
+            bottom = toOutfitItemDto(scannedProduct, bottomProduct, vibe);
+
+            if (isUsedRfid(usedRfids, bottom)) {
+                bottom = null;
+            }
+
+            addUsedRfid(usedRfids, bottom);
+        }
+
+        if ("shoes".equals(scannedCategory)) {
+            shoes = scannedAnchor;
+        } else if (isProductAvailable(shoesProduct)) {
+            shoes = toOutfitItemDto(scannedProduct, shoesProduct, vibe);
+
+            if (isUsedRfid(usedRfids, shoes)) {
+                shoes = null;
+            }
+
+            addUsedRfid(usedRfids, shoes);
+        }
+
+        if ("outerwear".equals(scannedCategory)) {
+            outerwear = scannedAnchor;
+        } else if (isProductAvailable(outerwearProduct)) {
+            outerwear = toOutfitItemDto(scannedProduct, outerwearProduct, vibe);
+
+            if (isUsedRfid(usedRfids, outerwear)) {
+                outerwear = null;
+            }
+
+            addUsedRfid(usedRfids, outerwear);
+        }
 
         if (top == null && bottom == null && shoes == null && outerwear == null) {
             return null;
@@ -133,63 +196,75 @@ public class AIStylistService {
         outfit.setShoes(shoes);
         outfit.setOuterwear(outerwear);
 
+        applyScoresAndExplanation(
+                outfit,
+                generateOutfitExplanationFromProducts(
+                        scannedProduct,
+                        topProduct,
+                        bottomProduct,
+                        shoesProduct,
+                        outerwearProduct
+                )
+        );
+
+        return outfit;
+    }
+
+    private void applyScoresAndExplanation(
+            FullOutfitDTO outfit,
+            String explanation
+    ) {
         int styleScore = averageScores(
-                scoreOrNull(top != null ? top.getStyleMatch() : null),
-                scoreOrNull(bottom != null ? bottom.getStyleMatch() : null),
-                scoreOrNull(shoes != null ? shoes.getStyleMatch() : null),
-                scoreOrNull(outerwear != null ? outerwear.getStyleMatch() : null)
+                scoreOrNull(outfit.getTop() != null ? outfit.getTop().getStyleMatch() : null),
+                scoreOrNull(outfit.getBottom() != null ? outfit.getBottom().getStyleMatch() : null),
+                scoreOrNull(outfit.getShoes() != null ? outfit.getShoes().getStyleMatch() : null),
+                scoreOrNull(outfit.getOuterwear() != null ? outfit.getOuterwear().getStyleMatch() : null)
         );
 
         int colorScore = averageScores(
-                scoreOrNull(top != null ? top.getColorMatch() : null),
-                scoreOrNull(bottom != null ? bottom.getColorMatch() : null),
-                scoreOrNull(shoes != null ? shoes.getColorMatch() : null),
-                scoreOrNull(outerwear != null ? outerwear.getColorMatch() : null)
+                scoreOrNull(outfit.getTop() != null ? outfit.getTop().getColorMatch() : null),
+                scoreOrNull(outfit.getBottom() != null ? outfit.getBottom().getColorMatch() : null),
+                scoreOrNull(outfit.getShoes() != null ? outfit.getShoes().getColorMatch() : null),
+                scoreOrNull(outfit.getOuterwear() != null ? outfit.getOuterwear().getColorMatch() : null)
         );
 
         int occasionScore = averageScores(
-                scoreOrNull(top != null ? top.getOccasionMatch() : null),
-                scoreOrNull(bottom != null ? bottom.getOccasionMatch() : null),
-                scoreOrNull(shoes != null ? shoes.getOccasionMatch() : null),
-                scoreOrNull(outerwear != null ? outerwear.getOccasionMatch() : null)
+                scoreOrNull(outfit.getTop() != null ? outfit.getTop().getOccasionMatch() : null),
+                scoreOrNull(outfit.getBottom() != null ? outfit.getBottom().getOccasionMatch() : null),
+                scoreOrNull(outfit.getShoes() != null ? outfit.getShoes().getOccasionMatch() : null),
+                scoreOrNull(outfit.getOuterwear() != null ? outfit.getOuterwear().getOccasionMatch() : null)
         );
 
         int overallScore = clampScore(Math.round(
-                (styleScore * 0.5f) +
-                        (colorScore * 0.3f) +
-                        (occasionScore * 0.2f)
+                (styleScore * 0.5f)
+                        + (colorScore * 0.3f)
+                        + (occasionScore * 0.2f)
         ));
 
         outfit.setStyleScore(styleScore);
         outfit.setColorScore(colorScore);
         outfit.setOccasionScore(occasionScore);
         outfit.setOverallScore(overallScore);
-        outfit.setExplanation(generateOutfitExplanationFromProducts(
-                scannedProduct,
-                topProduct,
-                bottomProduct,
-                shoesProduct,
-                outerwearProduct
-        ));
-
-        return outfit;
+        outfit.setExplanation(cleanSentence(explanation));
     }
 
     private RecommendationItemDTO toAnchorRecommendation(ScanResultDTO scanResultDTO) {
+        int baseScore = defaultedScore(scanResultDTO.getMatchScore(), 88);
+
         RecommendationItemDTO item = new RecommendationItemDTO();
-        item.setRfid(scanResultDTO.getRfid());
-        item.setName(scanResultDTO.getName());
-        item.setBrand(scanResultDTO.getBrand());
-        item.setCategory(scanResultDTO.getCategory());
-        item.setColor(scanResultDTO.getColor());
-        item.setRetailer(scanResultDTO.getRetailer());
-        item.setPrice(scanResultDTO.getPrice());
-        item.setImageUrl(scanResultDTO.getImageUrl());
-        item.setMatchScore(defaultedScore(scanResultDTO.getMatchScore(), 88));
-        item.setStyleMatch(defaultedScore(scanResultDTO.getMatchScore(), 88));
-        item.setColorMatch(defaultedScore(scanResultDTO.getMatchScore(), 88));
-        item.setOccasionMatch(defaultedScore(scanResultDTO.getMatchScore(), 88));
-        item.setReason(scanResultDTO.getWhyItWorks());
+        item.setRfid(safe(scanResultDTO.getRfid()));
+        item.setName(safe(scanResultDTO.getName()));
+        item.setBrand(safe(scanResultDTO.getBrand()));
+        item.setCategory(safe(scanResultDTO.getCategory()));
+        item.setColor(safe(scanResultDTO.getColor()));
+        item.setRetailer(safe(scanResultDTO.getRetailer()));
+        item.setPrice(safePrice(scanResultDTO.getPrice()));
+        item.setImageUrl(safeImage(scanResultDTO.getImageUrl()));
+        item.setMatchScore(clampScore(baseScore));
+        item.setStyleMatch(clampScore(baseScore));
+        item.setColorMatch(clampScore(baseScore));
+        item.setOccasionMatch(clampScore(baseScore));
+        item.setReason(safe(scanResultDTO.getWhyItWorks()));
         return item;
     }
 
@@ -201,7 +276,16 @@ public class AIStylistService {
         int styleMatch = calculateStyleMatch(scannedProduct, candidate, vibe);
         int colorMatch = calculateColorMatch(scannedProduct, candidate);
         int occasionMatch = calculateOccasionMatch(candidate, vibe);
-        int overallMatch = clampScore(Math.round((styleMatch + colorMatch + occasionMatch) / 3.0f));
+        int materialSeasonMatch = calculateMaterialSeasonMatch(candidate, vibe);
+        int priceCompatibility = calculateProductPriceCompatibility(scannedProduct, candidate);
+
+        int overallMatch = clampScore(Math.round(
+                (styleMatch * 0.32f)
+                        + (colorMatch * 0.24f)
+                        + (occasionMatch * 0.22f)
+                        + (materialSeasonMatch * 0.12f)
+                        + (priceCompatibility * 0.10f)
+        ));
 
         RecommendationItemDTO dto = new RecommendationItemDTO();
         dto.setRfid(safe(candidate.getRfid()));
@@ -220,36 +304,46 @@ public class AIStylistService {
         return dto;
     }
 
-    private RecommendationItemDTO findBestTop(List<RecommendationItemDTO> suggestions) {
+    private RecommendationItemDTO findBestByCategory(
+            List<RecommendationItemDTO> suggestions,
+            String normalizedCategory,
+            Set<String> usedRfids,
+            RecommendationItemDTO anchorItem
+    ) {
+        if (suggestions == null || suggestions.isEmpty()) {
+            return null;
+        }
+
         return suggestions.stream()
                 .filter(Objects::nonNull)
-                .filter(item -> isTopCategory(item.getCategory()))
-                .max(Comparator.comparingInt(this::combinedItemScore))
+                .filter(this::isRecommendationAvailable)
+                .filter(item -> normalizeCategory(item.getCategory()).equals(normalizedCategory))
+                .filter(item -> !isUsedRfid(usedRfids, item))
+                .filter(item -> !sameRfid(item, anchorItem) || normalizeCategory(anchorItem.getCategory()).equals(normalizedCategory))
+                .max(Comparator.comparingInt(item -> combinedItemScore(item, anchorItem, normalizedCategory)))
                 .orElse(null);
     }
 
-    private RecommendationItemDTO findBestBottom(List<RecommendationItemDTO> suggestions) {
-        return suggestions.stream()
-                .filter(Objects::nonNull)
-                .filter(item -> isBottomCategory(item.getCategory()))
-                .max(Comparator.comparingInt(this::combinedItemScore))
-                .orElse(null);
+    private void addUsedRfid(Set<String> usedRfids, RecommendationItemDTO item) {
+        if (usedRfids == null || item == null) {
+            return;
+        }
+
+        String rfid = safe(item.getRfid()).toUpperCase();
+
+        if (!rfid.isBlank()) {
+            usedRfids.add(rfid);
+        }
     }
 
-    private RecommendationItemDTO findBestShoes(List<RecommendationItemDTO> suggestions) {
-        return suggestions.stream()
-                .filter(Objects::nonNull)
-                .filter(item -> isShoeCategory(item.getCategory()))
-                .max(Comparator.comparingInt(this::combinedItemScore))
-                .orElse(null);
-    }
+    private boolean isUsedRfid(Set<String> usedRfids, RecommendationItemDTO item) {
+        if (usedRfids == null || item == null) {
+            return false;
+        }
 
-    private RecommendationItemDTO findBestOuterwear(List<RecommendationItemDTO> suggestions) {
-        return suggestions.stream()
-                .filter(Objects::nonNull)
-                .filter(item -> isOuterwearCategory(item.getCategory()))
-                .max(Comparator.comparingInt(this::combinedItemScore))
-                .orElse(null);
+        String rfid = safe(item.getRfid()).toUpperCase();
+
+        return !rfid.isBlank() && usedRfids.contains(rfid);
     }
 
     private boolean isTopCategory(String category) {
@@ -268,17 +362,250 @@ public class AIStylistService {
         return "outerwear".equals(normalizeCategory(category));
     }
 
-    private int combinedItemScore(RecommendationItemDTO item) {
+    private int combinedItemScore(
+            RecommendationItemDTO item,
+            RecommendationItemDTO anchorItem,
+            String targetCategory
+    ) {
         if (item == null) {
             return 0;
         }
 
-        int style = defaultedScore(item.getStyleMatch(), 0);
-        int color = defaultedScore(item.getColorMatch(), 0);
-        int occasion = defaultedScore(item.getOccasionMatch(), 0);
-        int match = defaultedScore(item.getMatchScore(), 0);
+        int style = defaultedScore(item.getStyleMatch(), 76);
+        int color = defaultedScore(item.getColorMatch(), 76);
+        int occasion = defaultedScore(item.getOccasionMatch(), 76);
+        int match = defaultedScore(item.getMatchScore(), 76);
 
-        return Math.round((style * 0.4f) + (color * 0.2f) + (occasion * 0.2f) + (match * 0.2f));
+        int score = Math.round(
+                (style * 0.34f)
+                        + (color * 0.24f)
+                        + (occasion * 0.22f)
+                        + (match * 0.20f)
+        );
+
+        score += categoryPriorityBoost(item, targetCategory);
+        score += colorHarmonyBoost(anchorItem, item);
+        score += priceCompatibilityBoost(anchorItem, item);
+
+        if (!isRecommendationAvailable(item)) {
+            score -= 35;
+        }
+
+        return clampScore(score);
+    }
+
+    private int categoryPriorityBoost(RecommendationItemDTO item, String targetCategory) {
+        String category = normalizeCategory(item != null ? item.getCategory() : null);
+
+        if (category.equals(targetCategory)) {
+            return 8;
+        }
+
+        if (OUTFIT_CATEGORY_ORDER.contains(category)) {
+            return 3;
+        }
+
+        return 0;
+    }
+
+    private int colorHarmonyBoost(RecommendationItemDTO anchorItem, RecommendationItemDTO candidate) {
+        if (anchorItem == null || candidate == null) {
+            return 0;
+        }
+
+        String anchorColor = safeLower(anchorItem.getColor());
+        String candidateColor = safeLower(candidate.getColor());
+
+        if (anchorColor.isBlank() || candidateColor.isBlank()) {
+            return 0;
+        }
+
+        if (anchorColor.equals(candidateColor)) {
+            return 4;
+        }
+
+        if (isNeutral(anchorColor) || isNeutral(candidateColor)) {
+            return 7;
+        }
+
+        if (sameKnownColorFamily(anchorColor, candidateColor)) {
+            return 5;
+        }
+
+        if (isComplementaryColorFamily(anchorColor, candidateColor)) {
+            return 4;
+        }
+
+        return 0;
+    }
+
+    private int priceCompatibilityBoost(RecommendationItemDTO anchorItem, RecommendationItemDTO candidate) {
+        if (anchorItem == null || candidate == null) {
+            return 0;
+        }
+
+        double anchorPrice = anchorItem.getPrice() == null ? 0.0 : anchorItem.getPrice();
+        double candidatePrice = candidate.getPrice() == null ? 0.0 : candidate.getPrice();
+
+        if (anchorPrice <= 0 || candidatePrice <= 0) {
+            return 0;
+        }
+
+        String anchorTier = priceTier(anchorPrice);
+        String candidateTier = priceTier(candidatePrice);
+
+        if (anchorTier.equals(candidateTier)) {
+            return 5;
+        }
+
+        if (isAdjacentPriceTier(anchorTier, candidateTier)) {
+            return 3;
+        }
+
+        return -3;
+    }
+
+    private String priceTier(double price) {
+        if (price < 50) {
+            return "budget";
+        }
+
+        if (price < 150) {
+            return "mid";
+        }
+
+        if (price < 350) {
+            return "premium";
+        }
+
+        return "luxury";
+    }
+
+    private boolean isAdjacentPriceTier(String a, String b) {
+        List<String> tiers = List.of("budget", "mid", "premium", "luxury");
+
+        int first = tiers.indexOf(a);
+        int second = tiers.indexOf(b);
+
+        if (first < 0 || second < 0) {
+            return false;
+        }
+
+        return Math.abs(first - second) == 1;
+    }
+
+    private boolean sameRfid(RecommendationItemDTO first, RecommendationItemDTO second) {
+        String firstRfid = safe(first != null ? first.getRfid() : "").trim();
+        String secondRfid = safe(second != null ? second.getRfid() : "").trim();
+
+        return !firstRfid.isBlank() && firstRfid.equalsIgnoreCase(secondRfid);
+    }
+
+    private boolean isRecommendationAvailable(RecommendationItemDTO item) {
+        if (item == null) {
+            return false;
+        }
+
+        Boolean available = readBooleanFlag(item, "getAvailable", "isAvailable");
+        Boolean active = readBooleanFlag(item, "getActive", "isActive");
+        Boolean enabled = readBooleanFlag(item, "getEnabled", "isEnabled");
+        Boolean outOfStock = readBooleanFlag(item, "getOutOfStock", "isOutOfStock");
+        Boolean discontinued = readBooleanFlag(item, "getDiscontinued", "isDiscontinued");
+        Number stock = readNumberField(item, "getStockQuantity", "getStock", "getQuantity", "getInventoryCount");
+
+        if (available != null && !available) {
+            return false;
+        }
+
+        if (active != null && !active) {
+            return false;
+        }
+
+        if (enabled != null && !enabled) {
+            return false;
+        }
+
+        if (outOfStock != null && outOfStock) {
+            return false;
+        }
+
+        if (discontinued != null && discontinued) {
+            return false;
+        }
+
+        return stock == null || stock.doubleValue() > 0;
+    }
+
+    private boolean isProductAvailable(Product product) {
+        if (product == null) {
+            return false;
+        }
+
+        Boolean available = readBooleanFlag(product, "getAvailable", "isAvailable");
+        Boolean active = readBooleanFlag(product, "getActive", "isActive");
+        Boolean enabled = readBooleanFlag(product, "getEnabled", "isEnabled");
+        Boolean outOfStock = readBooleanFlag(product, "getOutOfStock", "isOutOfStock");
+        Boolean discontinued = readBooleanFlag(product, "getDiscontinued", "isDiscontinued");
+        Number stock = readNumberField(product, "getStockQuantity", "getStock", "getQuantity", "getInventoryCount");
+
+        if (available != null && !available) {
+            return false;
+        }
+
+        if (active != null && !active) {
+            return false;
+        }
+
+        if (enabled != null && !enabled) {
+            return false;
+        }
+
+        if (outOfStock != null && outOfStock) {
+            return false;
+        }
+
+        if (discontinued != null && discontinued) {
+            return false;
+        }
+
+        return stock == null || stock.doubleValue() > 0;
+    }
+
+    private Boolean readBooleanFlag(Object source, String... methodNames) {
+        Object value = readReflectiveValue(source, methodNames);
+
+        if (value instanceof Boolean booleanValue) {
+            return booleanValue;
+        }
+
+        return null;
+    }
+
+    private Number readNumberField(Object source, String... methodNames) {
+        Object value = readReflectiveValue(source, methodNames);
+
+        if (value instanceof Number numberValue) {
+            return numberValue;
+        }
+
+        return null;
+    }
+
+    private Object readReflectiveValue(Object source, String... methodNames) {
+        if (source == null || methodNames == null) {
+            return null;
+        }
+
+        for (String methodName : methodNames) {
+            try {
+                Method method = source.getClass().getMethod(methodName);
+                return method.invoke(source);
+            } catch (ReflectiveOperationException ignored) {
+                // Optional getter not present on this DTO/model version.
+            }
+        }
+
+        return null;
     }
 
     private Integer scoreOrNull(Integer score) {
@@ -320,45 +647,12 @@ public class AIStylistService {
             sb.append(anchorName).append(" sets the tone of the outfit and gives it a clear focal point");
         }
 
-        if (top != null && !safe(top.getName()).equalsIgnoreCase(safe(scanResultDTO.getName()))) {
-            sb.append(", while ")
-                    .append(displayItemName(top.getName()))
-                    .append(" sharpens the line through the top half");
-        }
+        appendRecommendationExplanation(sb, top, scanResultDTO.getRfid(), "sharpens the line through the top half");
+        appendRecommendationExplanation(sb, bottom, scanResultDTO.getRfid(), bottomPhrase(bottom));
+        appendRecommendationExplanation(sb, outerwear, scanResultDTO.getRfid(), "adds depth and structure without overpowering the look");
+        appendRecommendationExplanation(sb, shoes, scanResultDTO.getRfid(), shoePhrase(shoes));
 
-        if (bottom != null && !safe(bottom.getName()).equalsIgnoreCase(safe(scanResultDTO.getName()))) {
-            if (safeLower(bottom.getName()).contains("slim")) {
-                sb.append(", and ")
-                        .append(displayItemName(bottom.getName()))
-                        .append(" keeps the silhouette lean and streamlined");
-            } else {
-                sb.append(", with ")
-                        .append(displayItemName(bottom.getName()))
-                        .append(" grounding the proportions");
-            }
-        }
-
-        if (outerwear != null && !safe(outerwear.getName()).equalsIgnoreCase(safe(scanResultDTO.getName()))) {
-            sb.append(", while ")
-                    .append(displayItemName(outerwear.getName()))
-                    .append(" adds depth and structure without overpowering the look");
-        }
-
-        if (shoes != null && !safe(shoes.getName()).equalsIgnoreCase(safe(scanResultDTO.getName()))) {
-            boolean sneakerLike =
-                    safeLower(shoes.getCategory()).contains("sneaker") ||
-                            safeLower(shoes.getName()).contains("sneaker");
-
-            if (sneakerLike) {
-                sb.append(", and ")
-                        .append(displayItemName(shoes.getName()))
-                        .append(" keeps the finish modern and easy");
-            } else {
-                sb.append(", and ")
-                        .append(displayItemName(shoes.getName()))
-                        .append(" finishes the outfit with a more polished edge");
-            }
-        }
+        appendMissingCategoryExplanation(sb, top, bottom, shoes, outerwear);
 
         sb.append(".");
         return sb.toString();
@@ -389,15 +683,10 @@ public class AIStylistService {
         }
 
         if (bottom != null && !"bottoms".equals(scannedCategory)) {
-            if (safeLower(bottom.getItemName()).contains("slim")) {
-                sb.append(", and ")
-                        .append(displayItemName(bottom.getItemName()))
-                        .append(" keeps the line clean and elongated");
-            } else {
-                sb.append(", with ")
-                        .append(displayItemName(bottom.getItemName()))
-                        .append(" grounding the proportions");
-            }
+            sb.append(", with ")
+                    .append(displayItemName(bottom.getItemName()))
+                    .append(" ")
+                    .append(productBottomPhrase(bottom));
         }
 
         if (outerwear != null && !"outerwear".equals(scannedCategory)) {
@@ -407,23 +696,116 @@ public class AIStylistService {
         }
 
         if (shoes != null && !"shoes".equals(scannedCategory)) {
-            boolean sneakerLike =
-                    safeLower(shoes.getCategory()).contains("sneaker") ||
-                            safeLower(shoes.getItemName()).contains("sneaker");
-
-            if (sneakerLike) {
-                sb.append(", and ")
-                        .append(displayItemName(shoes.getItemName()))
-                        .append(" keeps the finish relaxed but intentional");
-            } else {
-                sb.append(", and ")
-                        .append(displayItemName(shoes.getItemName()))
-                        .append(" gives the outfit a more refined finish");
-            }
+            sb.append(", and ")
+                    .append(displayItemName(shoes.getItemName()))
+                    .append(" ")
+                    .append(productShoePhrase(shoes));
         }
 
         sb.append(".");
         return sb.toString();
+    }
+
+    private void appendRecommendationExplanation(
+            StringBuilder sb,
+            RecommendationItemDTO item,
+            String anchorRfid,
+            String phrase
+    ) {
+        if (sb == null || item == null) {
+            return;
+        }
+
+        if (safe(item.getRfid()).equalsIgnoreCase(safe(anchorRfid))) {
+            return;
+        }
+
+        sb.append(", while ")
+                .append(displayItemName(item.getName()))
+                .append(" ")
+                .append(phrase);
+    }
+
+    private void appendMissingCategoryExplanation(
+            StringBuilder sb,
+            RecommendationItemDTO top,
+            RecommendationItemDTO bottom,
+            RecommendationItemDTO shoes,
+            RecommendationItemDTO outerwear
+    ) {
+        if (sb == null) {
+            return;
+        }
+
+        int missing = 0;
+
+        if (top == null) {
+            missing++;
+        }
+
+        if (bottom == null) {
+            missing++;
+        }
+
+        if (shoes == null) {
+            missing++;
+        }
+
+        if (outerwear == null) {
+            missing++;
+        }
+
+        if (missing == 0) {
+            sb.append(", creating a complete head-to-toe outfit");
+        } else if (missing == 1) {
+            sb.append(", with one category left open because no stronger available match was found");
+        } else if (missing > 1) {
+            sb.append(", with a leaner outfit built from the strongest available categories");
+        }
+    }
+
+    private String bottomPhrase(RecommendationItemDTO bottom) {
+        if (bottom != null && safeLower(bottom.getName()).contains("slim")) {
+            return "keeps the silhouette lean and streamlined";
+        }
+
+        return "grounds the proportions";
+    }
+
+    private String shoePhrase(RecommendationItemDTO shoes) {
+        if (shoes == null) {
+            return "finishes the outfit cleanly";
+        }
+
+        boolean sneakerLike =
+                safeLower(shoes.getCategory()).contains("sneaker")
+                        || safeLower(shoes.getName()).contains("sneaker");
+
+        return sneakerLike
+                ? "keeps the finish modern and easy"
+                : "finishes the outfit with a more polished edge";
+    }
+
+    private String productBottomPhrase(Product bottom) {
+        if (bottom != null && safeLower(bottom.getItemName()).contains("slim")) {
+            return "keeps the line clean and elongated";
+        }
+
+        return "grounds the proportions";
+    }
+
+    private String productShoePhrase(Product shoes) {
+        if (shoes == null) {
+            return "finishes the outfit cleanly";
+        }
+
+        boolean sneakerLike =
+                safeLower(shoes.getCategory()).contains("sneaker")
+                        || safeLower(shoes.getItemName()).contains("sneaker");
+
+        return sneakerLike
+                ? "keeps the finish relaxed but intentional"
+                : "gives the outfit a more refined finish";
     }
 
     private int calculateStyleMatch(Product scannedProduct, Product candidate, String vibe) {
@@ -432,42 +814,42 @@ public class AIStylistService {
         String scannedCategory = normalizeCategory(scannedProduct != null ? scannedProduct.getCategory() : null);
         String candidateCategory = normalizeCategory(candidate != null ? candidate.getCategory() : null);
         String candidateName = safeLower(candidate != null ? candidate.getItemName() : null);
+        String candidateCategoryRaw = safeLower(candidate != null ? candidate.getCategory() : null);
         String vibeLower = safeLower(vibe);
 
-        if ("tops".equals(scannedCategory)
-                && ("bottoms".equals(candidateCategory) || "shoes".equals(candidateCategory) || "outerwear".equals(candidateCategory))) {
+        if (!scannedCategory.isBlank()
+                && !candidateCategory.isBlank()
+                && !scannedCategory.equals(candidateCategory)
+                && OUTFIT_CATEGORY_ORDER.contains(candidateCategory)) {
             score += 10;
         }
 
-        if ("bottoms".equals(scannedCategory)
-                && ("tops".equals(candidateCategory) || "shoes".equals(candidateCategory) || "outerwear".equals(candidateCategory))) {
-            score += 10;
-        }
-
-        if ("shoes".equals(scannedCategory)
-                && ("tops".equals(candidateCategory) || "bottoms".equals(candidateCategory) || "outerwear".equals(candidateCategory))) {
-            score += 10;
-        }
-
-        if ("outerwear".equals(scannedCategory)
-                && ("tops".equals(candidateCategory) || "bottoms".equals(candidateCategory) || "shoes".equals(candidateCategory))) {
-            score += 10;
-        }
-
-        if ("casual".equals(vibeLower) && containsAny(candidateName, "shirt", "jeans", "sneaker", "hoodie", "coat", "trouser")) {
+        if ("casual".equals(vibeLower) && containsAny(candidateName, "shirt", "jeans", "sneaker", "hoodie", "coat", "trouser", "tee", "cardigan")) {
             score += 8;
         }
 
-        if ("formal".equals(vibeLower) && containsAny(candidateName, "blazer", "shirt", "trouser", "loafer", "coat")) {
+        if ("formal".equals(vibeLower) && containsAny(candidateName, "blazer", "shirt", "trouser", "loafer", "coat", "dress")) {
             score += 10;
         }
 
-        if ("streetwear".equals(vibeLower) && containsAny(candidateName, "hoodie", "cargo", "sneaker", "oversized", "jacket")) {
+        if ("date night".equals(vibeLower) && containsAny(candidateName, "boot", "jacket", "coat", "heel", "dress", "satin", "moto")) {
             score += 10;
         }
 
-        if ("luxury".equals(vibeLower) && containsAny(candidateName, "tailored", "leather", "premium", "coat", "loafer")) {
+        if ("streetwear".equals(vibeLower) && containsAny(candidateName, "hoodie", "cargo", "sneaker", "oversized", "jacket", "runner", "puffer")) {
             score += 10;
+        }
+
+        if ("luxury".equals(vibeLower) && containsAny(candidateName, "tailored", "leather", "premium", "coat", "loafer", "cashmere", "trench")) {
+            score += 10;
+        }
+
+        if ("formal".equals(vibeLower) && containsAny(candidateCategoryRaw, "hoodie", "cargo", "runner")) {
+            score -= 8;
+        }
+
+        if ("streetwear".equals(vibeLower) && containsAny(candidateName, "oxford", "loafer", "tailored")) {
+            score += 4;
         }
 
         return clampScore(score);
@@ -489,8 +871,12 @@ public class AIStylistService {
             return 92;
         }
 
-        if (sameColorFamily(scannedColor, candidateColor)) {
+        if (sameKnownColorFamily(scannedColor, candidateColor)) {
             return 88;
+        }
+
+        if (isComplementaryColorFamily(scannedColor, candidateColor)) {
+            return 86;
         }
 
         return 80;
@@ -499,29 +885,107 @@ public class AIStylistService {
     private int calculateOccasionMatch(Product candidate, String vibe) {
         int score = 76;
         String name = safeLower(candidate != null ? candidate.getItemName() : null);
+        String category = safeLower(candidate != null ? candidate.getCategory() : null);
         String vibeLower = safeLower(vibe);
 
-        if ("casual".equals(vibeLower) && containsAny(name, "shirt", "jeans", "sneaker", "hoodie", "coat", "trouser")) {
+        String searchable = name + " " + category;
+
+        if ("casual".equals(vibeLower) && containsAny(searchable, "shirt", "jeans", "sneaker", "hoodie", "coat", "trouser", "tee", "cardigan")) {
             score += 12;
         }
 
-        if ("formal".equals(vibeLower) && containsAny(name, "blazer", "shirt", "trouser", "loafer", "dress")) {
+        if ("formal".equals(vibeLower) && containsAny(searchable, "blazer", "shirt", "trouser", "loafer", "dress", "coat", "oxford", "tailored")) {
             score += 12;
         }
 
-        if ("date night".equals(vibeLower) && containsAny(name, "boot", "jacket", "coat", "heel", "dress")) {
+        if ("date night".equals(vibeLower) && containsAny(searchable, "boot", "jacket", "coat", "heel", "dress", "satin", "moto", "leather")) {
             score += 12;
         }
 
-        if ("streetwear".equals(vibeLower) && containsAny(name, "hoodie", "cargo", "sneaker", "oversized")) {
+        if ("streetwear".equals(vibeLower) && containsAny(searchable, "hoodie", "cargo", "sneaker", "oversized", "runner", "puffer", "graphic")) {
             score += 12;
         }
 
-        if ("luxury".equals(vibeLower) && containsAny(name, "leather", "tailored", "premium", "loafer", "coat")) {
+        if ("luxury".equals(vibeLower) && containsAny(searchable, "leather", "tailored", "premium", "loafer", "coat", "cashmere", "trench", "wool")) {
             score += 12;
+        }
+
+        if ("formal".equals(vibeLower) && containsAny(searchable, "flip flop", "slides", "distressed", "graphic hoodie")) {
+            score -= 12;
+        }
+
+        if ("luxury".equals(vibeLower) && containsAny(searchable, "cheap", "basic", "flip flop")) {
+            score -= 8;
         }
 
         return clampScore(score);
+    }
+
+    private int calculateMaterialSeasonMatch(Product candidate, String vibe) {
+        int score = 78;
+
+        String name = safeLower(candidate != null ? candidate.getItemName() : null);
+        String material = safeLower(readStringField(candidate, "getMaterial"));
+        String season = safeLower(readStringField(candidate, "getSeason"));
+        String vibeLower = safeLower(vibe);
+
+        String searchable = name + " " + material + " " + season;
+
+        if (containsAny(searchable, "cotton", "denim", "canvas", "linen")) {
+            score += 5;
+        }
+
+        if (containsAny(searchable, "wool", "cashmere", "leather", "suede")) {
+            score += 7;
+        }
+
+        if ("luxury".equals(vibeLower) && containsAny(searchable, "cashmere", "wool", "leather", "suede", "silk")) {
+            score += 9;
+        }
+
+        if ("streetwear".equals(vibeLower) && containsAny(searchable, "fleece", "nylon", "denim", "canvas")) {
+            score += 7;
+        }
+
+        if ("formal".equals(vibeLower) && containsAny(searchable, "wool", "cotton", "silk", "leather")) {
+            score += 7;
+        }
+
+        if (containsAny(searchable, "winter", "fall", "coat", "wool", "cashmere", "puffer")) {
+            score += 4;
+        }
+
+        if (containsAny(searchable, "summer", "linen", "lightweight", "cotton")) {
+            score += 4;
+        }
+
+        return clampScore(score);
+    }
+
+    private int calculateProductPriceCompatibility(Product scannedProduct, Product candidate) {
+        if (scannedProduct == null || candidate == null) {
+            return 80;
+        }
+
+        double scannedPrice = scannedProduct.getPrice() == null ? 0.0 : scannedProduct.getPrice();
+        double candidatePrice = candidate.getPrice() == null ? 0.0 : candidate.getPrice();
+
+        if (scannedPrice <= 0 || candidatePrice <= 0) {
+            return 80;
+        }
+
+        String scannedTier = priceTier(scannedPrice);
+        String candidateTier = priceTier(candidatePrice);
+
+        if (scannedTier.equals(candidateTier)) {
+            return 92;
+        }
+
+        if (isAdjacentPriceTier(scannedTier, candidateTier)) {
+            return 86;
+        }
+
+        return 76;
     }
 
     private String generateRecommendationReason(Product scannedProduct, Product candidate, String vibe) {
@@ -560,8 +1024,12 @@ public class AIStylistService {
             return candidateName + " works especially well here because the neutral tone makes the full look easier to balance.";
         }
 
-        if (sameColorFamily(scannedColor, candidateColor)) {
+        if (sameKnownColorFamily(scannedColor, candidateColor)) {
             return candidateName + " connects naturally with the scanned piece, keeping the palette cohesive without feeling too matched.";
+        }
+
+        if (isComplementaryColorFamily(scannedColor, candidateColor)) {
+            return candidateName + " adds contrast while still keeping the color story intentional.";
         }
 
         return candidateName + " supports the look by balancing the silhouette, the color story, and the overall vibe.";
@@ -570,24 +1038,48 @@ public class AIStylistService {
     private String getColorFamily(String color) {
         String c = safeLower(color);
 
-        if (containsAny(c, "beige", "white", "cream", "gray", "grey", "black", "tan", "brown", "charcoal", "navy", "neutral")) {
+        if (containsAny(c, "beige", "white", "cream", "gray", "grey", "black", "tan", "brown", "charcoal", "navy", "neutral", "khaki", "camel", "stone")) {
             return "neutral";
         }
-        if (containsAny(c, "blue")) {
+
+        if (containsAny(c, "blue", "navy", "grey", "gray", "silver")) {
             return "cool";
         }
-        if (containsAny(c, "red", "orange", "yellow")) {
+
+        if (containsAny(c, "red", "orange", "yellow", "pink", "burgundy", "maroon")) {
             return "warm";
         }
-        if (containsAny(c, "green", "olive")) {
+
+        if (containsAny(c, "green", "olive", "khaki", "brown", "tan", "camel")) {
             return "earth";
         }
 
         return "unknown";
     }
 
-    private boolean sameColorFamily(String a, String b) {
-        return getColorFamily(a).equals(getColorFamily(b));
+    private boolean sameKnownColorFamily(String a, String b) {
+        String familyA = getColorFamily(a);
+        String familyB = getColorFamily(b);
+
+        if ("unknown".equals(familyA) || "unknown".equals(familyB)) {
+            return false;
+        }
+
+        return familyA.equals(familyB);
+    }
+
+    private boolean isComplementaryColorFamily(String a, String b) {
+        String familyA = getColorFamily(a);
+        String familyB = getColorFamily(b);
+
+        if ("unknown".equals(familyA) || "unknown".equals(familyB)) {
+            return false;
+        }
+
+        return ("warm".equals(familyA) && "cool".equals(familyB))
+                || ("cool".equals(familyA) && "warm".equals(familyB))
+                || ("earth".equals(familyA) && "neutral".equals(familyB))
+                || ("neutral".equals(familyA) && "earth".equals(familyB));
     }
 
     private String casualAdvice(String category, String item) {
@@ -673,27 +1165,33 @@ public class AIStylistService {
         if (rawScore < 70) {
             return 70;
         }
+
         if (rawScore > 98) {
             return 98;
         }
+
         return rawScore;
     }
 
     private boolean containsAny(String text, String... keywords) {
-        if (text == null || text.isBlank()) {
+        String safeText = safeLower(text);
+
+        if (safeText.isBlank()) {
             return false;
         }
 
         for (String keyword : keywords) {
-            if (text.contains(keyword)) {
+            if (safeText.contains(safeLower(keyword))) {
                 return true;
             }
         }
+
         return false;
     }
 
     private boolean isNeutral(String color) {
         String normalized = safeLower(color);
+
         return "black".equals(normalized)
                 || "white".equals(normalized)
                 || "grey".equals(normalized)
@@ -703,7 +1201,17 @@ public class AIStylistService {
                 || "cream".equals(normalized)
                 || "brown".equals(normalized)
                 || "navy".equals(normalized)
-                || "neutral".equals(normalized);
+                || "neutral".equals(normalized)
+                || "camel".equals(normalized)
+                || "khaki".equals(normalized)
+                || "tan".equals(normalized)
+                || "stone".equals(normalized)
+                || "olive".equals(normalized);
+    }
+
+    private String readStringField(Object source, String... methodNames) {
+        Object value = readReflectiveValue(source, methodNames);
+        return value == null ? "" : String.valueOf(value).trim();
     }
 
     private String safe(String value) {
@@ -718,6 +1226,7 @@ public class AIStylistService {
         if (product == null || product.getColor() == null || product.getColor().isBlank()) {
             return "Neutral";
         }
+
         return product.getColor().trim();
     }
 
@@ -739,23 +1248,24 @@ public class AIStylistService {
 
     private String safeImage(String imageUrl) {
         if (imageUrl == null || imageUrl.isBlank()) {
-            return "https://placehold.co/500x620?text=No+Image";
+            return PLACEHOLDER_IMAGE;
         }
+
         return imageUrl.trim();
     }
 
     private int defaultedScore(Integer value, int fallback) {
-        return value != null ? value : fallback;
+        return clampScore(value == null ? fallback : value);
     }
 
     private String normalizeCategory(String category) {
         String normalized = safeLower(category);
 
         return switch (normalized) {
-            case "top", "tops", "shirt", "shirts", "tee", "t-shirt", "hoodie", "blouse", "sweater" -> "tops";
-            case "bottom", "bottoms", "pants", "trousers", "jeans", "skirt", "shorts", "short", "cargo" -> "bottoms";
-            case "shoe", "shoes", "sneaker", "sneakers", "boot", "boots", "loafer", "loafers", "heel", "heels", "sandal", "sandals" -> "shoes";
-            case "outerwear", "coat", "jacket", "blazer" -> "outerwear";
+            case "top", "tops", "shirt", "shirts", "tee", "t-shirt", "hoodie", "blouse", "sweater", "knit", "cardigan" -> "tops";
+            case "bottom", "bottoms", "pants", "trousers", "jeans", "skirt", "shorts", "short", "cargo", "jogger", "joggers" -> "bottoms";
+            case "shoe", "shoes", "sneaker", "sneakers", "boot", "boots", "loafer", "loafers", "heel", "heels", "sandal", "sandals", "runner", "runners" -> "shoes";
+            case "outerwear", "coat", "jacket", "blazer", "parka", "trench", "puffer", "overshirt", "moto" -> "outerwear";
             default -> normalized;
         };
     }
@@ -763,5 +1273,19 @@ public class AIStylistService {
     private String displayItemName(String value) {
         String cleaned = safe(value);
         return cleaned.isBlank() ? "This piece" : cleaned;
+    }
+
+    private String cleanSentence(String value) {
+        String cleaned = safe(value);
+
+        if (cleaned.isBlank()) {
+            return "This outfit balances the scanned anchor with complementary pieces for a complete, wearable look.";
+        }
+
+        if (!cleaned.endsWith(".")) {
+            return cleaned + ".";
+        }
+
+        return cleaned;
     }
 }

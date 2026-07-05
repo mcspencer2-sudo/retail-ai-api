@@ -4,8 +4,11 @@ import com.retailai.model.AppUser;
 import com.retailai.model.Store;
 import com.retailai.model.Tenant;
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
+import jakarta.annotation.PostConstruct;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import javax.crypto.SecretKey;
@@ -17,18 +20,32 @@ import java.util.Map;
 @Service
 public class JwtService {
 
-    private static final String SECRET =
-            "mcspencer-super-secret-jwt-key-2026-secure-key-12345";
+    @Value("${retailai.jwt.secret:mcspencer-super-secret-jwt-key-2026-secure-key-12345}")
+    private String jwtSecret;
 
-    private static final long EXPIRATION_MS = 24L * 60L * 60L * 1000L;
+    @Value("${retailai.jwt.expiration-ms:86400000}")
+    private long expirationMs;
 
-    private final SecretKey key =
-            Keys.hmacShaKeyFor(SECRET.getBytes(StandardCharsets.UTF_8));
+    @Value("${retailai.jwt.debug:false}")
+    private boolean jwtDebug;
 
-    /**
-     * Backward-compatible token generator.
-     * Useful for old code paths while you migrate to tenant-aware login.
-     */
+    private SecretKey key;
+
+    @PostConstruct
+    public void init() {
+        String cleanSecret = safe(jwtSecret);
+
+        if (cleanSecret.length() < 32) {
+            throw new IllegalStateException("JWT secret must be at least 32 characters for HS256.");
+        }
+
+        this.key = Keys.hmacShaKeyFor(cleanSecret.getBytes(StandardCharsets.UTF_8));
+
+        System.out.println("JWT SERVICE ACTIVE");
+        System.out.println("JWT secret length: " + cleanSecret.length());
+        System.out.println("JWT secret prefix: " + cleanSecret.substring(0, Math.min(8, cleanSecret.length())));
+    }
+
     public String generateToken(String email, String role) {
         String normalizedEmail = safeLower(email);
 
@@ -48,10 +65,6 @@ public class JwtService {
         return buildToken(normalizedEmail, claims);
     }
 
-    /**
-     * Main SaaS token generator.
-     * This is the method your SaaSAuthService.login() should use.
-     */
     public String generateToken(AppUser user, Tenant tenant, Store store) {
         if (user == null) {
             throw new IllegalArgumentException("User cannot be null");
@@ -66,7 +79,6 @@ public class JwtService {
         String normalizedRole = normalizeRole(user.getRole());
 
         Map<String, Object> claims = new HashMap<>();
-
         claims.put("userId", user.getId());
         claims.put("email", userEmail);
         claims.put("fullName", safe(user.getFullName()));
@@ -95,7 +107,16 @@ public class JwtService {
     }
 
     public String extractEmail(String token) {
-        return extractAllClaims(token).getSubject();
+        Claims claims = extractAllClaims(token);
+
+        String subject = safeLower(claims.getSubject());
+
+        if (!subject.isBlank()) {
+            return subject;
+        }
+
+        String emailClaim = safeLower(String.valueOf(claims.get("email")));
+        return emailClaim.isBlank() || "null".equals(emailClaim) ? null : emailClaim;
     }
 
     public String extractRole(String token) {
@@ -150,14 +171,17 @@ public class JwtService {
     public boolean isTokenValid(String token) {
         try {
             Claims claims = extractAllClaims(token);
-            String subject = claims.getSubject();
+            String subject = safe(claims.getSubject());
             Date expiration = claims.getExpiration();
 
-            return subject != null
-                    && !subject.isBlank()
+            return !subject.isBlank()
                     && expiration != null
                     && expiration.after(new Date());
-        } catch (Exception e) {
+        } catch (JwtException | IllegalArgumentException e) {
+            if (jwtDebug) {
+                System.out.println("JWT validation failed: " + e.getMessage());
+            }
+
             return false;
         }
     }
@@ -167,18 +191,24 @@ public class JwtService {
     }
 
     private String buildToken(String subject, Map<String, Object> claims) {
+        ensureKeyReady();
+
         String normalizedSubject = safeLower(subject);
 
         if (normalizedSubject.isBlank()) {
             throw new IllegalArgumentException("Token subject cannot be null or blank");
         }
 
+        long safeExpirationMs = expirationMs <= 0 ? 86_400_000L : expirationMs;
+
         Date now = new Date();
-        Date expiry = new Date(now.getTime() + EXPIRATION_MS);
+        Date expiry = new Date(now.getTime() + safeExpirationMs);
 
         Map<String, Object> safeClaims = claims == null
                 ? new HashMap<>()
                 : new HashMap<>(claims);
+
+        safeClaims.put("email", normalizedSubject);
 
         return Jwts.builder()
                 .setClaims(safeClaims)
@@ -190,7 +220,9 @@ public class JwtService {
     }
 
     private Claims extractAllClaims(String token) {
-        String cleanToken = safe(token);
+        ensureKeyReady();
+
+        String cleanToken = cleanToken(token);
 
         if (cleanToken.isBlank()) {
             throw new IllegalArgumentException("Token cannot be null or blank");
@@ -213,7 +245,7 @@ public class JwtService {
 
         String text = String.valueOf(value).trim();
 
-        return text.isBlank() ? null : text;
+        return text.isBlank() || "null".equalsIgnoreCase(text) ? null : text;
     }
 
     private Long extractLongClaim(String token, String claimName) {
@@ -229,7 +261,13 @@ public class JwtService {
         }
 
         try {
-            return Long.parseLong(String.valueOf(value));
+            String text = String.valueOf(value).trim();
+
+            if (text.isBlank() || "null".equalsIgnoreCase(text)) {
+                return null;
+            }
+
+            return Long.parseLong(text);
         } catch (NumberFormatException e) {
             return null;
         }
@@ -250,8 +288,30 @@ public class JwtService {
         return Boolean.parseBoolean(String.valueOf(value));
     }
 
+    private void ensureKeyReady() {
+        if (key == null) {
+            init();
+        }
+    }
+
+    private String cleanToken(String token) {
+        String cleaned = safe(token);
+
+        if (cleaned.startsWith("Bearer ")) {
+            return cleaned.substring(7).trim();
+        }
+
+        return cleaned;
+    }
+
     private String normalizeRole(String role) {
-        return safeUpper(role).replace("ROLE_", "");
+        String normalized = safeUpper(role).replace("ROLE_", "").trim();
+
+        if (normalized.isBlank()) {
+            return "";
+        }
+
+        return normalized;
     }
 
     private String safe(String value) {

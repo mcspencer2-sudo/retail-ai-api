@@ -10,7 +10,6 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import org.springframework.security.web.header.writers.frameoptions.XFrameOptionsHeaderWriter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -29,10 +28,7 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                .csrf(csrf -> csrf
-                        .ignoringRequestMatchers("/h2-console/**")
-                        .disable()
-                )
+                .csrf(AbstractHttpConfigurer::disable)
                 .cors(Customizer.withDefaults())
                 .formLogin(AbstractHttpConfigurer::disable)
                 .httpBasic(AbstractHttpConfigurer::disable)
@@ -50,9 +46,16 @@ public class SecurityConfig {
                                 response.sendError(HttpServletResponse.SC_FORBIDDEN, "Forbidden"))
                 )
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+
                         .requestMatchers(
                                 "/",
                                 "/index.html",
+                                "/landing.html",
+                                "/mirror.html",
+                                "/merchant-dashboard.html",
+                                "/merchant-inventory.html",
+                                "/merchant-activity.html",
                                 "/favicon.ico",
                                 "/retailers.js",
                                 "/css/**",
@@ -60,13 +63,24 @@ public class SecurityConfig {
                                 "/images/**",
                                 "/images/products/**",
                                 "/health",
+                                "/error",
                                 "/h2-console/**"
                         ).permitAll()
 
-                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-
                         .requestMatchers("/api/v1/saas/auth/signup").permitAll()
                         .requestMatchers("/api/v1/saas/auth/login").permitAll()
+
+                        /*
+                         * Public smart-mirror read endpoints.
+                         * These are safe for mirror/demo display because they are GET-only.
+                         * Write/update/admin actions remain protected below.
+                         */
+                        .requestMatchers(
+                                HttpMethod.GET,
+                                "/api/v1/macy-stylist/scan/**",
+                                "/api/v1/macy-stylist/look/**",
+                                "/api/v1/macy-stylist/associate/inventory"
+                        ).permitAll()
 
                         .requestMatchers("/api/v1/macy-stylist/admin/**").hasRole("OWNER")
                         .requestMatchers("/api/v1/merchant/inventory/**").hasRole("OWNER")

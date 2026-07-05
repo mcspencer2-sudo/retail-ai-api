@@ -6,1237 +6,55 @@
   <title>Universal Stylist | Smart Mirror Mode</title>
   <link rel="icon" href="data:," />
 
+  <script>
+    document.documentElement.classList.add("mirror-main-booting");
+  </script>
+
   <style>
-    :root {
-        --bg: #eef4ff;
-        --panel: rgba(255, 255, 255, 0.72);
-        --panel-strong: rgba(255, 255, 255, 0.92);
-        --glass: rgba(255, 255, 255, 0.58);
-        --glass-strong: rgba(255, 255, 255, 0.78);
-        --line: rgba(15, 23, 42, 0.1);
-        --line-strong: rgba(15, 23, 42, 0.16);
-        --text: #07111f;
-        --muted: rgba(51, 65, 85, 0.72);
-        --soft: rgba(15, 23, 42, 0.84);
-        --faint: rgba(100, 116, 139, 0.72);
-        --blue: #0071e3;
-        --blue-dark: #0058b0;
-        --green: #22c55e;
-        --yellow: #f59e0b;
-        --red: #ef4444;
-        --purple: #8b5cf6;
-        --shadow: 0 34px 90px rgba(15, 23, 42, 0.14);
-        --shadow-glow: 0 0 90px rgba(0, 113, 227, 0.12);
-        --radius-xl: 42px;
-        --radius-lg: 32px;
-        --radius-md: 24px;
-    }
-
-    * {
-        box-sizing: border-box;
-    }
-
-    html {
-        min-height: 100%;
-        scroll-behavior: smooth;
-    }
-
-    body {
-        min-height: 100%;
-        margin: 0;
-        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
-        color: var(--text);
-        background:
-            radial-gradient(circle at 12% 8%, rgba(0, 113, 227, 0.16), transparent 28%),
-            radial-gradient(circle at 88% 8%, rgba(168, 85, 247, 0.13), transparent 28%),
-            radial-gradient(circle at 50% 100%, rgba(34, 197, 94, 0.07), transparent 32%),
-            linear-gradient(180deg, #f8fbff 0%, #eef4ff 48%, #e8eef8 100%);
-        overflow-x: hidden;
-    }
-
-    body::before {
-        content: "";
-        position: fixed;
-        inset: 0;
-        pointer-events: none;
-        background:
-            linear-gradient(rgba(15, 23, 42, 0.028) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(15, 23, 42, 0.024) 1px, transparent 1px);
-        background-size: 48px 48px;
-        mask-image: radial-gradient(circle at 50% 18%, black, transparent 72%);
-        opacity: 0.36;
-        z-index: 0;
-    }
-
-    body::after {
-        content: "";
-        position: fixed;
-        inset: 0;
-        pointer-events: none;
-        background:
-            radial-gradient(circle at 50% 0%, rgba(255, 255, 255, 0.72), transparent 38%),
-            linear-gradient(180deg, rgba(255, 255, 255, 0.28), transparent 36%);
-        z-index: 0;
-    }
-
-    button,
-    input,
-    select {
-        font: inherit;
-    }
-
-    a {
-        color: inherit;
-        text-decoration: none;
-    }
-
-    @keyframes pulse {
-        0% {
-            transform: scale(1);
-            box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.36);
-        }
-
-        70% {
-            transform: scale(1.08);
-            box-shadow: 0 0 0 16px rgba(34, 197, 94, 0);
-        }
-
-        100% {
-            transform: scale(1);
-        }
-    }
-
-    @keyframes scanPulse {
-        0% {
-            box-shadow: 0 0 0 rgba(0, 113, 227, 0);
-        }
-
-        50% {
-            box-shadow: 0 0 52px rgba(0, 113, 227, 0.2);
-        }
-
-        100% {
-            box-shadow: 0 0 0 rgba(0, 113, 227, 0);
-        }
-    }
-
-    @keyframes shimmer {
-        0% {
-            background-position: -200% 0;
-        }
-
-        100% {
-            background-position: 200% 0;
-        }
-    }
-
-    @keyframes reveal {
-        from {
-            opacity: 0;
-            transform: translateY(18px);
-        }
-
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
-    }
-
-    @keyframes premiumReveal {
-        from {
-            opacity: 0;
-            transform: translateY(28px) scale(0.985);
-            box-shadow: 0 0 0 rgba(0, 113, 227, 0);
-        }
-
-        to {
-            opacity: 1;
-            transform: translateY(0) scale(1);
-            box-shadow:
-                var(--shadow),
-                var(--shadow-glow),
-                inset 0 1px 0 rgba(255, 255, 255, 0.96);
-        }
-    }
-
-    @keyframes sweep {
-        from {
-            transform: translateX(-120%);
-        }
-
-        to {
-            transform: translateX(120%);
-        }
-    }
-
-    @keyframes float {
-        0%, 100% {
-            transform: translateY(0);
-        }
-
-        50% {
-            transform: translateY(-8px);
-        }
-    }
-
-    .mirror-page {
-        position: relative;
-        z-index: 1;
-        width: min(1540px, calc(100% - 56px));
-        margin: 0 auto;
-        padding: 28px 0 80px;
-    }
-
-    .mirror-nav,
-    .hero-copy,
-    .scan-panel,
-    .result-panel,
-    .outfit-panel,
-    .bag-panel {
-        background:
-            linear-gradient(180deg, rgba(255, 255, 255, 0.88), rgba(255, 255, 255, 0.64)),
-            rgba(255, 255, 255, 0.72);
-        border: 1px solid rgba(255, 255, 255, 0.92);
-        box-shadow:
-            var(--shadow),
-            inset 0 1px 0 rgba(255, 255, 255, 0.96);
-        backdrop-filter: blur(28px);
-        -webkit-backdrop-filter: blur(28px);
-    }
-
-    .mirror-nav {
-        position: sticky;
-        top: 14px;
-        z-index: 20;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 18px;
-        min-height: 76px;
-        margin-bottom: 28px;
-        padding: 12px 16px;
-        border-radius: 34px;
-    }
-
-    .brand {
-        display: flex;
-        align-items: center;
-        gap: 13px;
-        min-width: 0;
-        height: 50px;
-    }
-
-    .brand-mark {
-        width: 50px;
-        height: 50px;
-        min-width: 50px;
-        min-height: 50px;
-        display: grid;
-        place-items: center;
-        border-radius: 19px;
-        background: linear-gradient(180deg, #ffffff, #e8f2ff);
-        color: #07111f;
-        font-weight: 950;
-        line-height: 1;
-        letter-spacing: -0.04em;
-        box-shadow:
-            0 18px 44px rgba(0, 113, 227, 0.12),
-            inset 0 1px 0 rgba(255, 255, 255, 0.95);
-    }
-
-    .brand-copy {
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        min-height: 50px;
-    }
-
-    .brand-copy strong {
-        display: block;
-        font-size: 1rem;
-        color: var(--text);
-        line-height: 1.15;
-        letter-spacing: -0.03em;
-    }
-
-    .brand-copy span {
-        display: block;
-        margin-top: 2px;
-        color: var(--muted);
-        font-size: 0.84rem;
-        line-height: 1.15;
-        font-weight: 750;
-    }
-
-    .nav-actions {
-        display: flex;
-        align-items: center;
-        justify-content: flex-end;
-        gap: 12px;
-        flex-wrap: wrap;
-    }
-
-    .pill,
-    .mirror-btn {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        height: 50px;
-        min-height: 50px;
-        padding: 0 22px;
-        border: 1px solid rgba(15, 23, 42, 0.08);
-        border-radius: 999px;
-        color: var(--soft);
-        background: rgba(255, 255, 255, 0.74);
-        font-size: 0.88rem;
-        font-weight: 900;
-        line-height: 1;
-        white-space: nowrap;
-        box-shadow:
-            0 10px 24px rgba(15, 23, 42, 0.05),
-            inset 0 1px 0 rgba(255, 255, 255, 0.92);
-    }
-
-    .pill {
-        gap: 10px;
-        font-weight: 850;
-    }
-
-    .mirror-btn {
-        color: var(--text);
-        cursor: pointer;
-        transition:
-            transform 0.18s ease,
-            background 0.2s ease,
-            box-shadow 0.2s ease,
-            border-color 0.2s ease;
-    }
-
-    .mirror-btn:hover {
-        transform: translateY(-2px);
-        background: rgba(255, 255, 255, 0.95);
-        border-color: rgba(0, 113, 227, 0.16);
-        box-shadow:
-            0 18px 34px rgba(15, 23, 42, 0.08),
-            inset 0 1px 0 rgba(255, 255, 255, 0.95);
-    }
-
-    .dot {
-        width: 10px;
-        height: 10px;
-        border-radius: 999px;
-        background: var(--green);
-        animation: pulse 1.8s infinite;
-        flex: 0 0 auto;
-    }
-
-    .dot.error-dot {
-        background: var(--red);
-        animation: none;
-    }
-
-    .mirror-btn.primary,
-    .scan-button {
-        border: 0;
-        color: #ffffff;
-        background: linear-gradient(180deg, var(--blue), var(--blue-dark));
-        box-shadow:
-            0 18px 45px rgba(0, 113, 227, 0.2),
-            inset 0 1px 0 rgba(255, 255, 255, 0.28);
-    }
-
-    .mirror-btn.primary:hover,
-    .scan-button:hover {
-        color: #ffffff;
-        transform: translateY(-2px);
-        box-shadow:
-            0 24px 56px rgba(0, 113, 227, 0.24),
-            inset 0 1px 0 rgba(255, 255, 255, 0.3);
-    }
-
-    .mirror-btn.success {
-        border: 0;
-        background: linear-gradient(135deg, #16a34a, #22c55e);
-        color: white;
-        box-shadow: 0 18px 38px rgba(34, 197, 94, 0.18);
-    }
-
-    .mirror-btn.ghost {
-        background: rgba(255, 255, 255, 0.48);
-    }
-
-    .mirror-btn:disabled {
-        opacity: 0.55;
-        cursor: not-allowed;
-        transform: none;
-        box-shadow: none;
-    }
-
-    .hero {
-        display: grid;
-        grid-template-columns: 1.02fr 0.98fr;
-        gap: 24px;
-        align-items: stretch;
-        padding: 28px 0 22px;
-    }
-
-    .hero-copy,
-    .scan-panel,
-    .result-panel,
-    .outfit-panel,
-    .bag-panel {
-        border-radius: var(--radius-xl);
-    }
-
-    .hero-copy {
-        min-height: 640px;
-        padding: 34px;
-        display: flex;
-        flex-direction: column;
-        justify-content: space-between;
-        overflow: hidden;
-        position: relative;
-    }
-
-    .hero-copy::before {
-        content: "";
-        position: absolute;
-        inset: 0;
-        background:
-            radial-gradient(circle at 18% 8%, rgba(255, 255, 255, 0.88), transparent 32%),
-            radial-gradient(circle at 82% 92%, rgba(0, 113, 227, 0.16), transparent 34%);
-        pointer-events: none;
-    }
-
-    .hero-copy::after {
-        content: "";
-        position: absolute;
-        inset: auto -22% -38% 16%;
-        height: 380px;
-        background: radial-gradient(circle, rgba(0, 113, 227, 0.14), transparent 62%);
-        pointer-events: none;
-    }
-
-    .hero-copy > * {
-        position: relative;
-        z-index: 1;
-    }
-
-    .eyebrow {
-        display: inline-flex;
-        width: fit-content;
-        align-items: center;
-        gap: 8px;
-        padding: 10px 15px;
-        border: 1px solid rgba(15, 23, 42, 0.08);
-        border-radius: 999px;
-        color: var(--muted);
-        background: rgba(255, 255, 255, 0.68);
-        font-size: 0.78rem;
-        font-weight: 950;
-        letter-spacing: 0.13em;
-        text-transform: uppercase;
-        box-shadow:
-            0 10px 24px rgba(15, 23, 42, 0.04),
-            inset 0 1px 0 rgba(255, 255, 255, 0.92);
-    }
-
-    .hero-title {
-        margin: 28px 0 22px;
-        max-width: 760px;
-        font-size: clamp(5.2rem, 11vw, 10rem);
-        line-height: 0.82;
-        letter-spacing: -0.105em;
-        font-weight: 950;
-        color: #07111f;
-        text-shadow: 0 22px 70px rgba(15, 23, 42, 0.08);
-    }
-
-    .hero-subtitle {
-        max-width: 650px;
-        margin: 0;
-        color: var(--soft);
-        font-size: clamp(1.18rem, 2vw, 1.55rem);
-        line-height: 1.65;
-        font-weight: 700;
-    }
-
-    .mirror-stats {
-        position: relative;
-        z-index: 1;
-        display: grid;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-        gap: 12px;
-        margin-top: 30px;
-    }
-
-    .stat-card {
-        min-height: 110px;
-        padding: 18px;
-        border: 1px solid rgba(15, 23, 42, 0.08);
-        border-radius: 24px;
-        background:
-            linear-gradient(180deg, rgba(255,255,255,0.84), rgba(255,255,255,0.58));
-        box-shadow:
-            0 12px 28px rgba(15, 23, 42, 0.05),
-            inset 0 1px 0 rgba(255,255,255,0.92);
-    }
-
-    .stat-card strong {
-        display: block;
-        color: var(--text);
-        font-size: 1.55rem;
-        letter-spacing: -0.05em;
-    }
-
-    .stat-card span {
-        display: block;
-        margin-top: 6px;
-        color: var(--muted);
-        font-size: 0.86rem;
-        font-weight: 750;
-        line-height: 1.35;
-    }
-
-    .scan-panel {
-        min-height: 640px;
-        padding: 30px;
-        display: flex;
-        flex-direction: column;
-        gap: 18px;
-        position: relative;
-        overflow: hidden;
-    }
-
-    .scan-panel::before {
-        content: "";
-        position: absolute;
-        inset: 0;
-        background:
-            radial-gradient(circle at 82% 12%, rgba(0, 113, 227, 0.12), transparent 36%),
-            radial-gradient(circle at 14% 94%, rgba(168, 85, 247, 0.08), transparent 30%);
-        pointer-events: none;
-    }
-
-    .scan-panel > * {
-        position: relative;
-        z-index: 1;
-    }
-
-    .panel-label {
-        color: var(--blue);
-        font-size: 0.76rem;
-        font-weight: 950;
-        letter-spacing: 0.14em;
-        text-transform: uppercase;
-    }
-
-    .scan-title {
-        margin: 0;
-        max-width: 650px;
-        color: var(--text);
-        font-size: clamp(3.2rem, 5vw, 5.8rem);
-        line-height: 0.88;
-        letter-spacing: -0.088em;
-        font-weight: 950;
-    }
-
-    .scan-copy {
-        margin: 0;
-        color: var(--muted);
-        line-height: 1.72;
-        font-size: 1rem;
-        font-weight: 680;
-    }
-
-    .ready-card {
-        padding: 20px;
-        border-radius: 28px;
-        border: 1px solid rgba(0, 113, 227, 0.12);
-        background:
-            radial-gradient(circle at 20% 12%, rgba(255, 255, 255, 0.96), transparent 34%),
-            linear-gradient(135deg, rgba(239, 247, 255, 0.95), rgba(255, 255, 255, 0.56));
-        box-shadow:
-            0 18px 44px rgba(15, 23, 42, 0.06),
-            inset 0 1px 0 rgba(255, 255, 255, 0.94);
-        animation: float 4.5s ease-in-out infinite;
-    }
-
-    .ready-card-top {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 14px;
-        margin-bottom: 18px;
-    }
-
-    .ready-orb {
-        width: 58px;
-        height: 58px;
-        display: grid;
-        place-items: center;
-        border-radius: 22px;
-        color: white;
-        background: linear-gradient(135deg, var(--blue), var(--purple));
-        box-shadow: 0 20px 44px rgba(0, 113, 227, 0.22);
-        font-size: 1.45rem;
-    }
-
-    .ready-status {
-        display: inline-flex;
-        align-items: center;
-        gap: 9px;
-        padding: 10px 13px;
-        border-radius: 999px;
-        color: #166534;
-        background: rgba(220, 252, 231, 0.86);
-        border: 1px solid rgba(34, 197, 94, 0.18);
-        font-size: 0.78rem;
-        font-weight: 950;
-    }
-
-    .ready-card h3 {
-        margin: 0 0 8px;
-        font-size: 1.35rem;
-        letter-spacing: -0.045em;
-    }
-
-    .ready-card p {
-        margin: 0;
-        color: var(--muted);
-        line-height: 1.58;
-        font-weight: 700;
-    }
-
-    .scan-form {
-        display: grid;
-        gap: 12px;
-        margin-top: 10px;
-    }
-
-    .form-grid {
-        display: grid;
-        grid-template-columns: 1fr 1fr 1fr;
-        gap: 10px;
-    }
-
-    .mirror-input,
-    .mirror-select {
-        width: 100%;
-        min-height: 60px;
-        padding: 0 16px;
-        border: 1px solid rgba(15, 23, 42, 0.09);
-        border-radius: 18px;
-        outline: none;
-        color: var(--text);
-        background: rgba(255, 255, 255, 0.76);
-        font-weight: 850;
-        box-shadow:
-            0 10px 24px rgba(15, 23, 42, 0.04),
-            inset 0 1px 0 rgba(255,255,255,0.92);
-    }
-
-    .mirror-select option {
-        color: #020617;
-    }
-
-    .mirror-input::placeholder {
-        color: var(--faint);
-    }
-
-    .mirror-input:focus,
-    .mirror-select:focus {
-        border-color: rgba(0, 113, 227, 0.34);
-        background: rgba(255, 255, 255, 0.96);
-        box-shadow:
-            0 0 0 5px rgba(0, 113, 227, 0.08),
-            0 14px 28px rgba(15, 23, 42, 0.06);
-    }
-
-    .scan-button {
-        min-height: 74px;
-        border: 0;
-        border-radius: 24px;
-        font-size: 1.08rem;
-        font-weight: 950;
-        cursor: pointer;
-        transition: transform 0.18s ease, filter 0.18s ease, box-shadow 0.2s ease;
-    }
-
-    .scan-button.scanning {
-        color: white;
-        background: linear-gradient(180deg, var(--blue), var(--blue-dark));
-        animation: scanPulse 1s infinite;
-    }
-
-    .quick-scans {
-        display: grid;
-        grid-template-columns: repeat(4, minmax(0, 1fr));
-        gap: 10px;
-    }
-
-    .quick-btn {
-        min-height: 56px;
-        border: 1px solid rgba(15, 23, 42, 0.08);
-        border-radius: 19px;
-        color: var(--text);
-        background: rgba(255, 255, 255, 0.72);
-        font-weight: 900;
-        cursor: pointer;
-        box-shadow:
-            0 10px 24px rgba(15, 23, 42, 0.04),
-            inset 0 1px 0 rgba(255,255,255,0.92);
-        transition: transform 0.18s ease, background 0.2s ease, border-color 0.2s ease;
-    }
-
-    .quick-btn:hover {
-        transform: translateY(-1px);
-        background: rgba(239, 247, 255, 0.96);
-        border-color: rgba(0, 113, 227, 0.24);
-    }
-
-    .status {
-        min-height: 56px;
-        display: flex;
-        align-items: center;
-        gap: 11px;
-        padding: 12px 15px;
-        border: 1px solid rgba(15, 23, 42, 0.08);
-        border-radius: 19px;
-        color: var(--muted);
-        background: rgba(255, 255, 255, 0.68);
-        font-weight: 850;
-        box-shadow:
-            0 10px 24px rgba(15,23,42,0.04),
-            inset 0 1px 0 rgba(255,255,255,0.92);
-    }
-
-    .status.success {
-        color: #166534;
-        border-color: rgba(34, 197, 94, 0.24);
-        background: rgba(220, 252, 231, 0.86);
-    }
-
-    .status.error {
-        color: #991b1b;
-        border-color: rgba(239, 68, 68, 0.24);
-        background: rgba(254, 226, 226, 0.86);
-    }
-
-    .loading {
-        display: none;
-        padding: 24px;
-        border: 1px solid rgba(15, 23, 42, 0.08);
-        border-radius: 24px;
-        background: rgba(255, 255, 255, 0.64);
-        overflow: hidden;
-        position: relative;
-        box-shadow: inset 0 1px 0 rgba(255,255,255,0.92);
-    }
-
-    .loading.show {
-        display: block;
-    }
-
-    .loading.show::after {
-        content: "";
-        position: absolute;
-        inset: 0;
-        background: linear-gradient(120deg, transparent, rgba(0, 113, 227, 0.16), transparent);
-        animation: sweep 1.3s linear infinite;
-    }
-
-    .loading-hero,
-    .loading-line {
-        background: linear-gradient(90deg, rgba(226,232,240,0.78) 25%, rgba(255,255,255,0.95) 50%, rgba(226,232,240,0.78) 75%);
-        background-size: 200% 100%;
-        animation: shimmer 1.4s linear infinite;
-    }
-
-    .loading-hero {
-        height: 180px;
-        border-radius: 22px;
-        margin-bottom: 16px;
-    }
-
-    .loading-line {
-        height: 14px;
-        border-radius: 999px;
-        margin-bottom: 10px;
-    }
-
-    .loading-line.short {
-        width: 36%;
-    }
-
-    .loading-line.medium {
-        width: 62%;
-    }
-
-    .loading-line.long {
-        width: 90%;
-    }
-
-    .result-panel,
-    .outfit-panel,
-    .bag-panel {
-        display: none;
-        margin-top: 40px;
-        padding: 30px;
-        animation: reveal 0.28s ease-out;
-        scroll-margin-top: 210px;
-    }
-
-    .result-panel.show,
-    .outfit-panel.show,
-    .bag-panel.show {
-        display: block;
-    }
-
-    .result-panel.scan-reveal,
-    .outfit-panel.scan-reveal,
-    .bag-panel.scan-reveal {
-        animation: premiumReveal 0.55s ease-out both;
-    }
-
-    .result-toolbar {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 14px;
-        margin-bottom: 22px;
-    }
-
-    .product-badges {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        flex-wrap: wrap;
-    }
-
-    .product-badge {
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        min-height: 38px;
-        padding: 0 13px;
-        border-radius: 999px;
-        border: 1px solid rgba(15, 23, 42, 0.08);
-        background: rgba(255, 255, 255, 0.68);
-        color: var(--soft);
-        font-size: 0.78rem;
-        font-weight: 950;
-        box-shadow:
-            0 10px 24px rgba(15, 23, 42, 0.04),
-            inset 0 1px 0 rgba(255,255,255,0.92);
-    }
-
-    .product-badge.blue {
-        color: #075985;
-        background: rgba(224, 242, 254, 0.88);
-        border-color: rgba(14, 165, 233, 0.18);
-    }
-
-    .product-badge.green {
-        color: #166534;
-        background: rgba(220, 252, 231, 0.88);
-        border-color: rgba(34, 197, 94, 0.18);
-    }
-
-    .result-layout {
-        display: grid;
-        grid-template-columns: 0.9fr 1.1fr;
-        gap: 26px;
-        align-items: stretch;
-    }
-
-    .image-box {
-        min-height: 650px;
-        border: 1px solid rgba(15, 23, 42, 0.08);
-        border-radius: 34px;
-        overflow: hidden;
-        background:
-            radial-gradient(circle at 50% 10%, rgba(255,255,255,0.95), transparent 34%),
-            linear-gradient(180deg, #ffffff, #f1f5f9);
-        box-shadow:
-            inset 0 1px 0 rgba(255,255,255,0.95),
-            0 30px 70px rgba(15, 23, 42, 0.12);
-    }
-
-    .image-box img {
-        width: 100%;
-        height: 100%;
-        object-fit: contain;
-        display: block;
-        padding: 34px;
-    }
-
-    .result-copy {
-        display: flex;
-        flex-direction: column;
-        gap: 16px;
-    }
-
-    .result-title {
-        margin: 0;
-        color: var(--text);
-        font-size: clamp(3.7rem, 6vw, 7rem);
-        line-height: 0.84;
-        letter-spacing: -0.095em;
-        font-weight: 950;
-    }
-
-    .result-meta {
-        margin: 10px 0 0;
-        color: var(--muted);
-        font-size: 1.15rem;
-        font-weight: 800;
-    }
-
-    .info-grid {
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 12px;
-    }
-
-    .info-card {
-        padding: 18px;
-        border: 1px solid rgba(15, 23, 42, 0.08);
-        border-radius: 23px;
-        background: rgba(255, 255, 255, 0.68);
-        box-shadow:
-            0 10px 24px rgba(15,23,42,0.04),
-            inset 0 1px 0 rgba(255,255,255,0.92);
-    }
-
-    .info-card.highlight {
-        background:
-            radial-gradient(circle at top right, rgba(0, 113, 227, 0.12), transparent 36%),
-            rgba(255, 255, 255, 0.76);
-        border-color: rgba(0, 113, 227, 0.12);
-    }
-
-    .info-card span {
-        display: block;
-        margin-bottom: 8px;
-        color: var(--faint);
-        font-size: 0.72rem;
-        font-weight: 950;
-        letter-spacing: 0.12em;
-        text-transform: uppercase;
-    }
-
-    .info-card strong,
-    .info-card p {
-        margin: 0;
-        color: var(--text);
-        font-size: 1.05rem;
-        line-height: 1.6;
-        font-weight: 850;
-    }
-
-    .info-card.wide {
-        grid-column: 1 / -1;
-    }
-
-    .result-actions {
-        display: grid;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-        gap: 12px;
-        margin-top: auto;
-    }
-
-    .result-actions .mirror-btn {
-        min-height: 60px;
-        height: 60px;
-        border-radius: 22px;
-    }
-
-    .section-head {
-        display: flex;
-        align-items: flex-end;
-        justify-content: space-between;
-        gap: 16px;
-        margin-bottom: 22px;
-    }
-
-    .section-head h2 {
-        margin: 0;
-        color: var(--text);
-        font-size: clamp(3.3rem, 6vw, 6.4rem);
-        line-height: 0.84;
-        letter-spacing: -0.09em;
-        font-weight: 950;
-    }
-
-    .score {
-        min-width: 108px;
-        padding: 14px 19px;
-        border-radius: 999px;
-        text-align: center;
-        color: #ffffff;
-        background: linear-gradient(180deg, var(--blue), var(--blue-dark));
-        font-weight: 950;
-        box-shadow:
-            0 16px 32px rgba(0, 113, 227, 0.18),
-            inset 0 1px 0 rgba(255,255,255,0.28);
-    }
-
-    .outfit-grid {
-        display: grid;
-        grid-template-columns: repeat(4, minmax(0, 1fr));
-        gap: 14px;
-    }
-
-    .outfit-card {
-        overflow: hidden;
-        border: 1px solid rgba(15, 23, 42, 0.08);
-        border-radius: 27px;
-        background:
-            linear-gradient(180deg, rgba(255, 255, 255, 0.86), rgba(255, 255, 255, 0.62));
-        box-shadow:
-            0 14px 34px rgba(15, 23, 42, 0.06),
-            inset 0 1px 0 rgba(255,255,255,0.92);
-    }
-
-    .outfit-card img {
-        width: 100%;
-        height: 280px;
-        object-fit: contain;
-        padding: 18px;
-        display: block;
-        background:
-            radial-gradient(circle at 50% 0%, rgba(255,255,255,0.95), transparent 38%),
-            linear-gradient(180deg, #ffffff, #f1f5f9);
-    }
-
-    .outfit-body {
-        padding: 16px;
-    }
-
-    .role {
-        color: var(--blue);
-        font-size: 0.72rem;
-        font-weight: 950;
-        letter-spacing: 0.13em;
-        text-transform: uppercase;
-    }
-
-    .outfit-name {
-        margin-top: 8px;
-        color: var(--text);
-        font-size: 1.12rem;
-        font-weight: 950;
-        line-height: 1.2;
-    }
-
-    .outfit-meta {
-        margin-top: 6px;
-        color: var(--muted);
-        font-size: 0.9rem;
-        font-weight: 760;
-    }
-
-    .outfit-explain {
-        margin-top: 18px;
-        padding: 20px;
-        border: 1px solid rgba(15, 23, 42, 0.08);
-        border-radius: 25px;
-        background: rgba(255, 255, 255, 0.7);
-        color: var(--soft);
-        line-height: 1.75;
-        font-weight: 720;
-        box-shadow:
-            0 12px 28px rgba(15,23,42,0.04),
-            inset 0 1px 0 rgba(255,255,255,0.92);
-    }
-
-    .bag-list {
-        display: grid;
-        gap: 12px;
-    }
-
-    .bag-item {
-        display: grid;
-        grid-template-columns: 96px 1fr auto;
-        gap: 14px;
-        align-items: center;
-        padding: 14px;
-        border: 1px solid rgba(15, 23, 42, 0.08);
-        border-radius: 24px;
-        background: rgba(255, 255, 255, 0.7);
-        box-shadow:
-            0 12px 28px rgba(15,23,42,0.04),
-            inset 0 1px 0 rgba(255,255,255,0.92);
-    }
-
-    .bag-item img {
-        width: 96px;
-        height: 96px;
-        object-fit: contain;
-        border-radius: 19px;
-        background: linear-gradient(180deg, #ffffff, #f1f5f9);
-        padding: 8px;
-    }
-
-    .bag-name {
-        color: var(--text);
-        font-size: 1.08rem;
-        font-weight: 950;
-    }
-
-    .bag-meta {
-        margin-top: 5px;
-        color: var(--muted);
-        font-size: 0.92rem;
-        font-weight: 750;
-    }
-
-    .empty {
-        padding: 30px;
-        border: 1px dashed var(--line-strong);
-        border-radius: 25px;
-        color: var(--muted);
-        text-align: center;
-        font-weight: 800;
-        background: rgba(255,255,255,0.56);
-    }
-
-    .toast-shell {
-        position: fixed;
-        right: 20px;
-        bottom: 20px;
-        z-index: 99;
-        display: grid;
-        gap: 10px;
-        width: min(380px, calc(100% - 40px));
-    }
-
-    .toast-card {
-        padding: 15px 16px;
-        border-radius: 19px;
-        color: #ffffff;
-        background: rgba(15, 23, 42, 0.96);
-        border: 1px solid rgba(255,255,255,0.12);
-        box-shadow: 0 24px 54px rgba(15, 23, 42, 0.18);
-        font-weight: 850;
-        animation: reveal 0.18s ease-out;
-    }
-
-    .toast-card.success {
-        background: linear-gradient(135deg, #15803d, #22c55e);
-    }
-
-    .toast-card.error {
-        background: linear-gradient(135deg, #b91c1c, #ef4444);
-    }
-
-     .toast-card.info {
-         background: linear-gradient(135deg, #0f172a, #334155);
-   }
-    @media (max-width: 1100px) {
-        .hero,
-        .result-layout {
-            grid-template-columns: 1fr;
-        }
-
-        .hero-copy,
-        .scan-panel {
-            min-height: auto;
-        }
-
-        .outfit-grid {
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-        }
-    }
-
-    @media (max-width: 760px) {
-        .mirror-page {
-            width: min(100% - 22px, 1480px);
-            padding-top: 12px;
-        }
-
-        .mirror-nav {
-            min-height: auto;
-            align-items: stretch;
-            border-radius: 28px;
-            flex-direction: column;
-        }
-
-        .brand {
-            height: 50px;
-        }
-
-        .nav-actions {
-            width: 100%;
-            display: grid;
-            grid-template-columns: 1fr;
-        }
-
-        .nav-actions .mirror-btn,
-        .nav-actions .pill {
-            width: 100%;
-            height: 54px;
-            min-height: 54px;
-            justify-content: center;
-        }
-
-        .brand-copy span {
-            display: none;
-        }
-
-        .hero-title {
-            font-size: 4.2rem;
-        }
-
-        .scan-title,
-        .result-title,
-        .section-head h2 {
-            font-size: 3.2rem;
-        }
-
-        .form-grid,
-        .quick-scans,
-        .info-grid,
-        .result-actions,
-        .outfit-grid {
-            grid-template-columns: 1fr;
-        }
-
-        .image-box {
-            min-height: 420px;
-        }
-
-        .bag-item {
-            grid-template-columns: 76px 1fr;
-        }
-
-        .bag-item img {
-            width: 76px;
-            height: 76px;
-        }
-
-        .bag-item .mirror-btn {
-            grid-column: 1 / -1;
-        }
-
-        .mirror-stats {
-            grid-template-columns: 1fr;
-        }
-
-        .result-toolbar,
-        .section-head {
-            align-items: flex-start;
-            flex-direction: column;
-        }
-
-        .result-panel,
-        .outfit-panel,
-        .bag-panel {
-            scroll-margin-top: 250px;
-        }
+    html.mirror-main-booting .mirror-page {
+      opacity: 0 !important;
+      visibility: hidden !important;
+      pointer-events: none !important;
+    }
+
+    html.mirror-main-booting body {
+      background: #f7f3ec;
+    }
+
+    html.mirror-main-ready .mirror-page > nav,
+    html.mirror-main-ready .mirror-page > .mirror-command-dock,
+    html.mirror-main-ready .mirror-page > .hero,
+    html.mirror-main-ready .mirror-page > #shopperIntelligencePanel,
+    html.mirror-main-ready .mirror-page > #resultPanel,
+    html.mirror-main-ready .mirror-page > #outfitPanel,
+    html.mirror-main-ready .mirror-page > #bagPanel,
+    html.mirror-main-ready .mirror-page > .mirror-demo-footer,
+    body.mirror-main-active .mirror-page > nav,
+    body.mirror-main-active .mirror-page > .mirror-command-dock,
+    body.mirror-main-active .mirror-page > .hero,
+    body.mirror-main-active .mirror-page > #shopperIntelligencePanel,
+    body.mirror-main-active .mirror-page > #resultPanel,
+    body.mirror-main-active .mirror-page > #outfitPanel,
+    body.mirror-main-active .mirror-page > #bagPanel,
+    body.mirror-main-active .mirror-page > .mirror-demo-footer {
+      opacity: 0 !important;
+      visibility: hidden !important;
+      pointer-events: none !important;
+      position: absolute !important;
+      left: -99999px !important;
+      top: 0 !important;
+      width: 1px !important;
+      height: 1px !important;
+      overflow: hidden !important;
+    }
+
+    html.mirror-main-ready .mirror-page,
+    body.mirror-main-active .mirror-page {
+      min-height: 0 !important;
     }
   </style>
+
+  <link rel="stylesheet" href="/css/mirror.css?v=9999">
 </head>
 
 <body>
@@ -1246,7 +64,7 @@
       <div class="brand-mark">US</div>
       <div class="brand-copy">
         <strong>Universal Stylist</strong>
-        <span>Smart Mirror Mode</span>
+        <span>AI Retail Mirror</span>
       </div>
     </a>
 
@@ -1263,19 +81,305 @@
     </div>
   </nav>
 
+  <section class="mirror-command-dock" aria-label="Mirror command controls">
+    <div class="command-dock-head">
+      <div>
+        <div class="panel-label">AI RETAIL COMMANDS</div>
+        <h2>Control the retail mirror.</h2>
+      </div>
+
+      <div class="command-dock-actions">
+        <div class="command-dock-status">
+          <span class="dot"></span>
+          Commands armed
+        </div>
+
+        <button id="toggleCommandConsole" class="command-console-toggle" type="button">
+          Command Input
+        </button>
+      </div>
+    </div>
+
+
+    <div class="command-grid">
+      <button class="command-tile primary" type="button" data-command="scan">
+    <span class="command-icon blue">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M4 7V5a1 1 0 0 1 1-1h2" />
+        <path d="M17 4h2a1 1 0 0 1 1 1v2" />
+        <path d="M20 17v2a1 1 0 0 1-1 1h-2" />
+        <path d="M7 20H5a1 1 0 0 1-1-1v-2" />
+        <path d="M7 12h10" />
+        <path d="M9 9.5c1.8-1.2 4.2-1.2 6 0" />
+        <path d="M10.5 14.5c.9.6 2.1.6 3 0" />
+      </svg>
+    </span>
+        <span>
+      <strong>Scan Item</strong>
+      <small>Voice: “Scan this”</small>
+    </span>
+      </button>
+
+      <button class="command-tile purple" type="button" data-command="create-look">
+    <span class="command-icon purple">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M12 3l7 7-7 11-7-11 7-7Z" />
+        <path d="M5 10h14" />
+        <path d="M9 10l3 11 3-11" />
+        <path d="M9 10l3-7 3 7" />
+      </svg>
+    </span>
+        <span>
+      <strong>Create Look</strong>
+      <small>Voice: “Build my outfit”</small>
+    </span>
+      </button>
+
+      <button class="command-tile green" type="button" data-command="save-bag">
+    <span class="command-icon green">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M6 8h12l-1 12H7L6 8Z" />
+        <path d="M9 8a3 3 0 0 1 6 0" />
+        <path d="M9.5 14l2 2 4-4" />
+      </svg>
+    </span>
+        <span>
+      <strong>Save to Bag</strong>
+      <small>Gesture: palm hold</small>
+    </span>
+      </button>
+
+      <button class="command-tile" type="button" data-command="show-bag">
+    <span class="command-icon indigo">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M6 8h12l-1 12H7L6 8Z" />
+        <path d="M9 8a3 3 0 0 1 6 0" />
+        <path d="M9 13h6" />
+        <path d="M9 16h4" />
+      </svg>
+    </span>
+        <span>
+      <strong>Show Bag</strong>
+      <small>Voice: “Open my bag”</small>
+    </span>
+      </button>
+
+      <button class="command-tile gold" type="button" data-command="refresh-profile">
+    <span class="command-icon orange">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z" />
+        <path d="M4 20a8 8 0 0 1 12.5-6.6" />
+        <path d="M18 14v4h4" />
+        <path d="M21 18a4.5 4.5 0 0 1-7.7 3.2" />
+      </svg>
+    </span>
+        <span>
+      <strong>Refresh Profile</strong>
+      <small>Sync shopper preferences</small>
+    </span>
+      </button>
+
+      <button class="command-tile slate" type="button" data-command="reset">
+    <span class="command-icon slate">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M4 12a8 8 0 1 0 2.35-5.65" />
+        <path d="M4 4v6h6" />
+        <path d="M12 8v4l3 2" />
+      </svg>
+    </span>
+        <span>
+      <strong>Reset Mirror</strong>
+      <small>Voice: “Start over”</small>
+    </span>
+      </button>
+
+      <button class="command-tile cinematic" type="button" data-command="cinematic">
+    <span class="command-icon navy">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M4 6h16v12H4V6Z" />
+        <path d="M8 10h8v4H8v-4Z" />
+        <path d="M4 9h3" />
+        <path d="M17 9h3" />
+        <path d="M4 15h3" />
+        <path d="M17 15h3" />
+      </svg>
+    </span>
+        <span>
+      <strong>Cinematic Mode</strong>
+      <small>Full-screen mirror display</small>
+    </span>
+      </button>
+    </div>
+
+    <div class="voice-command-console">
+      <div class="voice-command-copy">
+        <div class="panel-label">STYLIST COMMAND CENTER</div>
+        <h3>Direct the mirror in real time.</h3>
+        <p>
+          Use smart commands to scan items, build complete looks, save pieces, open the shopper bag,
+          refresh preferences, or reset the mirror session.
+        </p>
+      </div>
+
+      <div class="voice-command-form">
+        <input
+                id="voiceCommandInput"
+                class="voice-command-input"
+                type="text"
+                placeholder="Try: build outfit"
+                autocomplete="off"
+        />
+
+        <button id="runVoiceCommandBtn" class="mirror-btn primary" type="button">
+          Run Command
+        </button>
+      </div>
+
+      <div id="voiceCommandResult" class="voice-command-result">
+        Command center ready.
+      </div>
+    </div>
+  </section>
+
+  <div id="shortcutHelpOverlay" class="shortcut-help-overlay" aria-hidden="true">
+    <div class="shortcut-help-card" role="dialog" aria-modal="true" aria-labelledby="shortcutHelpTitle">
+      <div class="shortcut-help-head">
+        <div>
+          <div class="panel-label">Keyboard Command Layer</div>
+          <h2 id="shortcutHelpTitle">Mirror shortcuts.</h2>
+        </div>
+
+        <button id="closeShortcutHelpBtn" class="mirror-btn ghost" type="button">
+          Close
+        </button>
+      </div>
+
+      <div class="shortcut-grid">
+        <div class="shortcut-row">
+          <kbd>S</kbd>
+          <span>Scan item / focus RFID input</span>
+        </div>
+
+        <div class="shortcut-row">
+          <kbd>L</kbd>
+          <span>Create full look</span>
+        </div>
+
+        <div class="shortcut-row">
+          <kbd>G</kbd>
+          <span>Save current item to bag</span>
+        </div>
+
+        <div class="shortcut-row">
+          <kbd>B</kbd>
+          <span>Show shopper bag</span>
+        </div>
+
+        <div class="shortcut-row">
+          <kbd>P</kbd>
+          <span>Refresh shopper profile</span>
+        </div>
+
+        <div class="shortcut-row">
+          <kbd>R</kbd>
+          <span>Reset mirror</span>
+        </div>
+
+        <div class="shortcut-row">
+          <kbd>C</kbd>
+          <span>Toggle cinematic full-screen mode</span>
+        </div>
+
+        <div class="shortcut-row">
+          <kbd>?</kbd>
+          <span>Show this help panel</span>
+        </div>
+
+        <div class="shortcut-row">
+          <kbd>Esc</kbd>
+          <span>Close this help panel</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <section class="hero">
     <div class="hero-copy">
       <div>
         <div class="eyebrow">RFID Smart Mirror • AI Styling • Live Inventory</div>
+
+        <div class="presentation-badge">
+          <span class="dot"></span>
+          <strong>Live Retail Mirror Demo</strong>
+          <small>Inventory-aware • Profile-aware • Voice-ready</small>
+        </div>
+
         <h1 class="hero-title">
-          Scan.<br />
+          Try.<br />
           Style.<br />
-          Save.
+          Own.
         </h1>
         <p class="hero-subtitle">
           A premium smart mirror experience that turns live store inventory into styling advice,
           complete outfit recommendations, and saved shopper intent.
         </p>
+
+        <div class="mirror-preview-card" aria-label="Universal Stylist mirror preview">
+          <div class="mirror-preview-top">
+            <div class="mirror-preview-orb">P</div>
+
+            <div>
+              <strong>Pixel Concierge</strong>
+              <span>Live styling assistant</span>
+            </div>
+
+            <div class="mirror-preview-live">
+              <span class="dot"></span>
+              Live
+            </div>
+          </div>
+
+          <div class="mirror-preview-screen">
+            <div class="mirror-preview-product">
+              <div class="mirror-preview-image">
+                <svg viewBox="0 0 120 150" aria-hidden="true">
+                  <path d="M38 18h44l11 24-15 8v82H42V50l-15-8 11-24Z" />
+                  <path d="M48 18c2.5 8 7 12 12 12s9.5-4 12-12" />
+                  <path d="M42 52h36" />
+                </svg>
+              </div>
+
+              <div class="mirror-preview-copy">
+                <small>SCANNED ITEM</small>
+                <strong>Cashmere Crewneck</strong>
+                <span>Nicks Boutique • Casual fit</span>
+              </div>
+            </div>
+
+            <div class="mirror-preview-flow">
+              <div>
+                <span>01</span>
+                Scan
+              </div>
+
+              <div>
+                <span>02</span>
+                Style
+              </div>
+
+              <div>
+                <span>03</span>
+                Save
+              </div>
+            </div>
+          </div>
+
+          <div class="mirror-preview-footer">
+            <span>RFID Ready</span>
+            <span>Profile Aware</span>
+            <span>Store Locked</span>
+          </div>
+        </div>
       </div>
 
       <div class="mirror-stats">
@@ -1335,16 +439,33 @@
 
         <button id="scanBtn" class="scan-button" type="button">Scan Item</button>
 
-        <div class="quick-scans">
-          <button class="quick-btn" type="button" data-retailer="MACY001" data-rfid="RFID1001">Macy’s</button>
-          <button class="quick-btn" type="button" data-retailer="ZARA001" data-rfid="RFID2001">Zara</button>
-          <button class="quick-btn" type="button" data-retailer="NIKE001" data-rfid="RFID3001">Nike</button>
-          <button class="quick-btn" type="button" data-retailer="NORD001" data-rfid="RFID4001">Nordstrom</button>
+        <div id="mirrorQuickScans" class="quick-scans">
+          <button class="quick-btn" type="button" data-dynamic-quick-scan="true">
+            Current Store
+          </button>
         </div>
 
         <div id="scanStatus" class="status">
           <span class="dot"></span>
           <span>Ready to scan.</span>
+        </div>
+
+        <div id="mirrorConciergePanel" class="mirror-concierge-panel">
+          <div class="mirror-concierge-avatar">P</div>
+          <div>
+            <div class="mirror-concierge-label">Pixel Concierge</div>
+            <p id="mirrorConciergeMessage">
+              Welcome. Scan a store item and Pixel will build a complete look from this store’s live inventory.
+            </p>
+          </div>
+        </div>
+
+        <div class="mirror-hint-bar">
+          <span>Shortcut: <strong>S</strong> Scan</span>
+          <span><strong>L</strong> Look</span>
+          <span><strong>G</strong> Save</span>
+          <span><strong>C</strong> Cinematic</span>
+          <span><strong>?</strong> Help</span>
         </div>
 
         <div id="loadingState" class="loading">
@@ -1357,8 +478,55 @@
     </div>
   </section>
 
-  <section id="resultPanel" class="result-panel">
-    <div class="result-toolbar">
+  <section id="shopperIntelligencePanel" class="shopper-intelligence-panel">
+      <div class="shopper-intelligence-head">
+        <div>
+          <div class="panel-label">Shopper Intelligence</div>
+          <h2>Personal styling profile.</h2>
+        </div>
+
+        <button id="refreshShopperProfileBtn" class="mirror-btn ghost" type="button">
+          Refresh Profile
+        </button>
+      </div>
+
+      <div id="shopperProfileContent" class="shopper-profile-content">
+        <div class="empty">Shopper preferences will appear here after login.</div>
+      </div>
+
+      <section id="tryOnMemoryPanel" class="tryon-memory-panel">
+        <div class="tryon-memory-head">
+          <div>
+            <div class="panel-label">Try-On Session Memory</div>
+            <h2>Current mirror journey.</h2>
+          </div>
+
+          <button id="clearTryOnMemoryBtn" class="mirror-btn ghost" type="button">
+            Clear Session
+          </button>
+        </div>
+
+        <div id="tryOnMemoryContent" class="tryon-memory-content">
+          <div class="empty">Your mirror session activity will appear here.</div>
+        </div>
+
+        <div class="tryon-timeline-shell">
+          <div class="tryon-timeline-head">
+            <div>
+              <div class="panel-label">Session Timeline</div>
+              <h3>Live mirror activity.</h3>
+            </div>
+          </div>
+
+          <div id="tryOnTimelineContent" class="tryon-timeline-content">
+            <div class="empty">Timeline events will appear here.</div>
+          </div>
+        </div>
+      </section>
+    </section>
+
+    <section id="resultPanel" class="result-panel">
+      <div class="result-toolbar">
       <div class="product-badges">
         <span class="product-badge blue">RFID Identified</span>
         <span id="resultInventoryBadge" class="product-badge green">Inventory Available</span>
@@ -1410,6 +578,13 @@
             <span>Why This Works</span>
             <p id="resultWhy">Your styling explanation will appear here.</p>
           </div>
+
+          <div id="preferenceMatchCard" class="info-card wide preference-match-card">
+            <span>Why This Matches You</span>
+            <div id="preferenceMatchContent" class="preference-match-content">
+              Shopper profile insights will appear after scan.
+            </div>
+          </div>
         </div>
 
         <div class="result-actions">
@@ -1418,7 +593,7 @@
           <button id="viewBagInlineBtn" class="mirror-btn" type="button">View Bag</button>
         </div>
       </div>
-    </div>
+      </div>
   </section>
 
   <section id="outfitPanel" class="outfit-panel">
@@ -1435,9 +610,67 @@
     <div id="outfitExplanation" class="outfit-explain">
       Create a full look to see the styling explanation.
     </div>
-  </section>
 
-  <section id="bagPanel" class="bag-panel">
+    <div id="outfitPreferencePanel" class="outfit-preference-panel">
+      <div class="outfit-preference-head">
+        <div>
+          <div class="panel-label">Outfit Intelligence</div>
+          <h3>Why this full look matches you.</h3>
+        </div>
+        <div id="outfitTotalPrice" class="outfit-total-price">$0.00</div>
+      </div>
+
+      <div id="outfitPreferenceContent" class="outfit-preference-content">
+        Create a full look to see shopper intelligence.
+      </div>
+    </div>
+
+    <div id="outfitScoreBreakdownPanel" class="outfit-score-breakdown-panel">
+      <div class="outfit-score-head">
+        <div>
+          <div class="panel-label">Advanced Outfit Intelligence</div>
+          <h3>Recommendation score breakdown.</h3>
+        </div>
+
+        <div id="advancedOutfitScore" class="advanced-outfit-score">0%</div>
+      </div>
+
+      <div id="outfitScoreBreakdownGrid" class="outfit-score-breakdown-grid">
+        <div class="empty">Create a full look to see advanced scoring.</div>
+      </div>
+    </div>
+
+    <div id="outfitImprovementPanel" class="outfit-improvement-panel">
+      <div class="outfit-improvement-head">
+        <div>
+          <div class="panel-label">Smart Look Improvements</div>
+          <h3>How Pixel would refine this outfit.</h3>
+        </div>
+      </div>
+
+      <div id="outfitImprovementContent" class="outfit-improvement-content">
+        Create a full look to see improvement suggestions.
+      </div>
+    </div>
+
+    <div id="outfitRiskPanel" class="outfit-risk-panel">
+      <div class="outfit-risk-head">
+        <div>
+          <div class="panel-label">Styling Risk Check</div>
+          <h3>Retail confidence detector.</h3>
+        </div>
+
+        <div id="outfitRiskLevel" class="outfit-risk-level low">Low Risk</div>
+      </div>
+
+      <div id="outfitRiskContent" class="outfit-risk-content">
+        Create a full look to see risk analysis.
+      </div>
+    </div>
+
+</section>
+
+<section id="bagPanel" class="bag-panel">
     <div class="section-head">
       <div>
         <div class="panel-label">Personal Style Bag</div>
@@ -1450,1008 +683,89 @@
       <div class="empty">Your bag will appear here.</div>
     </div>
   </section>
+
+  <footer class="mirror-demo-footer">
+    <div>
+      <strong>Universal Stylist Smart Mirror</strong>
+      <span>Powered by Pixel Concierge • RFID scan flow • Shopper intelligence • Store-locked inventory</span>
+    </div>
+
+    <div class="mirror-demo-footer-badges">
+      <span>Demo Ready</span>
+      <span>Voice Ready</span>
+      <span>Investor Ready</span>
+    </div>
+  </footer>
+
+<div id="ambientIdleOverlay" class="ambient-idle-overlay" aria-hidden="true">
+  <div class="ambient-idle-card">
+    <div class="ambient-orb">P</div>
+
+    <div>
+      <div id="ambientStoreName" class="ambient-store-name">Current Store</div>
+      <h2>Pixel is ready.</h2>
+      <p>
+        Tap the mirror, scan an RFID item, or use a voice command to begin your styling session.
+      </p>
+    </div>
+
+    <div class="ambient-command-row">
+      <span>Scan item</span>
+      <span>Create look</span>
+      <span>Save to bag</span>
+    </div>
+  </div>
 </div>
+
+<button id="exitCinematicBtn" class="exit-cinematic-btn" type="button">
+  Exit Cinematic
+</button>
 
 <div id="toastShell" class="toast-shell"></div>
 
+</div>
+
 <script src="/retailers.js"></script>
+<script src="/js/mirror.js"></script>
 
 <script>
-  const API = {
-    stylist: "/api/v1/macy-stylist"
-  };
+  (function bootSmartMirrorFailsafe() {
+    let hasRevealedSmartMirror = false;
 
-  const RETAILER_CONFIG = window.UniversalStylistRetailers;
-  const STORE_OPTIONS = RETAILER_CONFIG.getStoreOptions();
+    function revealSmartMirrorOnly() {
+      document.documentElement.classList.remove("mirror-main-booting");
+      document.documentElement.classList.add("mirror-main-ready");
 
-  let currentRfid = "";
-  let currentLoadedItem = null;
-  let lastScannedItem = null;
-  let savedRfids = new Set();
-
-  function escapeHtml(value) {
-    return String(value ?? "")
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;")
-      .replace(/'/g, "&#039;");
-  }
-
-  function getToken() {
-    return localStorage.getItem("token") || "";
-  }
-
-  function getAuthHeaders(extra = {}) {
-    const token = getToken();
-
-    return {
-      ...extra,
-      ...(token ? { Authorization: `Bearer ${token}` } : {})
-    };
-  }
-
-  function requireToken() {
-    const token = getToken();
-
-    if (!token) {
-      throw new Error("Please log in from the Merchant App first, then return to Mirror Mode.");
-    }
-
-    return token;
-  }
-
-  function getSelectedRetailerKey() {
-    return document.getElementById("retailerSelect")?.value || "MACY001";
-  }
-
-  function getSelectedStoreCode() {
-    return document.getElementById("storeCodeSelect")?.value || "";
-  }
-
-  function getItemField(item, ...keys) {
-    for (const key of keys) {
-      if (item && item[key] !== undefined && item[key] !== null && item[key] !== "") {
-        return item[key];
-      }
-    }
-
-    return "";
-  }
-
-  function safeNumber(value, fallback = 0) {
-    const number = Number(value);
-    return Number.isFinite(number) ? number : fallback;
-  }
-
-  function formatPrice(value) {
-    const number = Number(value);
-    return Number.isFinite(number) ? `$${number.toFixed(2)}` : "$0.00";
-  }
-
-  function safeImageUrl(url, fallback = "https://placehold.co/700x900?text=Scanned+Item") {
-    const value = String(url || "").trim();
-
-    if (!value) {
-      return fallback;
-    }
-
-    try {
-      const parsed = new URL(value, window.location.origin);
+      document.body.classList.add("mirror-page-visible");
 
       if (
-        parsed.protocol === "http:" ||
-        parsed.protocol === "https:" ||
-        parsed.protocol === "data:" ||
-        parsed.protocol === "blob:"
+        window.MirrorMainExperience &&
+        typeof window.MirrorMainExperience.show === "function"
       ) {
-        return parsed.href;
-      }
-    } catch (_) {
-      return fallback;
-    }
-
-    return fallback;
-  }
-
- function populateRetailerSelect(selectedValue = "MACY001") {
-  const retailerSelect = document.getElementById("retailerSelect");
-  if (!retailerSelect || !RETAILER_CONFIG) return;
-
-  const fallbackValue = selectedValue || "MACY001";
-
-  retailerSelect.innerHTML =
-    RETAILER_CONFIG.buildRetailerOptionsHtml(fallbackValue, false);
-
-  const selectedExists = Array.from(retailerSelect.options).some(option => option.value === fallbackValue);
-
-  retailerSelect.value = selectedExists
-    ? fallbackValue
-    : retailerSelect.options[0]?.value || "MACY001";
-}
-
-  function populateStoreOptions(retailerKey, preferredStoreCode = "") {
-    const storeSelect = document.getElementById("storeCodeSelect");
-    if (!storeSelect) return;
-
-    const stores = STORE_OPTIONS[retailerKey] || [];
-    const fallbackStoreCode = preferredStoreCode || stores[0]?.code || "";
-
-    if (!stores.length) {
-      storeSelect.innerHTML = `<option value="">No Stores</option>`;
-      return;
-    }
-
-    storeSelect.innerHTML = stores.map(store => `
-      <option value="${escapeHtml(store.code)}">${escapeHtml(store.label)}</option>
-    `).join("");
-
-    const exists = stores.some(store => store.code === fallbackStoreCode);
-    storeSelect.value = exists ? fallbackStoreCode : stores[0].code;
-  }
-
-  function getLocalScanActivity() {
-    try {
-      const stored = JSON.parse(localStorage.getItem("universalStylistScanActivity") || "[]");
-      return Array.isArray(stored) ? stored : [];
-    } catch (_) {
-      return [];
-    }
-  }
-
-  function saveLocalScanActivity(activity) {
-    localStorage.setItem("universalStylistScanActivity", JSON.stringify(activity));
-  }
-
-  function logScanActivity(item, vibe, source = "mirror") {
-    if (!item) return;
-
-    const existingActivity = getLocalScanActivity();
-
-    const rfid = getItemField(item, "rfid", "itemRfid", "productRfid", "id") || currentRfid || "";
-    const retailerKey = getSelectedRetailerKey();
-    const retailer =
-      getItemField(item, "retailer", "retailerName") ||
-      RETAILER_CONFIG.getRetailerName(retailerKey) ||
-      "Unknown Retailer";
-
-    const scanRecord = {
-      id: crypto.randomUUID(),
-      timestamp: new Date().toISOString(),
-      source,
-      rfid,
-      retailer,
-      retailerKey,
-      storeCode: getSelectedStoreCode(),
-      name: getItemField(item, "name", "itemName") || "Scanned Item",
-      brand: getItemField(item, "brand") || "Brand",
-      category: getItemField(item, "category") || "Category",
-      color: getItemField(item, "color") || "",
-      price: Number(getItemField(item, "price")) || 0,
-      vibe: vibe || "Casual",
-      imageUrl: getItemField(item, "imageUrl", "image_url", "image", "photoUrl", "productImageUrl") || "",
-      savedToBag: false
-    };
-
-    const updatedActivity = [scanRecord, ...existingActivity].slice(0, 250);
-    saveLocalScanActivity(updatedActivity);
-  }
-
-  function markLatestScanSavedToBag(rfid) {
-    if (!rfid) return;
-
-    const activity = getLocalScanActivity();
-    const normalizedRfid = String(rfid).toLowerCase();
-
-    let hasMarkedLatest = false;
-
-    const updatedActivity = activity.map(record => {
-      const recordRfid = String(record.rfid || "").toLowerCase();
-
-      if (!hasMarkedLatest && recordRfid === normalizedRfid && !record.savedToBag) {
-        hasMarkedLatest = true;
-
-        return {
-          ...record,
-          savedToBag: true,
-          savedAt: new Date().toISOString()
-        };
-      }
-
-      return record;
-    });
-
-    saveLocalScanActivity(updatedActivity);
-  }
-
-  async function assertAuthorizedResponse(response, fallbackMessage = "Request failed.") {
-    if (response.ok) return;
-
-    if (response.status === 401 || response.status === 403) {
-      throw new Error("Your session expired. Please log in again from the Merchant App.");
-    }
-
-    let message = fallbackMessage;
-
-    try {
-      const contentType = response.headers.get("Content-Type") || "";
-
-      if (contentType.includes("application/json")) {
-        const data = await response.json();
-        message = data?.message || data?.detail || data?.error || fallbackMessage;
-      } else {
-        message = await response.text() || fallbackMessage;
-      }
-    } catch (_) {
-      message = fallbackMessage;
-    }
-
-    throw new Error(cleanApiErrorMessage(message));
-  }
-
-  function cleanApiErrorMessage(message) {
-    const text = String(message || "").trim();
-
-    if (!text) {
-      return "Request failed.";
-    }
-
-    const quotedMatch = text.match(/"([^"]+)"/);
-
-    if (quotedMatch && quotedMatch[1]) {
-      return quotedMatch[1];
-    }
-
-    return text
-      .replace(/^422\s+UNPROCESSABLE_ENTITY\s*/i, "")
-      .replace(/^400\s+BAD_REQUEST\s*/i, "")
-      .replace(/^401\s+UNAUTHORIZED\s*/i, "")
-      .replace(/^403\s+FORBIDDEN\s*/i, "")
-      .replace(/^404\s+NOT_FOUND\s*/i, "")
-      .replace(/^500\s+INTERNAL_SERVER_ERROR\s*/i, "")
-      .trim();
-  }
-
-  function updateAuthStatus() {
-    const authStatus = document.getElementById("authStatus");
-    const liveDot = document.getElementById("liveDot");
-
-    if (!authStatus) return;
-
-    const loggedIn = !!getToken();
-    authStatus.textContent = loggedIn ? "Mirror session ready" : "Login required";
-
-    if (liveDot) {
-      liveDot.classList.toggle("error-dot", !loggedIn);
-    }
-  }
-
-  function setStatus(message, type = "ready") {
-    const status = document.getElementById("scanStatus");
-    if (!status) return;
-
-    const className = type === "success" ? "status success" : type === "error" ? "status error" : "status";
-    const dotClass = type === "error" ? "dot error-dot" : "dot";
-
-    status.className = className;
-    status.innerHTML = `
-      <span class="${dotClass}"></span>
-      <span>${escapeHtml(message)}</span>
-    `;
-  }
-
-  function showToast(message, type = "info") {
-    const shell = document.getElementById("toastShell");
-    if (!shell || !message) return;
-
-    const toast = document.createElement("div");
-    toast.className = `toast-card ${type}`;
-    toast.textContent = message;
-
-    shell.appendChild(toast);
-
-    window.setTimeout(() => {
-      toast.remove();
-    }, 3200);
-  }
-
-  function setLoading(isLoading) {
-    const loading = document.getElementById("loadingState");
-    const scanBtn = document.getElementById("scanBtn");
-    const readyCard = document.getElementById("readyCard");
-
-    loading?.classList.toggle("show", isLoading);
-
-    if (readyCard) {
-      readyCard.style.display = isLoading ? "none" : "";
-    }
-
-    if (scanBtn) {
-      scanBtn.disabled = isLoading;
-      scanBtn.classList.toggle("scanning", isLoading);
-      scanBtn.textContent = isLoading ? "Analyzing..." : "Scan Item";
-    }
-  }
-
-  function revealPanel(panel) {
-    if (!panel) return;
-
-    panel.classList.add("show");
-    panel.classList.remove("scan-reveal");
-    void panel.offsetWidth;
-    panel.classList.add("scan-reveal");
-  }
-
-  function scrollToPanel(panel, options = {}) {
-    if (!panel) return;
-
-    const { gap = 76, behavior = "smooth" } = options;
-    const nav = document.querySelector(".mirror-nav");
-    const navHeight = nav ? nav.getBoundingClientRect().height : 0;
-    const stickyTop = 14;
-    const panelTop = panel.getBoundingClientRect().top + window.scrollY;
-    const targetY = panelTop - navHeight - stickyTop - gap;
-
-    window.scrollTo({
-      top: Math.max(0, targetY),
-      behavior
-    });
-  }
-
-  function generateStylingAdvice(item, vibe) {
-    const category = getItemField(item, "category") || "piece";
-    const color = getItemField(item, "color") || "";
-    const selected = String(vibe || "").toLowerCase();
-
-    if (selected === "casual") {
-      return `Pair this ${color ? `${color} ` : ""}${category} with clean sneakers and relaxed essentials for an effortless everyday look.`;
-    }
-
-    if (selected === "streetwear") {
-      return "Layer this piece with cargos, statement sneakers, and bold outerwear for a sharper streetwear fit.";
-    }
-
-    if (selected === "formal") {
-      return "Style this item with structured layers and refined accessories to create a polished formal direction.";
-    }
-
-    if (selected === "luxury") {
-      return "Combine this with premium textures, elevated tailoring, and minimal accessories for a luxury-forward outfit.";
-    }
-
-    if (selected === "date night") {
-      return "Balance this piece with sharper silhouettes and elevated accessories for a confident date-night look.";
-    }
-
-    return `This item is versatile and can anchor a strong ${vibe || "modern"} look.`;
-  }
-
-  function generateWhyItWorks(item, vibe) {
-    const color = getItemField(item, "color") || "color";
-    const category = getItemField(item, "category") || "silhouette";
-
-    return `The ${color}, ${category}, and ${vibe || "overall"} styling direction make this piece easy to build around.`;
-  }
-
-  function isCurrentItemSaved(item) {
-    const rfid = getItemField(item, "rfid", "itemRfid", "productRfid", "id");
-    return !!rfid && savedRfids.has(rfid);
-  }
-
-  function setSaveButtonSaved() {
-    const button = document.getElementById("saveToBagBtn");
-    if (!button) return;
-
-    button.textContent = "Saved to Bag ✓";
-    button.disabled = true;
-  }
-
-  function setSaveButtonDefault(disabled = false) {
-    const button = document.getElementById("saveToBagBtn");
-    if (!button) return;
-
-    button.textContent = "Save to Bag";
-    button.disabled = disabled;
-  }
-
-  function updateResultBadges(item) {
-    const inventoryBadge = document.getElementById("resultInventoryBadge");
-    const retailBadge = document.getElementById("resultRetailBadge");
-
-    const stockValue = getItemField(item, "stock", "quantity", "inventory", "availableQuantity");
-    const stock = stockValue === "" ? null : safeNumber(stockValue, null);
-    const retailer =
-      getItemField(item, "retailer", "retailerName") ||
-      RETAILER_CONFIG.getRetailerName(getSelectedRetailerKey()) ||
-      "Store";
-
-    if (inventoryBadge) {
-      if (stock === null) {
-        inventoryBadge.textContent = "Inventory Available";
-        inventoryBadge.className = "product-badge green";
-      } else if (stock > 0) {
-        inventoryBadge.textContent = `${stock} In Stock`;
-        inventoryBadge.className = "product-badge green";
-      } else {
-        inventoryBadge.textContent = "Check Availability";
-        inventoryBadge.className = "product-badge";
-      }
-    }
-
-    if (retailBadge) {
-      retailBadge.textContent = `${retailer} Match`;
-    }
-  }
-
-  function renderScanResult(item, selectedVibe) {
-    lastScannedItem = item || null;
-    currentLoadedItem = item || null;
-    currentRfid = getItemField(item, "rfid", "itemRfid", "productRfid", "id") || currentRfid;
-
-    const name = getItemField(item, "name", "itemName") || "Scanned Item";
-    const brand = getItemField(item, "brand") || "Brand";
-    const category = getItemField(item, "category") || "Category";
-    const color = getItemField(item, "color") || "Color";
-    const retailer =
-      getItemField(item, "retailer", "retailerName") ||
-      RETAILER_CONFIG.getRetailerName(getSelectedRetailerKey()) ||
-      "Unknown Retailer";
-
-    const price = getItemField(item, "price");
-    const advice = getItemField(item, "stylingAdvice") || generateStylingAdvice(item, selectedVibe);
-    const why = getItemField(item, "whyItWorks") || generateWhyItWorks(item, selectedVibe);
-    const score = getItemField(item, "matchScore") || 92;
-    const imageUrl = safeImageUrl(getItemField(item, "imageUrl", "image_url", "image", "photoUrl", "productImageUrl"));
-
-    document.getElementById("resultItemName").textContent = name;
-    document.getElementById("resultMeta").textContent = `${brand} • ${category} • ${color}`;
-    document.getElementById("resultRetailer").textContent = retailer;
-    document.getElementById("resultPrice").textContent = formatPrice(price);
-    document.getElementById("resultVibe").textContent = selectedVibe || "Casual";
-    document.getElementById("resultAdvice").textContent = advice;
-    document.getElementById("resultWhy").textContent = why;
-    document.getElementById("resultScore").textContent = `${score}%`;
-
-    updateResultBadges(item);
-
-    const image = document.getElementById("resultImage");
-    image.src = imageUrl;
-    image.alt = name;
-    image.onerror = function () {
-      this.src = "https://placehold.co/700x900?text=Scanned+Item";
-    };
-
-    if (isCurrentItemSaved(item)) {
-      setSaveButtonSaved();
-    } else {
-      setSaveButtonDefault(false);
-    }
-
-    const resultPanel = document.getElementById("resultPanel");
-    revealPanel(resultPanel);
-
-    if (item?.fullOutfit) {
-      renderFullOutfit(item.fullOutfit, false);
-    }
-
-    window.requestAnimationFrame(() => {
-      scrollToPanel(resultPanel, { gap: 90 });
-    });
-  }
-
-  function renderOutfitCard(item, role) {
-    if (!item) {
-      return `
-        <div class="outfit-card">
-          <div class="outfit-body">
-            <div class="role">${escapeHtml(role)}</div>
-            <div class="outfit-name">No item selected</div>
-          </div>
-        </div>
-      `;
-    }
-
-    const name = getItemField(item, "name", "itemName") || role;
-    const brand = getItemField(item, "brand") || "";
-    const retailer = getItemField(item, "retailer", "retailerName") || "";
-    const price = getItemField(item, "price");
-    const imageUrl = safeImageUrl(getItemField(item, "imageUrl"), "https://placehold.co/400x500?text=Look");
-
-    return `
-      <div class="outfit-card">
-        <img
-          src="${imageUrl}"
-          alt="${escapeHtml(name)}"
-          onerror="this.src='https://placehold.co/400x500?text=Look';"
-        />
-        <div class="outfit-body">
-          <div class="role">${escapeHtml(role)}</div>
-          <div class="outfit-name">${escapeHtml(name)}</div>
-          <div class="outfit-meta">${escapeHtml(brand || retailer || "Brand")} • ${formatPrice(price)}</div>
-        </div>
-      </div>
-    `;
-  }
-
-  function renderFullOutfit(fullOutfit, shouldScroll = true) {
-    const panel = document.getElementById("outfitPanel");
-    const grid = document.getElementById("outfitGrid");
-    const explanation = document.getElementById("outfitExplanation");
-    const score = document.getElementById("outfitScore");
-
-    if (!panel || !grid || !explanation || !score) return;
-
-    if (!fullOutfit) {
-      panel.classList.remove("show");
-      return;
-    }
-
-    const scannedRfid = currentRfid || getItemField(lastScannedItem, "rfid", "itemRfid", "productRfid", "id") || "";
-
-    const pieces = [
-      ["Top", fullOutfit.top],
-      ["Bottom", fullOutfit.bottom],
-      ["Shoes", fullOutfit.shoes],
-      ["Outerwear", fullOutfit.outerwear]
-    ].filter(([, item]) => {
-      const rfid = getItemField(item, "rfid", "itemRfid", "productRfid", "id");
-      return item && rfid !== scannedRfid;
-    });
-
-    grid.innerHTML = pieces.length
-      ? pieces.map(([role, item]) => renderOutfitCard(item, role)).join("")
-      : `<div class="empty">Additional styled pieces will appear here.</div>`;
-
-    explanation.textContent = fullOutfit.explanation || "This outfit is built around your scanned item.";
-    score.textContent = `${safeNumber(fullOutfit.overallScore)}%`;
-
-    revealPanel(panel);
-
-    if (shouldScroll) {
-      window.requestAnimationFrame(() => {
-        scrollToPanel(panel, { gap: 96 });
-      });
-    }
-  }
-
-  function resetMirror() {
-    currentRfid = "";
-    currentLoadedItem = null;
-    lastScannedItem = null;
-
-    const rfidInput = document.getElementById("rfidInput");
-    if (rfidInput) rfidInput.value = "";
-
-    document.getElementById("resultPanel")?.classList.remove("show", "scan-reveal");
-    document.getElementById("outfitPanel")?.classList.remove("show", "scan-reveal");
-
-    setSaveButtonDefault(true);
-    setStatus(
-      getToken() ? "Ready for a new scan." : "Login from the Merchant App first.",
-      getToken() ? "ready" : "error"
-    );
-
-    const scanPanel = document.querySelector(".scan-panel");
-
-    window.requestAnimationFrame(() => {
-      scrollToPanel(scanPanel, { gap: 70 });
-    });
-  }
-
-  async function handleScan() {
-    const retailer = getSelectedRetailerKey();
-    const storeCode = getSelectedStoreCode();
-    const rfid = document.getElementById("rfidInput")?.value.trim();
-    const vibe = document.getElementById("vibeSelect")?.value || "Casual";
-
-    if (!rfid) {
-      setStatus("Enter or scan an RFID tag first.", "error");
-      return;
-    }
-
-    if (!storeCode) {
-      setStatus("Select a store first.", "error");
-      return;
-    }
-
-    try {
-      requireToken();
-
-      setLoading(true);
-      setStatus("Analyzing item with Universal Stylist...", "ready");
-
-      const params = new URLSearchParams({
-        storeCode,
-        vibe
-      });
-
-      const response = await fetch(
-        `${API.stylist}/scan/${encodeURIComponent(retailer)}/${encodeURIComponent(rfid)}?${params.toString()}`,
-        { headers: getAuthHeaders() }
-      );
-
-      await assertAuthorizedResponse(response, "Could not scan this item for the selected retailer.");
-
-      const data = await response.json();
-
-      renderScanResult(data, vibe);
-      logScanActivity(data, vibe, "mirror");
-
-      if (window.location.search) {
-        window.history.replaceState({}, document.title, window.location.pathname);
-      }
-
-      const input = document.getElementById("rfidInput");
-      if (input) input.value = "";
-
-      setStatus(`Loaded ${data?.itemName || data?.name || "item"} successfully.`, "success");
-      showToast("Item scanned successfully.", "success");
-    } catch (error) {
-      console.error("Mirror scan failed:", error);
-      setStatus(error.message || "Unable to scan item.", "error");
-      showToast(error.message || "Unable to scan item.", "error");
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function createFullLook() {
-    if (!lastScannedItem) {
-      setStatus("Scan an item first to create a full look.", "error");
-      return;
-    }
-
-    const rfid = currentRfid || getItemField(lastScannedItem, "rfid", "itemRfid", "productRfid", "id");
-    const retailerKey = getSelectedRetailerKey();
-    const storeCode = getSelectedStoreCode();
-    const vibe = document.getElementById("vibeSelect")?.value || "Casual";
-    const button = document.getElementById("createLookBtn");
-
-    if (!rfid) {
-      showToast("Missing RFID for look generation.", "error");
-      return;
-    }
-
-    try {
-      requireToken();
-
-      if (button) {
-        button.disabled = true;
-        button.textContent = "Creating Look...";
-      }
-
-      setStatus("Creating a complete outfit...", "ready");
-
-      const params = new URLSearchParams({
-        retailerKey,
-        storeCode,
-        vibe
-      });
-
-      const response = await fetch(
-        `${API.stylist}/look/${encodeURIComponent(rfid)}?${params.toString()}`,
-        { headers: getAuthHeaders() }
-      );
-
-      await assertAuthorizedResponse(response, "Unable to generate full look.");
-
-      const look = await response.json();
-      renderFullOutfit(look.fullOutfit || look, true);
-
-      setStatus("Full look created.", "success");
-      showToast("Full look created.", "success");
-    } catch (error) {
-      console.error("Create look failed:", error);
-      setStatus(error.message || "Unable to generate full look.", "error");
-      showToast(error.message || "Unable to generate full look.", "error");
-    } finally {
-      if (button) {
-        button.disabled = false;
-        button.textContent = "Create Full Look";
-      }
-    }
-  }
-
-  async function saveToBag() {
-    if (!currentRfid || !currentLoadedItem) {
-      setStatus("Scan an item before saving it to your bag.", "error");
-      showToast("Scan an item first.", "error");
-      return;
-    }
-
-    const button = document.getElementById("saveToBagBtn");
-
-    try {
-      requireToken();
-
-      if (button) {
-        button.disabled = true;
-        button.textContent = "Saving...";
-      }
-
-      const response = await fetch(`${API.stylist}/save/${encodeURIComponent(currentRfid)}`, {
-        method: "POST",
-        headers: getAuthHeaders()
-      });
-
-      await assertAuthorizedResponse(response, "Unable to save item.");
-
-      const message = await response.text();
-
-      savedRfids.add(currentRfid);
-      markLatestScanSavedToBag(currentRfid);
-      setSaveButtonSaved();
-
-      setStatus(message || "Item saved to bag.", "success");
-      showToast(message || "Item saved to bag.", "success");
-
-      await loadBag(false);
-    } catch (error) {
-      console.error("Save failed:", error);
-      setSaveButtonDefault(false);
-      setStatus(error.message || "Unable to save item.", "error");
-      showToast(error.message || "Unable to save item.", "error");
-    }
-  }
-
-  async function loadBag(showPanel = true) {
-    const bagPanel = document.getElementById("bagPanel");
-    const container = document.getElementById("bagContent");
-
-    if (!container) return;
-
-    if (!getToken()) {
-      savedRfids = new Set();
-      container.innerHTML = `<div class="empty">Login from the Merchant App to view your bag.</div>`;
-
-      if (showPanel) {
-        revealPanel(bagPanel);
-        window.requestAnimationFrame(() => {
-          scrollToPanel(bagPanel, { gap: 86 });
-        });
-      }
-
-      return;
-    }
-
-    container.innerHTML = `<div class="empty">Refreshing bag...</div>`;
-
-    try {
-      const response = await fetch(`${API.stylist}/bag`, {
-        headers: getAuthHeaders()
-      });
-
-      await assertAuthorizedResponse(response, "Unable to load bag.");
-
-      const bag = await response.json();
-      const items = Array.isArray(bag.items) ? bag.items : [];
-
-      savedRfids = new Set(
-        items.map(item => item.rfid || item.itemRfid || item.productRfid).filter(Boolean)
-      );
-
-      if (!items.length) {
-        container.innerHTML = `<div class="empty">Your style bag is empty. Scan and save pieces to build your look.</div>`;
-      } else {
-        container.innerHTML = items.map(item => {
-          const name = item.itemName || item.name || "Unnamed Item";
-          const retailer = item.retailerName || item.retailer || "Retailer";
-          const category = item.category || "Item";
-          const imageUrl = safeImageUrl(item.imageUrl, "https://placehold.co/120x120?text=Item");
-
-          return `
-            <div class="bag-item">
-              <img
-                src="${imageUrl}"
-                alt="${escapeHtml(name)}"
-                onerror="this.src='https://placehold.co/120x120?text=Item';"
-              />
-              <div>
-                <div class="bag-name">${escapeHtml(name)}</div>
-                <div class="bag-meta">${escapeHtml(retailer)} • ${escapeHtml(category)} • ${formatPrice(item.price)}</div>
-              </div>
-              <button
-                class="mirror-btn"
-                type="button"
-                data-remove-id="${escapeHtml(item.id || "")}"
-              >
-                Remove
-              </button>
-            </div>
-          `;
-        }).join("");
-
-        container.querySelectorAll("[data-remove-id]").forEach(button => {
-          button.addEventListener("click", () => removeFromBag(button.dataset.removeId || ""));
-        });
-      }
-
-      if (currentLoadedItem) {
-        if (isCurrentItemSaved(currentLoadedItem)) {
-          setSaveButtonSaved();
-        } else {
-          setSaveButtonDefault(false);
+        try {
+          window.MirrorMainExperience.show();
+          hasRevealedSmartMirror = true;
+        } catch (error) {
+          console.warn("MirrorMainExperience.show() failed during failsafe boot:", error);
         }
       }
 
-      if (showPanel) {
-        revealPanel(bagPanel);
-        window.requestAnimationFrame(() => {
-          scrollToPanel(bagPanel, { gap: 86 });
-        });
+      if (!hasRevealedSmartMirror) {
+        console.warn("Smart mirror customer experience has not mounted yet. Waiting for mirror.js.");
       }
-    } catch (error) {
-      console.error("Bag load failed:", error);
-      container.innerHTML = `<div class="empty">Unable to load bag right now.</div>`;
-
-      if (showPanel) {
-        revealPanel(bagPanel);
-        window.requestAnimationFrame(() => {
-          scrollToPanel(bagPanel, { gap: 86 });
-        });
-      }
-
-      showToast(error.message || "Unable to load bag.", "error");
-    }
-  }
-
-  async function removeFromBag(id) {
-    if (!id) {
-      showToast("Missing bag item id.", "error");
-      return;
     }
 
-    try {
-      requireToken();
-
-      const response = await fetch(`${API.stylist}/bag/${encodeURIComponent(id)}`, {
-        method: "DELETE",
-        headers: getAuthHeaders()
-      });
-
-      await assertAuthorizedResponse(response, "Unable to remove item.");
-
-      showToast("Item removed from bag.", "success");
-      await loadBag(true);
-    } catch (error) {
-      console.error("Remove failed:", error);
-      showToast(error.message || "Unable to remove item.", "error");
-    }
-  }
-
-  function quickScan(retailerKey, rfid) {
-    const retailerSelect = document.getElementById("retailerSelect");
-    const rfidInput = document.getElementById("rfidInput");
-    const vibeSelect = document.getElementById("vibeSelect");
-
-    if (retailerSelect) {
-      retailerSelect.value = retailerKey;
-    }
-
-    populateStoreOptions(retailerKey);
-
-    const firstStore = STORE_OPTIONS[retailerKey]?.[0]?.code || "";
-    const storeSelect = document.getElementById("storeCodeSelect");
-
-    if (storeSelect && firstStore) {
-      storeSelect.value = firstStore;
-    }
-
-    if (rfidInput) rfidInput.value = rfid;
-    if (vibeSelect) vibeSelect.value = "Casual";
-
-    handleScan();
-  }
-
-  function hydrateFromUrlParams() {
-    const params = new URLSearchParams(window.location.search);
-
-    const retailer = params.get("retailer") || "";
-    const storeCode = params.get("storeCode") || "";
-    const rfid = params.get("rfid") || "";
-    const vibe = params.get("vibe") || "";
-    const autoScan = params.get("autoScan") === "true";
-
-    const retailerSelect = document.getElementById("retailerSelect");
-    const storeCodeSelect = document.getElementById("storeCodeSelect");
-    const rfidInput = document.getElementById("rfidInput");
-    const vibeSelect = document.getElementById("vibeSelect");
-
-    if (retailer && retailerSelect) {
-      populateRetailerSelect(retailer);
-      populateStoreOptions(getSelectedRetailerKey(), storeCode);
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", revealSmartMirrorOnly, { once: true });
     } else {
-       populateStoreOptions(getSelectedRetailerKey(), storeCode);
+      revealSmartMirrorOnly();
     }
 
-    if (storeCode && storeCodeSelect) {
-      const storeExists = Array.from(storeCodeSelect.options).some(option => option.value === storeCode);
+    window.addEventListener("load", revealSmartMirrorOnly, { once: true });
 
-      if (storeExists) {
-        storeCodeSelect.value = storeCode;
-      }
-    }
-
-    if (rfid && rfidInput) {
-      rfidInput.value = rfid;
-    }
-
-    if (vibe && vibeSelect) {
-      const vibeExists = Array.from(vibeSelect.options).some(option => option.value === vibe);
-
-      if (vibeExists) {
-        vibeSelect.value = vibe;
-      }
-    }
-
-    const hasDeepLinkData = Boolean(retailer || storeCode || rfid || vibe);
-
-    if (hasDeepLinkData && !autoScan) {
-      setStatus("Mirror test loaded from inventory. Press Scan Item to begin.", "ready");
-    }
-
-    if (autoScan && rfid) {
-      if (!getToken()) {
-        setStatus("Mirror test loaded. Log in from the Merchant App to run the scan.", "error");
-        showToast("Login required before auto-scan can run.", "error");
-        return;
-      }
-
-      setStatus("Mirror test loaded from inventory. Starting scan...", "ready");
-
-      window.setTimeout(() => {
-        handleScan();
-      }, 450);
-    }
-  }
-
-  function bindEvents() {
-    document.getElementById("scanBtn")?.addEventListener("click", handleScan);
-    document.getElementById("createLookBtn")?.addEventListener("click", createFullLook);
-    document.getElementById("saveToBagBtn")?.addEventListener("click", saveToBag);
-    document.getElementById("bagToggleBtn")?.addEventListener("click", () => loadBag(true));
-    document.getElementById("viewBagInlineBtn")?.addEventListener("click", () => loadBag(true));
-    document.getElementById("refreshBagBtn")?.addEventListener("click", () => loadBag(true));
-    document.getElementById("newScanBtn")?.addEventListener("click", resetMirror);
-
-    document.getElementById("rfidInput")?.addEventListener("keydown", event => {
-      if (event.key === "Enter") {
-        event.preventDefault();
-        handleScan();
-      }
-    });
-
-    document.getElementById("retailerSelect")?.addEventListener("change", event => {
-      populateStoreOptions(event.target.value || "MACY001");
-    });
-
-    document.querySelectorAll(".quick-btn").forEach(button => {
-      button.addEventListener("click", () => {
-        quickScan(button.dataset.retailer || "MACY001", button.dataset.rfid || "RFID1001");
-      });
-    });
-  }
-
-  function init() {
-    populateRetailerSelect("MACY001");
-    populateStoreOptions(getSelectedRetailerKey());
-    bindEvents();
-    updateAuthStatus();
-    setSaveButtonDefault(true);
-
-    setStatus(
-      getToken() ? "Ready to scan." : "Login from the Merchant App first.",
-      getToken() ? "ready" : "error"
-    );
-
-    if (getToken()) {
-      loadBag(false);
-    }
-
-    hydrateFromUrlParams();
-  }
-
-  init();
+    window.setTimeout(revealSmartMirrorOnly, 500);
+    window.setTimeout(revealSmartMirrorOnly, 1500);
+  })();
 </script>
 </body>
 </html>

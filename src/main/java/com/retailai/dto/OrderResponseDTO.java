@@ -27,6 +27,18 @@ public class OrderResponseDTO {
     private List<OrderItemDTO> items = new ArrayList<>();
 
     public OrderResponseDTO() {
+        this.orderNumber = "";
+        this.status = "COMPLETED";
+        this.retailerKey = "";
+        this.retailerName = "";
+        this.storeCode = "";
+        this.storeName = "";
+        this.itemCount = 0;
+        this.subtotal = 0.0;
+        this.tax = 0.0;
+        this.total = 0.0;
+        this.createdAt = LocalDateTime.now();
+        this.items = new ArrayList<>();
     }
 
     public Long getId() {
@@ -50,7 +62,8 @@ public class OrderResponseDTO {
     }
 
     public void setStatus(String status) {
-        this.status = clean(status);
+        String cleaned = clean(status);
+        this.status = cleaned.isBlank() ? "COMPLETED" : cleaned;
     }
 
     public String getRetailerKey() {
@@ -86,7 +99,11 @@ public class OrderResponseDTO {
     }
 
     public Integer getItemCount() {
-        return itemCount == null ? 0 : itemCount;
+        if (itemCount != null && itemCount >= 0) {
+            return itemCount;
+        }
+
+        return items == null ? 0 : items.size();
     }
 
     public void setItemCount(Integer itemCount) {
@@ -94,27 +111,27 @@ public class OrderResponseDTO {
     }
 
     public Double getSubtotal() {
-        return subtotal == null ? 0.0 : subtotal;
+        return money(subtotal);
     }
 
     public void setSubtotal(Double subtotal) {
-        this.subtotal = subtotal == null ? 0.0 : subtotal;
+        this.subtotal = money(subtotal);
     }
 
     public Double getTax() {
-        return tax == null ? 0.0 : tax;
+        return money(tax);
     }
 
     public void setTax(Double tax) {
-        this.tax = tax == null ? 0.0 : tax;
+        this.tax = money(tax);
     }
 
     public Double getTotal() {
-        return total == null ? 0.0 : total;
+        return money(total);
     }
 
     public void setTotal(Double total) {
-        this.total = total == null ? 0.0 : total;
+        this.total = money(total);
     }
 
     public LocalDateTime getCreatedAt() {
@@ -122,11 +139,11 @@ public class OrderResponseDTO {
     }
 
     public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
+        this.createdAt = createdAt == null ? LocalDateTime.now() : createdAt;
     }
 
     public List<OrderItemDTO> getItems() {
-        return items;
+        return items == null ? new ArrayList<>() : items;
     }
 
     public void setItems(List<OrderItemDTO> items) {
@@ -135,5 +152,13 @@ public class OrderResponseDTO {
 
     private String clean(String value) {
         return value == null ? "" : value.trim();
+    }
+
+    private Double money(Double value) {
+        if (value == null || Double.isNaN(value) || Double.isInfinite(value)) {
+            return 0.0;
+        }
+
+        return Math.max(0.0, value);
     }
 }

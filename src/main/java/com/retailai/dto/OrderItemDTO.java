@@ -15,6 +15,17 @@ public class OrderItemDTO {
     private String storeCode;
 
     public OrderItemDTO() {
+        this.rfid = "";
+        this.itemName = "";
+        this.category = "";
+        this.imageUrl = "";
+        this.unitPrice = 0.0;
+        this.quantity = 1;
+        this.lineTotal = null;
+        this.retailerName = "";
+        this.retailerKey = "";
+        this.storeName = "";
+        this.storeCode = "";
     }
 
     public String getRfid() {
@@ -50,15 +61,15 @@ public class OrderItemDTO {
     }
 
     public Double getUnitPrice() {
-        return unitPrice == null ? 0.0 : unitPrice;
+        return money(unitPrice);
     }
 
     public void setUnitPrice(Double unitPrice) {
-        this.unitPrice = unitPrice == null ? 0.0 : unitPrice;
+        this.unitPrice = money(unitPrice);
     }
 
     public Integer getQuantity() {
-        return quantity == null ? 1 : quantity;
+        return quantity == null ? 1 : Math.max(1, quantity);
     }
 
     public void setQuantity(Integer quantity) {
@@ -66,11 +77,15 @@ public class OrderItemDTO {
     }
 
     public Double getLineTotal() {
-        return lineTotal == null ? 0.0 : lineTotal;
+        if (lineTotal != null) {
+            return money(lineTotal);
+        }
+
+        return money(getUnitPrice() * getQuantity());
     }
 
     public void setLineTotal(Double lineTotal) {
-        this.lineTotal = lineTotal == null ? 0.0 : lineTotal;
+        this.lineTotal = lineTotal == null ? null : money(lineTotal);
     }
 
     public String getRetailerName() {
@@ -107,5 +122,13 @@ public class OrderItemDTO {
 
     private String clean(String value) {
         return value == null ? "" : value.trim();
+    }
+
+    private Double money(Double value) {
+        if (value == null || Double.isNaN(value) || Double.isInfinite(value)) {
+            return 0.0;
+        }
+
+        return Math.max(0.0, value);
     }
 }

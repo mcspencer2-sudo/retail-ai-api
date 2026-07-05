@@ -4,7 +4,9 @@ import jakarta.persistence.*;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 
 @Entity
 @Table(name = "saved_look")
@@ -28,6 +30,23 @@ public class SavedLook {
 
     @Column(nullable = false)
     private LocalDateTime savedAt = LocalDateTime.now();
+
+    @Column(nullable = false, length = 255)
+    private String title = "Saved Look";
+
+    @Column(length = 4000)
+    private String notes;
+
+    @Column(length = 1000)
+    private String tagsCsv = "";
+
+    @Column(length = 120, unique = true)
+    private String shareToken;
+
+    @Column(nullable = false)
+    private Boolean publicShareEnabled = false;
+
+    private LocalDateTime shareCreatedAt;
 
     @Column(nullable = false)
     private String anchorRfid = "";
@@ -109,7 +128,8 @@ public class SavedLook {
     }
 
     public void setVibe(String vibe) {
-        this.vibe = safe(vibe).isBlank() ? "Casual" : safe(vibe);
+        String cleaned = safe(vibe);
+        this.vibe = cleaned.isBlank() ? "Casual" : cleaned;
     }
 
     public Integer getScore() {
@@ -126,6 +146,79 @@ public class SavedLook {
 
     public void setSavedAt(LocalDateTime savedAt) {
         this.savedAt = savedAt == null ? LocalDateTime.now() : savedAt;
+    }
+
+    public String getTitle() {
+        return title;
+    }
+
+    public void setTitle(String title) {
+        String cleaned = safe(title);
+        this.title = cleaned.isBlank() ? "Saved Look" : cleaned;
+    }
+
+    public String getName() {
+        return getTitle();
+    }
+
+    public void setName(String name) {
+        setTitle(name);
+    }
+
+    public String getNotes() {
+        return notes;
+    }
+
+    public void setNotes(String notes) {
+        this.notes = safeNullable(notes);
+    }
+
+    public String getTagsCsv() {
+        return tagsCsv;
+    }
+
+    public void setTagsCsv(String tagsCsv) {
+        this.tagsCsv = normalizeTagsCsv(tagsCsv);
+    }
+
+    public List<String> getTags() {
+        return csvToTags(tagsCsv);
+    }
+
+    public void setTags(List<String> tags) {
+        this.tagsCsv = tagsToCsv(tags);
+    }
+
+    public List<String> getTagList() {
+        return getTags();
+    }
+
+    public void setTagList(List<String> tags) {
+        setTags(tags);
+    }
+
+    public String getShareToken() {
+        return shareToken;
+    }
+
+    public void setShareToken(String shareToken) {
+        this.shareToken = safeNullable(shareToken);
+    }
+
+    public Boolean getPublicShareEnabled() {
+        return publicShareEnabled;
+    }
+
+    public void setPublicShareEnabled(Boolean publicShareEnabled) {
+        this.publicShareEnabled = publicShareEnabled != null && publicShareEnabled;
+    }
+
+    public LocalDateTime getShareCreatedAt() {
+        return shareCreatedAt;
+    }
+
+    public void setShareCreatedAt(LocalDateTime shareCreatedAt) {
+        this.shareCreatedAt = shareCreatedAt;
     }
 
     public String getAnchorRfid() {
@@ -291,6 +384,80 @@ public class SavedLook {
 
     public void clearItems() {
         this.items.clear();
+    }
+
+    public boolean isPubliclyShareable() {
+        return Boolean.TRUE.equals(publicShareEnabled)
+                && shareToken != null
+                && !shareToken.isBlank();
+    }
+
+    public void enablePublicShare(String token) {
+        String cleanedToken = safe(token);
+
+        if (cleanedToken.isBlank()) {
+            throw new IllegalArgumentException("Share token is required.");
+        }
+
+        this.shareToken = cleanedToken;
+        this.publicShareEnabled = true;
+        this.shareCreatedAt = LocalDateTime.now();
+    }
+
+    public void disablePublicShare() {
+        this.publicShareEnabled = false;
+    }
+
+    private String normalizeTagsCsv(String value) {
+        if (value == null || value.isBlank()) {
+            return "";
+        }
+
+        return tagsToCsv(Arrays.asList(value.split(",")));
+    }
+
+    private String tagsToCsv(List<String> tags) {
+        if (tags == null || tags.isEmpty()) {
+            return "";
+        }
+
+        List<String> cleanedTags = new ArrayList<>();
+
+        for (String tag : tags) {
+            String cleaned = normalizeTag(tag);
+
+            if (!cleaned.isBlank() && !cleanedTags.contains(cleaned)) {
+                cleanedTags.add(cleaned);
+            }
+        }
+
+        return String.join(",", cleanedTags);
+    }
+
+    private List<String> csvToTags(String csv) {
+        List<String> tags = new ArrayList<>();
+
+        if (csv == null || csv.isBlank()) {
+            return tags;
+        }
+
+        String[] parts = csv.split(",");
+
+        for (String part : parts) {
+            String cleaned = normalizeTag(part);
+
+            if (!cleaned.isBlank() && !tags.contains(cleaned)) {
+                tags.add(cleaned);
+            }
+        }
+
+        return tags;
+    }
+
+    private String normalizeTag(String value) {
+        return safe(value)
+                .toLowerCase(Locale.ROOT)
+                .replaceAll("\\s+", "-");
     }
 
     private String safe(String value) {

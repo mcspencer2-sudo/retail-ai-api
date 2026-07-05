@@ -96,6 +96,7 @@ public class SaaSAuthService {
                 + " using store " + store.getStoreCode();
     }
 
+    @Transactional(readOnly = true)
     public String login(LoginRequest request) {
         if (request == null) {
             throw new RuntimeException("Login request is required");
@@ -121,7 +122,7 @@ public class SaaSAuthService {
 
         boolean passwordMatches = passwordEncoder.matches(
                 password,
-                user.getPasswordHash()
+                safe(user.getPasswordHash())
         );
 
         if (!passwordMatches) {
@@ -137,7 +138,7 @@ public class SaaSAuthService {
         Tenant tenant = tenantRepository.findById(tenantId)
                 .orElseThrow(() -> new RuntimeException("Tenant not found for user"));
 
-        if (!tenant.isActive()) {
+        if (!isTenantActive(tenant)) {
             throw new RuntimeException("Tenant account is inactive");
         }
 
@@ -146,6 +147,8 @@ public class SaaSAuthService {
         if (store == null) {
             throw new RuntimeException("No active store found for tenant");
         }
+
+        validateLoginContext(user, tenant, store);
 
         return jwtService.generateToken(user, tenant, store);
     }
@@ -270,6 +273,10 @@ public class SaaSAuthService {
             String storeName,
             String location
     ) {
+        if (tenant == null || tenant.getId() == null) {
+            throw new RuntimeException("Tenant must be saved before creating a store");
+        }
+
         Store store = new Store();
 
         store.setTenantId(tenant.getId());
@@ -288,6 +295,10 @@ public class SaaSAuthService {
             String userEmail,
             String password
     ) {
+        if (tenant == null || tenant.getId() == null) {
+            throw new RuntimeException("Tenant must be saved before creating a user");
+        }
+
         AppUser user = new AppUser();
 
         user.setTenantId(tenant.getId());
@@ -309,8 +320,58 @@ public class SaaSAuthService {
                 .orElse(null);
     }
 
+    private void validateLoginContext(AppUser user, Tenant tenant, Store store) {
+        if (user == null) {
+            throw new RuntimeException("User context is missing");
+        }
+
+        if (tenant == null) {
+            throw new RuntimeException("Tenant context is missing");
+        }
+
+        if (store == null) {
+            throw new RuntimeException("Store context is missing");
+        }
+
+        if (user.getTenantId() == null) {
+            throw new RuntimeException("User tenant id is missing");
+        }
+
+        if (tenant.getId() == null) {
+            throw new RuntimeException("Tenant id is missing");
+        }
+
+        if (!user.getTenantId().equals(tenant.getId())) {
+            throw new RuntimeException("User tenant does not match tenant context");
+        }
+
+        if (store.getTenantId() == null) {
+            throw new RuntimeException("Store tenant id is missing");
+        }
+
+        if (!store.getTenantId().equals(tenant.getId())) {
+            throw new RuntimeException("Store tenant does not match tenant context");
+        }
+
+        if (safe(store.getRetailerKey()).isBlank()) {
+            throw new RuntimeException("Logged-in store retailer key is missing");
+        }
+
+        if (safe(store.getStoreCode()).isBlank()) {
+            throw new RuntimeException("Logged-in store code is missing");
+        }
+
+        if (!store.isActive()) {
+            throw new RuntimeException("Store is inactive");
+        }
+    }
+
     private boolean isUserActive(AppUser user) {
         return user != null && user.isActive();
+    }
+
+    private boolean isTenantActive(Tenant tenant) {
+        return tenant != null && tenant.isActive();
     }
 
     private String buildStoreCode(String retailerKey, String storeName) {

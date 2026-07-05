@@ -2,14 +2,19 @@ package com.retailai.service;
 
 import com.retailai.dto.ActivityDTO;
 import com.retailai.dto.AnalyticsSummaryDTO;
+import com.retailai.dto.CustomerPreferenceRequest;
 import com.retailai.dto.FullOutfitDTO;
 import com.retailai.dto.LookResponseDTO;
 import com.retailai.dto.MerchantInventoryItemDTO;
 import com.retailai.dto.MerchantInventoryPageDTO;
+import com.retailai.dto.MerchantInventoryUpdateRequest;
 import com.retailai.dto.StoreStaffDashboardDTO;
 import com.retailai.dto.RecommendationItemDTO;
 import com.retailai.dto.RetailerStatsDTO;
+import com.retailai.dto.ScanHistoryDTO;
 import com.retailai.dto.ScanResultDTO;
+import com.retailai.model.ScanHistory;
+import com.retailai.repository.ScanHistoryRepository;
 import com.retailai.dto.TrendDTO;
 import com.retailai.model.BagItem;
 import com.retailai.model.BagSummaryResponse;
@@ -42,6 +47,7 @@ public class InventoryService {
     private final ProductRepository productRepository;
     private final BagItemRepository bagItemRepository;
     private final TrendEventRepository trendEventRepository;
+    private final ScanHistoryRepository scanHistoryRepository;
     private final AIStylistService aiStylistService;
 
     @Value("${retailai.demo-scan-mode:true}")
@@ -51,80 +57,76 @@ public class InventoryService {
             ProductRepository productRepository,
             BagItemRepository bagItemRepository,
             TrendEventRepository trendEventRepository,
+            ScanHistoryRepository scanHistoryRepository,
             AIStylistService aiStylistService
     ) {
         this.productRepository = productRepository;
         this.bagItemRepository = bagItemRepository;
         this.trendEventRepository = trendEventRepository;
+        this.scanHistoryRepository = scanHistoryRepository;
         this.aiStylistService = aiStylistService;
     }
 
     public ScanResultDTO scanItem(String retailerKey, String rfid, String vibe) {
-        return scanItem(retailerKey, null, rfid, vibe);
+        return scanItem(retailerKey, null, rfid, vibe, null);
     }
 
     public ScanResultDTO scanItem(String retailerKey, String storeCode, String rfid, String vibe) {
+        return scanItem(retailerKey, storeCode, rfid, vibe, null);
+    }
+
+    public ScanResultDTO scanItem(
+            String retailerKey,
+            String storeCode,
+            String rfid,
+            String vibe,
+            CustomerPreferenceRequest preferences
+    ) {
         Product product = loadScannedProductForContext(retailerKey, storeCode, rfid);
 
         saveTrendEvent("SCAN", product);
 
-        String stylingAdvice;
-        try {
-            stylingAdvice = aiStylistService.generateAdvice(product, vibe);
-        } catch (RuntimeException e) {
-            stylingAdvice = "This item is a strong styling anchor and can be paired with complementary pieces for a polished look.";
-        }
+        saveScanHistory(
+                product,
+                vibe,
+                "",
+                "",
+                "",
+                "",
+                retailerKey,
+                storeCode
+        );
 
-        String whyItWorks = generateWhyItWorks(product, vibe);
+        return buildScanResultFromProduct(product, vibe, preferences);
+    }
 
-        List<RecommendationItemDTO> suggestions;
-        try {
-            suggestions = generateSmartSuggestions(product, vibe);
-        } catch (RuntimeException e) {
-            suggestions = List.of();
-        }
+    public ScanResultDTO scanItem(
+            String userId,
+            String tenantId,
+            String storeId,
+            String userEmail,
+            String retailerKey,
+            String storeCode,
+            String rfid,
+            String vibe,
+            CustomerPreferenceRequest preferences
+    ) {
+        Product product = loadScannedProductForContext(retailerKey, storeCode, rfid);
 
-        ScanResultDTO scanResult = new ScanResultDTO();
-        scanResult.setRfid(safe(product.getRfid()));
-        scanResult.setName(safe(product.getItemName()));
-        scanResult.setBrand(safeBrand(product));
-        scanResult.setCategory(safe(product.getCategory()));
-        scanResult.setColor(safeColor(product));
-        scanResult.setRetailer(safe(product.getRetailerName()));
-        scanResult.setRetailerKey(safe(product.getRetailerKey()));
-        scanResult.setStoreCode(safe(product.getStoreCode()));
-        scanResult.setStoreName(safe(product.getStoreName()));
-        scanResult.setPrice(safePrice(product.getPrice()));
-        scanResult.setMatchScore(calculateMainMatchScore(product, vibe));
-        scanResult.setImageUrl(safeImage(product.getImageUrl()));
-        scanResult.setStylingAdvice(stylingAdvice);
-        scanResult.setWhyItWorks(whyItWorks);
-        scanResult.setSuggestions(suggestions);
+        saveTrendEvent("SCAN", product);
 
-        FullOutfitDTO fullOutfit = null;
+        saveScanHistory(
+                product,
+                vibe,
+                userId,
+                tenantId,
+                storeId,
+                userEmail,
+                retailerKey,
+                storeCode
+        );
 
-        try {
-            fullOutfit = aiStylistService.buildFullOutfit(scanResult);
-            scanResult.setFullOutfit(fullOutfit);
-        } catch (RuntimeException e) {
-            scanResult.setFullOutfit(null);
-        }
-
-        List<RecommendationItemDTO> filteredSuggestions;
-
-        try {
-            filteredSuggestions = generateAlternativeSuggestions(product, vibe, fullOutfit, 0);
-
-            if (filteredSuggestions.isEmpty()) {
-                filteredSuggestions = removeItemsAlreadyInFullOutfit(suggestions, fullOutfit);
-            }
-        } catch (RuntimeException e) {
-            filteredSuggestions = suggestions;
-        }
-
-        scanResult.setSuggestions(filteredSuggestions);
-
-        return scanResult;
+        return buildScanResultFromProduct(product, vibe, preferences);
     }
 
     public String saveToBag(String rfid) {
@@ -195,19 +197,47 @@ public class InventoryService {
         String safeTenantId = safe(tenantId);
         String safeStoreId = safe(storeId);
         String safeUserEmail = safe(userEmail);
-        String safeRetailerKey = safe(retailerKey);
-        String safeStoreCode = safe(storeCode);
-        String productRfid = safe(product.getRfid());
 
-        boolean alreadySaved = bagItemRepository.findAll().stream()
-                .filter(item -> matchesBagScope(item, safeUserId, safeTenantId, safeStoreCode))
-                .anyMatch(item -> safe(item.getRfid()).equalsIgnoreCase(productRfid));
+        String safeRetailerKey = safe(retailerKey).isBlank()
+                ? safe(product.getRetailerKey()).toUpperCase()
+                : safe(retailerKey).toUpperCase();
+
+        String safeStoreCode = safe(storeCode).isBlank()
+                ? safe(product.getStoreCode()).toUpperCase()
+                : safe(storeCode).toUpperCase();
+
+        String productRfid = normalizeRequired(product.getRfid(), "Product RFID is required.");
+
+        boolean alreadySaved;
+
+        if (!safeUserId.isBlank()) {
+            alreadySaved = bagItemRepository.findByUserIdAndRetailerKeyAndStoreCodeAndRfidIgnoreCase(
+                    safeUserId,
+                    safeRetailerKey,
+                    safeStoreCode,
+                    productRfid
+            ).isPresent();
+        } else if (!safeTenantId.isBlank()) {
+            alreadySaved = bagItemRepository.findByTenantIdAndRetailerKeyAndStoreCodeAndRfidIgnoreCase(
+                    safeTenantId,
+                    safeRetailerKey,
+                    safeStoreCode,
+                    productRfid
+            ).isPresent();
+        } else {
+            alreadySaved = bagItemRepository.findByRetailerKeyAndStoreCodeAndRfidIgnoreCase(
+                    safeRetailerKey,
+                    safeStoreCode,
+                    productRfid
+            ).isPresent();
+        }
 
         if (alreadySaved) {
             return safe(product.getItemName()) + " is already in your style bag.";
         }
 
         BagItem item = new BagItem();
+
         item.setRfid(product.getRfid());
         item.setRetailerName(product.getRetailerName());
         item.setItemName(product.getItemName());
@@ -219,9 +249,11 @@ public class InventoryService {
         item.setTenantId(safeTenantId);
         item.setStoreId(safeStoreId);
         item.setUserEmail(safeUserEmail);
-        item.setRetailerKey(safeRetailerKey.isBlank() ? safe(product.getRetailerKey()) : safeRetailerKey);
-        item.setStoreCode(safeStoreCode.isBlank() ? safe(product.getStoreCode()) : safeStoreCode);
+        item.setRetailerKey(safeRetailerKey);
+        item.setStoreCode(safeStoreCode);
         item.setStoreName(safe(product.getStoreName()));
+        item.setQuantity(1);
+        item.setSource("SCAN");
 
         bagItemRepository.save(item);
         saveTrendEvent("SAVE", product);
@@ -230,13 +262,27 @@ public class InventoryService {
     }
 
     public LookResponseDTO createFullLook(String rfid, String vibe) {
-        return createFullLook(null, null, rfid, vibe);
+        return createFullLook(null, null, rfid, vibe, null);
     }
 
     public LookResponseDTO createFullLook(String retailerKey, String storeCode, String rfid, String vibe) {
+        return createFullLook(retailerKey, storeCode, rfid, vibe, null);
+    }
+
+    public LookResponseDTO createFullLook(
+            String retailerKey,
+            String storeCode,
+            String rfid,
+            String vibe,
+            CustomerPreferenceRequest preferences
+    ) {
         Product scannedProduct = loadScannedProductForContext(retailerKey, storeCode, rfid);
 
-        List<RecommendationItemDTO> suggestions = generateSmartSuggestions(scannedProduct, vibe);
+        List<RecommendationItemDTO> suggestions = generateSmartSuggestions(scannedProduct, vibe, preferences);
+
+        if (suggestions.isEmpty() && preferences != null) {
+            suggestions = generateSmartSuggestions(scannedProduct, vibe, null);
+        }
 
         if (suggestions.isEmpty()) {
             throw new RuntimeException("No full look recommendations found for RFID: " + rfid);
@@ -253,7 +299,8 @@ public class InventoryService {
                 scannedProduct,
                 vibe,
                 fullOutfit,
-                0
+                0,
+                preferences
         );
 
         if (filteredSuggestions.isEmpty()) {
@@ -265,14 +312,39 @@ public class InventoryService {
         response.setFullOutfit(fullOutfit);
         response.setVariation(0);
 
+        enrichLookResponseWithStylingNotes(
+                response,
+                scannedProduct,
+                vibe,
+                fullOutfit,
+                preferences
+        );
+
         return response;
     }
 
     public LookResponseDTO generateAgain(String rfid, String vibe, Integer variation) {
-        return generateAgain(null, null, rfid, vibe, variation);
+        return generateAgain(null, null, rfid, vibe, variation, null);
     }
 
-    public LookResponseDTO generateAgain(String retailerKey, String storeCode, String rfid, String vibe, Integer variation) {
+    public LookResponseDTO generateAgain(
+            String retailerKey,
+            String storeCode,
+            String rfid,
+            String vibe,
+            Integer variation
+    ) {
+        return generateAgain(retailerKey, storeCode, rfid, vibe, variation, null);
+    }
+
+    public LookResponseDTO generateAgain(
+            String retailerKey,
+            String storeCode,
+            String rfid,
+            String vibe,
+            Integer variation,
+            CustomerPreferenceRequest preferences
+    ) {
         Product scannedProduct = loadScannedProductForContext(retailerKey, storeCode, rfid);
 
         int safeVariation = variation == null ? 1 : Math.max(1, variation);
@@ -280,7 +352,8 @@ public class InventoryService {
         List<RecommendationItemDTO> suggestions = generateSmartSuggestionsForVariation(
                 scannedProduct,
                 vibe,
-                safeVariation
+                safeVariation,
+                preferences
         );
 
         if (suggestions.isEmpty()) {
@@ -298,7 +371,8 @@ public class InventoryService {
                 scannedProduct,
                 vibe,
                 fullOutfit,
-                safeVariation
+                safeVariation,
+                preferences
         );
 
         if (filteredSuggestions.isEmpty()) {
@@ -309,6 +383,14 @@ public class InventoryService {
         response.setSuggestions(filteredSuggestions);
         response.setFullOutfit(fullOutfit);
         response.setVariation(safeVariation);
+
+        enrichLookResponseWithStylingNotes(
+                response,
+                scannedProduct,
+                vibe,
+                fullOutfit,
+                preferences
+        );
 
         return response;
     }
@@ -331,7 +413,8 @@ public class InventoryService {
                 currentTopRfid,
                 currentBottomRfid,
                 currentShoesRfid,
-                currentOuterwearRfid
+                currentOuterwearRfid,
+                null
         );
     }
 
@@ -346,6 +429,32 @@ public class InventoryService {
             String currentShoesRfid,
             String currentOuterwearRfid
     ) {
+        return swapLookItem(
+                retailerKey,
+                storeCode,
+                rfid,
+                vibe,
+                swapCategory,
+                currentTopRfid,
+                currentBottomRfid,
+                currentShoesRfid,
+                currentOuterwearRfid,
+                null
+        );
+    }
+
+    public LookResponseDTO swapLookItem(
+            String retailerKey,
+            String storeCode,
+            String rfid,
+            String vibe,
+            String swapCategory,
+            String currentTopRfid,
+            String currentBottomRfid,
+            String currentShoesRfid,
+            String currentOuterwearRfid,
+            CustomerPreferenceRequest preferences
+    ) {
         Product scannedProduct = loadScannedProductForContext(retailerKey, storeCode, rfid);
 
         String normalizedSwapCategory = normalizeSwapCategory(swapCategory);
@@ -357,17 +466,28 @@ public class InventoryService {
 
         Map<String, Product> currentLook = new LinkedHashMap<>();
 
-        Product currentTop = findProductIfValidForContext(currentTopRfid, "tops", rfid, scannedProduct);
-        Product currentBottom = findProductIfValidForContext(currentBottomRfid, "bottoms", rfid, scannedProduct);
-        Product currentShoes = findProductIfValidForContext(currentShoesRfid, "shoes", rfid, scannedProduct);
-        Product currentOuterwear = findProductIfValidForContext(currentOuterwearRfid, "outerwear", rfid, scannedProduct);
+        Product currentTop = findProductIfValidForContext(currentTopRfid, "tops", rfid, scannedProduct, preferences);
+        Product currentBottom = findProductIfValidForContext(currentBottomRfid, "bottoms", rfid, scannedProduct, preferences);
+        Product currentShoes = findProductIfValidForContext(currentShoesRfid, "shoes", rfid, scannedProduct, preferences);
+        Product currentOuterwear = findProductIfValidForContext(currentOuterwearRfid, "outerwear", rfid, scannedProduct, preferences);
 
-        if (currentTop != null) currentLook.put("tops", currentTop);
-        if (currentBottom != null) currentLook.put("bottoms", currentBottom);
-        if (currentShoes != null) currentLook.put("shoes", currentShoes);
-        if (currentOuterwear != null) currentLook.put("outerwear", currentOuterwear);
+        if (currentTop != null) {
+            currentLook.put("tops", currentTop);
+        }
 
-        List<Product> baseSuggestions = generateSmartSuggestionProducts(scannedProduct, vibe);
+        if (currentBottom != null) {
+            currentLook.put("bottoms", currentBottom);
+        }
+
+        if (currentShoes != null) {
+            currentLook.put("shoes", currentShoes);
+        }
+
+        if (currentOuterwear != null) {
+            currentLook.put("outerwear", currentOuterwear);
+        }
+
+        List<Product> baseSuggestions = generateSmartSuggestionProducts(scannedProduct, vibe, preferences);
 
         for (Product product : baseSuggestions) {
             String category = normalizeCategory(product.getCategory());
@@ -388,7 +508,8 @@ public class InventoryService {
                 scannedProduct,
                 vibe,
                 normalizedSwapCategory,
-                excludedRfids
+                excludedRfids,
+                preferences
         );
 
         if (replacement == null) {
@@ -410,7 +531,7 @@ public class InventoryService {
             }
 
             if (!currentLook.containsKey(category)) {
-                Product fallback = findBestCandidateForCategory(scannedProduct, vibe, category, excludedRfids);
+                Product fallback = findBestCandidateForCategory(scannedProduct, vibe, category, excludedRfids, preferences);
 
                 if (fallback != null) {
                     currentLook.put(category, fallback);
@@ -425,7 +546,7 @@ public class InventoryService {
             Product product = currentLook.get(category);
 
             if (product != null && targetCategories.contains(category)) {
-                currentLookItems.add(toRecommendationDto(scannedProduct, product, vibe));
+                currentLookItems.add(toRecommendationDto(scannedProduct, product, vibe, preferences));
             }
         }
 
@@ -450,7 +571,8 @@ public class InventoryService {
                 scannedProduct,
                 vibe,
                 fullOutfit,
-                normalizedSwapCategory
+                normalizedSwapCategory,
+                preferences
         );
 
         if (filteredSuggestions.isEmpty()) {
@@ -462,6 +584,14 @@ public class InventoryService {
         response.setFullOutfit(fullOutfit);
         response.setVariation(0);
 
+        enrichLookResponseWithStylingNotes(
+                response,
+                scannedProduct,
+                vibe,
+                fullOutfit,
+                preferences
+        );
+
         return response;
     }
 
@@ -469,23 +599,167 @@ public class InventoryService {
         return buildBagSummary(bagItemRepository.findAll());
     }
 
-    public BagSummaryResponse getBagSummary(String userId, String tenantId, String storeCode) {
-        List<BagItem> scopedItems = bagItemRepository.findAll().stream()
-                .filter(item -> matchesBagScope(item, userId, tenantId, storeCode))
-                .collect(Collectors.toList());
+    public BagSummaryResponse getBagSummary(
+            String userId,
+            String tenantId,
+            String retailerKey,
+            String storeCode
+    ) {
+        List<BagItem> scopedItems = loadScopedBagItems(
+                userId,
+                tenantId,
+                retailerKey,
+                storeCode
+        );
 
         return buildBagSummary(scopedItems);
     }
 
+    public BagSummaryResponse updateBagItemQuantity(
+            Long bagItemId,
+            Integer quantity,
+            String userId,
+            String tenantId,
+            String retailerKey,
+            String storeCode
+    ) {
+        if (bagItemId == null) {
+            throw new IllegalArgumentException("Bag item id is required.");
+        }
+
+        if (quantity == null) {
+            throw new IllegalArgumentException("Quantity is required.");
+        }
+
+        if (quantity < 1) {
+            throw new IllegalArgumentException("Quantity must be at least 1.");
+        }
+
+        String safeRetailerKey = normalizeRequired(retailerKey, "Retailer key is required.").toUpperCase();
+        String safeStoreCode = normalizeRequired(storeCode, "Store code is required.").toUpperCase();
+        String safeUserId = safe(userId);
+        String safeTenantId = safe(tenantId);
+
+        BagItem item;
+
+        if (!safeUserId.isBlank()) {
+            item = bagItemRepository.findByIdAndUserIdAndRetailerKeyAndStoreCode(
+                    bagItemId,
+                    safeUserId,
+                    safeRetailerKey,
+                    safeStoreCode
+            ).orElseThrow(() -> new SecurityException("You do not have permission to update this bag item."));
+        } else if (!safeTenantId.isBlank()) {
+            item = bagItemRepository.findByIdAndTenantIdAndRetailerKeyAndStoreCode(
+                    bagItemId,
+                    safeTenantId,
+                    safeRetailerKey,
+                    safeStoreCode
+            ).orElseThrow(() -> new SecurityException("You do not have permission to update this bag item."));
+        } else {
+            item = bagItemRepository.findByIdAndRetailerKeyAndStoreCode(
+                    bagItemId,
+                    safeRetailerKey,
+                    safeStoreCode
+            ).orElseThrow(() -> new SecurityException("You do not have permission to update this bag item."));
+        }
+
+        item.setQuantity(quantity);
+        bagItemRepository.save(item);
+
+        return getBagSummary(
+                safeUserId,
+                safeTenantId,
+                safeRetailerKey,
+                safeStoreCode
+        );
+    }
+
+    public int removeUnavailableBagItems(
+            String userId,
+            String tenantId,
+            String retailerKey,
+            String storeCode
+    ) {
+        String safeRetailerKey = normalizeRequired(retailerKey, "Retailer key is required.").toUpperCase();
+        String safeStoreCode = normalizeRequired(storeCode, "Store code is required.").toUpperCase();
+        String safeUserId = safe(userId);
+        String safeTenantId = safe(tenantId);
+
+        List<BagItem> scopedItems = loadScopedBagItems(
+                safeUserId,
+                safeTenantId,
+                safeRetailerKey,
+                safeStoreCode
+        );
+
+        if (scopedItems.isEmpty()) {
+            return 0;
+        }
+
+        List<BagItem> unavailableItems = scopedItems.stream()
+                .filter(bagItem -> {
+                    String rfid = safe(bagItem.getRfid());
+
+                    if (rfid.isBlank()) {
+                        return true;
+                    }
+
+                    Product product = productRepository.findById(rfid).orElse(null);
+
+                    if (product == null) {
+                        return true;
+                    }
+
+                    if (!matchesRetailerSelection(product, safeRetailerKey)) {
+                        return true;
+                    }
+
+                    if (!matchesStoreSelection(product, safeStoreCode)) {
+                        return true;
+                    }
+
+                    if (!isProductAvailableForStyling(product)) {
+                        return true;
+                    }
+
+                    int requestedQuantity = bagItem.getQuantity() == null
+                            ? 1
+                            : Math.max(1, bagItem.getQuantity());
+
+                    int stockQuantity = product.getStockQuantity() == null
+                            ? 0
+                            : product.getStockQuantity();
+
+                    return stockQuantity < requestedQuantity;
+                })
+                .toList();
+
+        if (unavailableItems.isEmpty()) {
+            return 0;
+        }
+
+        bagItemRepository.deleteAll(unavailableItems);
+
+        return unavailableItems.size();
+    }
+
     private BagSummaryResponse buildBagSummary(List<BagItem> items) {
-        double subtotal = items.stream()
-                .mapToDouble(BagItem::getPrice)
+
+        List<BagItem> safeItems = items == null ? List.of() : items;
+
+        double subtotal = safeItems.stream()
+                .mapToDouble(item -> {
+                    double price = item.getPrice() == null ? 0.0 : item.getPrice();
+                    int quantity = item.getQuantity() == null ? 1 : Math.max(1, item.getQuantity());
+                    return price * quantity;
+                })
                 .sum();
 
         double tax = subtotal * 0.0825;
         double total = subtotal + tax;
 
-        return new BagSummaryResponse(items, subtotal, tax, total);
+        return new BagSummaryResponse(safeItems, subtotal, tax, total);
     }
 
     public String removeBagItem(Long id) {
@@ -501,19 +775,47 @@ public class InventoryService {
         return "Item removed from bag.";
     }
 
-    public String removeBagItem(Long id, String userId, String tenantId, String storeCode) {
+    public String removeBagItem(
+            Long id,
+            String userId,
+            String tenantId,
+            String retailerKey,
+            String storeCode
+    ) {
         if (id == null) {
             throw new IllegalArgumentException("Bag item id is required.");
         }
 
-        BagItem item = bagItemRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Bag item not found: " + id));
+        String safeRetailerKey = normalizeRequired(retailerKey, "Retailer key is required.").toUpperCase();
+        String safeStoreCode = normalizeRequired(storeCode, "Store code is required.").toUpperCase();
+        String safeUserId = safe(userId);
+        String safeTenantId = safe(tenantId);
 
-        if (!matchesBagScope(item, userId, tenantId, storeCode)) {
-            throw new SecurityException("You do not have permission to remove this bag item.");
+        BagItem item;
+
+        if (!safeUserId.isBlank()) {
+            item = bagItemRepository.findByIdAndUserIdAndRetailerKeyAndStoreCode(
+                    id,
+                    safeUserId,
+                    safeRetailerKey,
+                    safeStoreCode
+            ).orElseThrow(() -> new SecurityException("You do not have permission to remove this bag item."));
+        } else if (!safeTenantId.isBlank()) {
+            item = bagItemRepository.findByIdAndTenantIdAndRetailerKeyAndStoreCode(
+                    id,
+                    safeTenantId,
+                    safeRetailerKey,
+                    safeStoreCode
+            ).orElseThrow(() -> new SecurityException("You do not have permission to remove this bag item."));
+        } else {
+            item = bagItemRepository.findByIdAndRetailerKeyAndStoreCode(
+                    id,
+                    safeRetailerKey,
+                    safeStoreCode
+            ).orElseThrow(() -> new SecurityException("You do not have permission to remove this bag item."));
         }
 
-        bagItemRepository.deleteById(id);
+        bagItemRepository.delete(item);
         return "Item removed from bag.";
     }
 
@@ -522,13 +824,152 @@ public class InventoryService {
         return "Bag cleared.";
     }
 
-    public String clearBag(String userId, String tenantId, String storeCode) {
-        List<BagItem> scopedItems = bagItemRepository.findAll().stream()
-                .filter(item -> matchesBagScope(item, userId, tenantId, storeCode))
-                .collect(Collectors.toList());
+    public String clearBag(
+            String userId,
+            String tenantId,
+            String retailerKey,
+            String storeCode
+    ) {
+        String safeRetailerKey = normalizeRequired(retailerKey, "Retailer key is required.").toUpperCase();
+        String safeStoreCode = normalizeRequired(storeCode, "Store code is required.").toUpperCase();
+        String safeUserId = safe(userId);
+        String safeTenantId = safe(tenantId);
 
-        bagItemRepository.deleteAll(scopedItems);
+        if (!safeUserId.isBlank()) {
+            bagItemRepository.deleteByUserIdAndRetailerKeyAndStoreCode(
+                    safeUserId,
+                    safeRetailerKey,
+                    safeStoreCode
+            );
+
+            return "Bag cleared.";
+        }
+
+        if (!safeTenantId.isBlank()) {
+            bagItemRepository.deleteByTenantIdAndRetailerKeyAndStoreCode(
+                    safeTenantId,
+                    safeRetailerKey,
+                    safeStoreCode
+            );
+
+            return "Bag cleared.";
+        }
+
+        bagItemRepository.deleteByRetailerKeyAndStoreCode(
+                safeRetailerKey,
+                safeStoreCode
+        );
+
         return "Bag cleared.";
+    }
+
+    public List<ScanHistoryDTO> getScanHistory(
+            String userId,
+            String tenantId,
+            String retailerKey,
+            String storeCode
+    ) {
+        String safeRetailerKey = normalizeRequired(retailerKey, "Retailer key is required.").toUpperCase();
+        String safeStoreCode = normalizeRequired(storeCode, "Store code is required.").toUpperCase();
+        String safeUserId = safe(userId);
+        String safeTenantId = safe(tenantId);
+
+        List<ScanHistory> history;
+
+        if (!safeUserId.isBlank()) {
+            history = scanHistoryRepository.findTop30ByUserIdAndRetailerKeyAndStoreCodeOrderByCreatedAtDesc(
+                    safeUserId,
+                    safeRetailerKey,
+                    safeStoreCode
+            );
+        } else if (!safeTenantId.isBlank()) {
+            history = scanHistoryRepository.findTop30ByTenantIdAndRetailerKeyAndStoreCodeOrderByCreatedAtDesc(
+                    safeTenantId,
+                    safeRetailerKey,
+                    safeStoreCode
+            );
+        } else {
+            history = scanHistoryRepository.findTop30ByRetailerKeyAndStoreCodeOrderByCreatedAtDesc(
+                    safeRetailerKey,
+                    safeStoreCode
+            );
+        }
+
+        return history.stream()
+                .map(ScanHistoryDTO::fromEntity)
+                .collect(Collectors.toList());
+    }
+
+    public String clearScanHistory(
+            String userId,
+            String tenantId,
+            String retailerKey,
+            String storeCode
+    ) {
+        String safeRetailerKey = normalizeRequired(retailerKey, "Retailer key is required.").toUpperCase();
+        String safeStoreCode = normalizeRequired(storeCode, "Store code is required.").toUpperCase();
+        String safeUserId = safe(userId);
+        String safeTenantId = safe(tenantId);
+
+        if (!safeUserId.isBlank()) {
+            scanHistoryRepository.deleteByUserIdAndRetailerKeyAndStoreCode(
+                    safeUserId,
+                    safeRetailerKey,
+                    safeStoreCode
+            );
+
+            return "Scan history cleared.";
+        }
+
+        if (!safeTenantId.isBlank()) {
+            scanHistoryRepository.deleteByTenantIdAndRetailerKeyAndStoreCode(
+                    safeTenantId,
+                    safeRetailerKey,
+                    safeStoreCode
+            );
+
+            return "Scan history cleared.";
+        }
+
+        scanHistoryRepository.deleteByRetailerKeyAndStoreCode(
+                safeRetailerKey,
+                safeStoreCode
+        );
+
+        return "Scan history cleared.";
+    }
+
+    private List<BagItem> loadScopedBagItems(
+            String userId,
+            String tenantId,
+            String retailerKey,
+            String storeCode
+    ) {
+        String safeRetailerKey = normalizeRequired(retailerKey, "Retailer key is required.").toUpperCase();
+        String safeStoreCode = normalizeRequired(storeCode, "Store code is required.").toUpperCase();
+        String safeUserId = safe(userId);
+        String safeTenantId = safe(tenantId);
+
+        if (!safeUserId.isBlank()) {
+            return bagItemRepository.findByUserIdAndRetailerKeyAndStoreCode(
+                    safeUserId,
+                    safeRetailerKey,
+                    safeStoreCode
+            );
+        }
+
+        if (!safeTenantId.isBlank()) {
+            return bagItemRepository.findByTenantIdAndRetailerKeyAndStoreCode(
+                    safeTenantId,
+                    safeRetailerKey,
+                    safeStoreCode
+            );
+        }
+
+        return bagItemRepository.findByRetailerKeyAndStoreCode(
+                safeRetailerKey,
+                safeStoreCode
+        );
     }
 
     public List<TrendDTO> getTrends() {
@@ -536,12 +977,12 @@ public class InventoryService {
     }
 
     public List<TrendDTO> getTrends(String retailerKey, String storeCode) {
-        Map<String, Long> grouped = trendEventRepository.findAll().stream()
-                .filter(event -> matchesTrendRetailer(event, retailerKey))
-                .filter(event -> matchesTrendStore(event, storeCode))
+        List<TrendEvent> events = loadTrendEventsForStore(retailerKey, storeCode, "SAVE");
+
+        Map<String, Long> grouped = events.stream()
                 .filter(event -> "SAVE".equalsIgnoreCase(event.getEventType()))
                 .collect(Collectors.groupingBy(
-                        e -> safe(e.getRetailerName()) + "||" + safe(e.getItemName()),
+                        event -> safe(event.getRetailerName()) + "||" + safe(event.getItemName()),
                         Collectors.counting()
                 ));
 
@@ -652,22 +1093,20 @@ public class InventoryService {
 
         return safe(fallbackStoreCode);
     }
+
     public AnalyticsSummaryDTO getAnalyticsSummary() {
         return getAnalyticsSummary(null, null);
     }
 
     public AnalyticsSummaryDTO getAnalyticsSummary(String retailerKey, String storeCode) {
-        List<TrendEvent> events = trendEventRepository.findAll().stream()
-                .filter(event -> matchesTrendRetailer(event, retailerKey))
-                .filter(event -> matchesTrendStore(event, storeCode))
-                .collect(Collectors.toList());
+        List<TrendEvent> events = loadTrendEventsForStore(retailerKey, storeCode, "ALL");
 
         long totalScans = events.stream()
-                .filter(e -> "SCAN".equalsIgnoreCase(e.getEventType()))
+                .filter(event -> "SCAN".equalsIgnoreCase(event.getEventType()))
                 .count();
 
         long totalSaves = events.stream()
-                .filter(e -> "SAVE".equalsIgnoreCase(e.getEventType()))
+                .filter(event -> "SAVE".equalsIgnoreCase(event.getEventType()))
                 .count();
 
         double conversionRate = totalScans == 0
@@ -675,26 +1114,38 @@ public class InventoryService {
                 : ((double) totalSaves / totalScans) * 100.0;
 
         String topRetailer = events.stream()
-                .collect(Collectors.groupingBy(e -> safe(e.getRetailerName()), Collectors.counting()))
-                .entrySet().stream()
+                .collect(Collectors.groupingBy(
+                        event -> safe(event.getRetailerName()),
+                        Collectors.counting()
+                ))
+                .entrySet()
+                .stream()
                 .filter(entry -> !entry.getKey().isBlank())
                 .max(Map.Entry.comparingByValue())
                 .map(Map.Entry::getKey)
                 .orElse("N/A");
 
         String topScannedItem = events.stream()
-                .filter(e -> "SCAN".equalsIgnoreCase(e.getEventType()))
-                .collect(Collectors.groupingBy(e -> safe(e.getItemName()), Collectors.counting()))
-                .entrySet().stream()
+                .filter(event -> "SCAN".equalsIgnoreCase(event.getEventType()))
+                .collect(Collectors.groupingBy(
+                        event -> safe(event.getItemName()),
+                        Collectors.counting()
+                ))
+                .entrySet()
+                .stream()
                 .filter(entry -> !entry.getKey().isBlank())
                 .max(Map.Entry.comparingByValue())
                 .map(Map.Entry::getKey)
                 .orElse("N/A");
 
         String topSavedItem = events.stream()
-                .filter(e -> "SAVE".equalsIgnoreCase(e.getEventType()))
-                .collect(Collectors.groupingBy(e -> safe(e.getItemName()), Collectors.counting()))
-                .entrySet().stream()
+                .filter(event -> "SAVE".equalsIgnoreCase(event.getEventType()))
+                .collect(Collectors.groupingBy(
+                        event -> safe(event.getItemName()),
+                        Collectors.counting()
+                ))
+                .entrySet()
+                .stream()
                 .filter(entry -> !entry.getKey().isBlank())
                 .max(Map.Entry.comparingByValue())
                 .map(Map.Entry::getKey)
@@ -712,16 +1163,38 @@ public class InventoryService {
 
     public List<ActivityDTO> getRecentActivity(String eventType, String retailerKey, String storeCode) {
         String safeEventType = safe(eventType);
+        List<TrendEvent> events;
 
-        return trendEventRepository.findAll().stream()
-                .filter(event -> matchesTrendRetailer(event, retailerKey))
-                .filter(event -> matchesTrendStore(event, storeCode))
-                .sorted(Comparator.comparing(
-                        TrendEvent::getCreatedAt,
-                        Comparator.nullsLast(Comparator.naturalOrder())
-                ).reversed())
-                .filter(e -> "ALL".equalsIgnoreCase(safeEventType)
-                        || safe(e.getEventType()).equalsIgnoreCase(safeEventType))
+        boolean hasStoreScope = !safe(retailerKey).isBlank()
+                && !safe(storeCode).isBlank()
+                && !"ALL".equalsIgnoreCase(retailerKey)
+                && !"ALL".equalsIgnoreCase(storeCode);
+
+        if (hasStoreScope && !"ALL".equalsIgnoreCase(safeEventType) && !safeEventType.isBlank()) {
+            events = trendEventRepository.findTop20ByRetailerKeyIgnoreCaseAndStoreCodeIgnoreCaseAndEventTypeIgnoreCaseOrderByCreatedAtDesc(
+                    safe(retailerKey).toUpperCase(),
+                    safe(storeCode).toUpperCase(),
+                    safeEventType
+            );
+        } else if (hasStoreScope) {
+            events = trendEventRepository.findTop20ByRetailerKeyIgnoreCaseAndStoreCodeIgnoreCaseOrderByCreatedAtDesc(
+                    safe(retailerKey).toUpperCase(),
+                    safe(storeCode).toUpperCase()
+            );
+        } else {
+            events = trendEventRepository.findAll().stream()
+                    .sorted(Comparator.comparing(
+                            TrendEvent::getCreatedAt,
+                            Comparator.nullsLast(Comparator.naturalOrder())
+                    ).reversed())
+                    .limit(20)
+                    .collect(Collectors.toList());
+        }
+
+        return events.stream()
+                .filter(event -> "ALL".equalsIgnoreCase(safeEventType)
+                        || safeEventType.isBlank()
+                        || safe(event.getEventType()).equalsIgnoreCase(safeEventType))
                 .limit(20)
                 .map(event -> new ActivityDTO(
                         safe(event.getEventType()),
@@ -738,18 +1211,21 @@ public class InventoryService {
     }
 
     public List<RetailerStatsDTO> getRetailerStats(String retailerKey, String storeCode) {
-        List<TrendEvent> events = trendEventRepository.findAll().stream()
-                .filter(event -> matchesTrendRetailer(event, retailerKey))
-                .filter(event -> matchesTrendStore(event, storeCode))
-                .collect(Collectors.toList());
+        List<TrendEvent> events = loadTrendEventsForStore(retailerKey, storeCode, "ALL");
 
         Map<String, Long> scansByRetailer = events.stream()
-                .filter(e -> "SCAN".equalsIgnoreCase(e.getEventType()))
-                .collect(Collectors.groupingBy(e -> safe(e.getRetailerName()), Collectors.counting()));
+                .filter(event -> "SCAN".equalsIgnoreCase(event.getEventType()))
+                .collect(Collectors.groupingBy(
+                        event -> safe(event.getRetailerName()),
+                        Collectors.counting()
+                ));
 
         Map<String, Long> savesByRetailer = events.stream()
-                .filter(e -> "SAVE".equalsIgnoreCase(e.getEventType()))
-                .collect(Collectors.groupingBy(e -> safe(e.getRetailerName()), Collectors.counting()));
+                .filter(event -> "SAVE".equalsIgnoreCase(event.getEventType()))
+                .collect(Collectors.groupingBy(
+                        event -> safe(event.getRetailerName()),
+                        Collectors.counting()
+                ));
 
         Set<String> retailers = new HashSet<>();
         retailers.addAll(scansByRetailer.keySet());
@@ -765,7 +1241,12 @@ public class InventoryService {
                             ? 0.0
                             : ((double) saves / scans) * 100.0;
 
-                    return new RetailerStatsDTO(retailerName, scans, saves, conversion);
+                    return new RetailerStatsDTO(
+                            retailerName,
+                            scans,
+                            saves,
+                            conversion
+                    );
                 })
                 .sorted(Comparator.comparingLong(RetailerStatsDTO::getScans).reversed())
                 .collect(Collectors.toList());
@@ -820,6 +1301,57 @@ public class InventoryService {
 
         int stockQuantity = product.getStockQuantity() == null ? 0 : product.getStockQuantity();
         product.setAvailable(Boolean.TRUE.equals(active) && stockQuantity > 0);
+
+        Product saved = productRepository.save(product);
+        return toMerchantInventoryItemDto(saved);
+    }
+
+
+    public MerchantInventoryItemDTO updateMerchantInventoryItem(
+            String rfid,
+            String retailerKey,
+            String storeCode,
+            MerchantInventoryItemDTO updateRequest
+    ) {
+        if (rfid == null || rfid.isBlank()) {
+            throw new IllegalArgumentException("RFID is required.");
+        }
+
+        if (updateRequest == null) {
+            throw new IllegalArgumentException("Inventory update request body is required.");
+        }
+
+        Product product = findMerchantInventoryProductForUpdate(rfid, retailerKey, storeCode);
+
+        product.setItemName(safe(updateRequest.getItemName()));
+        product.setBrand(safe(updateRequest.getBrand()));
+        product.setCategory(safe(updateRequest.getCategory()));
+        product.setColor(safe(updateRequest.getColor()));
+        product.setPrice(updateRequest.getPrice() == null ? 0.0 : Math.max(0.0, updateRequest.getPrice()));
+        product.setImageUrl(safe(updateRequest.getImageUrl()));
+
+        product.setSize(safe(updateRequest.getSize()));
+        product.setFit(safe(updateRequest.getFit()));
+        product.setMaterial(safe(updateRequest.getMaterial()));
+        product.setGender(safe(updateRequest.getGender()));
+        product.setSeason(safe(updateRequest.getSeason()));
+        product.setOccasion(safe(updateRequest.getOccasion()));
+        product.setStyleTags(safe(updateRequest.getStyleTags()));
+        product.setPattern(safe(updateRequest.getPattern()));
+
+        if (updateRequest.getStockQuantity() != null) {
+            int stockQuantity = Math.max(0, updateRequest.getStockQuantity());
+            product.setStockQuantity(stockQuantity);
+        }
+
+        if (updateRequest.getActive() != null) {
+            product.setActive(Boolean.TRUE.equals(updateRequest.getActive()));
+        }
+
+        int stockQuantity = product.getStockQuantity() == null ? 0 : product.getStockQuantity();
+        boolean active = Boolean.TRUE.equals(product.getActive());
+
+        product.setAvailable(active && stockQuantity > 0);
 
         Product saved = productRepository.save(product);
         return toMerchantInventoryItemDto(saved);
@@ -1116,6 +1648,14 @@ public class InventoryService {
         dto.setReorderThreshold(reorderThreshold);
         dto.setSuggestedReorderQuantity(suggestedReorderQuantity);
         dto.setInventoryAlert(inventoryAlert);
+        dto.setSize(safe(product.getSize()));
+        dto.setFit(safe(product.getFit()));
+        dto.setMaterial(safe(product.getMaterial()));
+        dto.setGender(safe(product.getGender()));
+        dto.setSeason(safe(product.getSeason()));
+        dto.setOccasion(safe(product.getOccasion()));
+        dto.setStyleTags(safe(product.getStyleTags()));
+        dto.setPattern(safe(product.getPattern()));
 
         return dto;
     }
@@ -1173,6 +1713,79 @@ public class InventoryService {
         return product;
     }
 
+    private ScanResultDTO buildScanResultFromProduct(
+            Product product,
+            String vibe,
+            CustomerPreferenceRequest preferences
+    ) {
+        String stylingAdvice;
+
+        try {
+            stylingAdvice = aiStylistService.generateAdvice(product, vibe);
+        } catch (RuntimeException e) {
+            stylingAdvice = "This item is a strong styling anchor and can be paired with complementary pieces for a polished look.";
+        }
+
+        String whyItWorks = generateWhyItWorks(product, vibe);
+
+        List<RecommendationItemDTO> suggestions;
+
+        try {
+            suggestions = generateSmartSuggestions(product, vibe, preferences);
+        } catch (RuntimeException e) {
+            suggestions = List.of();
+        }
+
+        ScanResultDTO scanResult = new ScanResultDTO();
+
+        scanResult.setRfid(safe(product.getRfid()));
+        scanResult.setName(safe(product.getItemName()));
+        scanResult.setBrand(safeBrand(product));
+        scanResult.setCategory(safe(product.getCategory()));
+        scanResult.setColor(safeColor(product));
+        scanResult.setRetailer(safe(product.getRetailerName()));
+        scanResult.setRetailerKey(safe(product.getRetailerKey()));
+        scanResult.setStoreCode(safe(product.getStoreCode()));
+        scanResult.setStoreName(safe(product.getStoreName()));
+        scanResult.setPrice(safePrice(product.getPrice()));
+        scanResult.setMatchScore(calculateMainMatchScore(product, vibe, preferences));
+        scanResult.setImageUrl(safeImage(product.getImageUrl()));
+        scanResult.setStylingAdvice(stylingAdvice);
+        scanResult.setWhyItWorks(whyItWorks);
+        scanResult.setSuggestions(suggestions);
+
+        FullOutfitDTO fullOutfit = null;
+
+        try {
+            fullOutfit = aiStylistService.buildFullOutfit(scanResult);
+            scanResult.setFullOutfit(fullOutfit);
+        } catch (RuntimeException e) {
+            scanResult.setFullOutfit(null);
+        }
+
+        List<RecommendationItemDTO> filteredSuggestions;
+
+        try {
+            filteredSuggestions = generateAlternativeSuggestions(
+                    product,
+                    vibe,
+                    fullOutfit,
+                    0,
+                    preferences
+            );
+
+            if (filteredSuggestions.isEmpty()) {
+                filteredSuggestions = removeItemsAlreadyInFullOutfit(suggestions, fullOutfit);
+            }
+        } catch (RuntimeException e) {
+            filteredSuggestions = suggestions;
+        }
+
+        scanResult.setSuggestions(filteredSuggestions);
+
+        return scanResult;
+    }
+
     private ScanResultDTO buildScanResultForLook(
             Product scannedProduct,
             String vibe,
@@ -1189,7 +1802,7 @@ public class InventoryService {
         scanResult.setStoreCode(safe(scannedProduct.getStoreCode()));
         scanResult.setStoreName(safe(scannedProduct.getStoreName()));
         scanResult.setPrice(safePrice(scannedProduct.getPrice()));
-        scanResult.setMatchScore(calculateMainMatchScore(scannedProduct, vibe));
+        scanResult.setMatchScore(calculateMainMatchScore(scannedProduct, vibe, null));
         scanResult.setImageUrl(safeImage(scannedProduct.getImageUrl()));
 
         try {
@@ -1205,6 +1818,14 @@ public class InventoryService {
     }
 
     private List<Product> findAvailableProductsForCategory(Product scannedProduct, String normalizedCategory) {
+        return findAvailableProductsForCategory(scannedProduct, normalizedCategory, null);
+    }
+
+    private List<Product> findAvailableProductsForCategory(
+            Product scannedProduct,
+            String normalizedCategory,
+            CustomerPreferenceRequest preferences
+    ) {
         String retailerKey = safe(scannedProduct.getRetailerKey());
         String storeCode = safe(scannedProduct.getStoreCode());
         String categoryValue = toStoredCategoryValue(normalizedCategory);
@@ -1241,6 +1862,7 @@ public class InventoryService {
                 .filter(this::isProductAvailableForStyling)
                 .filter(product -> matchesRetailerSelection(product, retailerKey))
                 .filter(product -> matchesStoreSelection(product, storeCode))
+                .filter(product -> matchesCustomerPreferences(product, preferences))
                 .collect(Collectors.toList());
     }
 
@@ -1248,10 +1870,18 @@ public class InventoryService {
             Product scannedProduct,
             Set<String> targetCategories
     ) {
+        return findAvailableProductsForTargetCategories(scannedProduct, targetCategories, null);
+    }
+
+    private List<Product> findAvailableProductsForTargetCategories(
+            Product scannedProduct,
+            Set<String> targetCategories,
+            CustomerPreferenceRequest preferences
+    ) {
         Map<String, Product> deduped = new LinkedHashMap<>();
 
         for (String category : targetCategories) {
-            List<Product> products = findAvailableProductsForCategory(scannedProduct, category);
+            List<Product> products = findAvailableProductsForCategory(scannedProduct, category, preferences);
 
             for (Product product : products) {
                 deduped.putIfAbsent(safe(product.getRfid()), product);
@@ -1272,8 +1902,16 @@ public class InventoryService {
     }
 
     private List<RecommendationItemDTO> generateSmartSuggestions(Product scannedProduct, String vibe) {
-        return generateSmartSuggestionProducts(scannedProduct, vibe).stream()
-                .map(candidate -> toRecommendationDto(scannedProduct, candidate, vibe))
+        return generateSmartSuggestions(scannedProduct, vibe, null);
+    }
+
+    private List<RecommendationItemDTO> generateSmartSuggestions(
+            Product scannedProduct,
+            String vibe,
+            CustomerPreferenceRequest preferences
+    ) {
+        return generateSmartSuggestionProducts(scannedProduct, vibe, preferences).stream()
+                .map(candidate -> toRecommendationDto(scannedProduct, candidate, vibe, preferences))
                 .collect(Collectors.toList());
     }
 
@@ -1282,13 +1920,22 @@ public class InventoryService {
             String vibe,
             int variation
     ) {
+        return generateSmartSuggestionsForVariation(scannedProduct, vibe, variation, null);
+    }
+
+    private List<RecommendationItemDTO> generateSmartSuggestionsForVariation(
+            Product scannedProduct,
+            String vibe,
+            int variation,
+            CustomerPreferenceRequest preferences
+    ) {
         Set<String> targetCategories = getTargetCategories(scannedProduct.getCategory(), vibe);
 
-        Map<String, List<Product>> groupedByCategory = findAvailableProductsForTargetCategories(scannedProduct, targetCategories).stream()
+        Map<String, List<Product>> groupedByCategory = findAvailableProductsForTargetCategories(scannedProduct, targetCategories, preferences).stream()
                 .filter(p -> !safe(p.getRfid()).equalsIgnoreCase(safe(scannedProduct.getRfid())))
                 .filter(p -> targetCategories.contains(normalizeCategory(p.getCategory())))
                 .sorted(Comparator
-                        .comparingInt((Product p) -> scoreSuggestion(scannedProduct, p, vibe))
+                        .comparingInt((Product p) -> scoreSuggestion(scannedProduct, p, vibe, preferences))
                         .reversed()
                         .thenComparing(p -> safe(p.getRetailerName()))
                         .thenComparing(p -> safe(p.getStoreName()))
@@ -1318,18 +1965,26 @@ public class InventoryService {
         }
 
         return selected.stream()
-                .map(candidate -> toRecommendationDto(scannedProduct, candidate, vibe))
+                .map(candidate -> toRecommendationDto(scannedProduct, candidate, vibe, preferences))
                 .collect(Collectors.toList());
     }
 
     private List<Product> generateSmartSuggestionProducts(Product scannedProduct, String vibe) {
+        return generateSmartSuggestionProducts(scannedProduct, vibe, null);
+    }
+
+    private List<Product> generateSmartSuggestionProducts(
+            Product scannedProduct,
+            String vibe,
+            CustomerPreferenceRequest preferences
+    ) {
         Set<String> targetCategories = getTargetCategories(scannedProduct.getCategory(), vibe);
 
-        return findAvailableProductsForTargetCategories(scannedProduct, targetCategories).stream()
+        return findAvailableProductsForTargetCategories(scannedProduct, targetCategories, preferences).stream()
                 .filter(p -> !safe(p.getRfid()).equalsIgnoreCase(safe(scannedProduct.getRfid())))
                 .filter(p -> targetCategories.contains(normalizeCategory(p.getCategory())))
                 .sorted(Comparator
-                        .comparingInt((Product p) -> scoreSuggestion(scannedProduct, p, vibe))
+                        .comparingInt((Product p) -> scoreSuggestion(scannedProduct, p, vibe, preferences))
                         .reversed()
                         .thenComparing(p -> safe(p.getRetailerName()))
                         .thenComparing(p -> safe(p.getStoreName()))
@@ -1352,14 +2007,24 @@ public class InventoryService {
             FullOutfitDTO fullOutfit,
             int variationOffset
     ) {
+        return generateAlternativeSuggestions(scannedProduct, vibe, fullOutfit, variationOffset, null);
+    }
+
+    private List<RecommendationItemDTO> generateAlternativeSuggestions(
+            Product scannedProduct,
+            String vibe,
+            FullOutfitDTO fullOutfit,
+            int variationOffset,
+            CustomerPreferenceRequest preferences
+    ) {
         Set<String> targetCategories = getTargetCategories(scannedProduct.getCategory(), vibe);
         Set<String> excludedRfids = collectUsedRfids(scannedProduct, fullOutfit);
 
-        Map<String, List<Product>> groupedByCategory = findAvailableProductsForTargetCategories(scannedProduct, targetCategories).stream()
+        Map<String, List<Product>> groupedByCategory = findAvailableProductsForTargetCategories(scannedProduct, targetCategories, preferences).stream()
                 .filter(p -> !excludedRfids.contains(safe(p.getRfid())))
                 .filter(p -> targetCategories.contains(normalizeCategory(p.getCategory())))
                 .sorted(Comparator
-                        .comparingInt((Product p) -> scoreSuggestion(scannedProduct, p, vibe))
+                        .comparingInt((Product p) -> scoreSuggestion(scannedProduct, p, vibe, preferences))
                         .reversed()
                         .thenComparing(p -> safe(p.getRetailerName()))
                         .thenComparing(p -> safe(p.getStoreName()))
@@ -1385,7 +2050,7 @@ public class InventoryService {
             }
 
             Product chosen = candidates.get(safeOffset % candidates.size());
-            alternatives.add(toRecommendationDto(scannedProduct, chosen, vibe));
+            alternatives.add(toRecommendationDto(scannedProduct, chosen, vibe, preferences));
         }
 
         return removeItemsAlreadyInFullOutfit(alternatives, fullOutfit);
@@ -1397,6 +2062,16 @@ public class InventoryService {
             FullOutfitDTO fullOutfit,
             String prioritizedCategory
     ) {
+        return generateSmartSwapSuggestions(scannedProduct, vibe, fullOutfit, prioritizedCategory, null);
+    }
+
+    private List<RecommendationItemDTO> generateSmartSwapSuggestions(
+            Product scannedProduct,
+            String vibe,
+            FullOutfitDTO fullOutfit,
+            String prioritizedCategory,
+            CustomerPreferenceRequest preferences
+    ) {
         Set<String> targetCategories = getTargetCategories(scannedProduct.getCategory(), vibe);
         Set<String> excludedRfids = collectUsedRfids(scannedProduct, fullOutfit);
 
@@ -1404,17 +2079,17 @@ public class InventoryService {
             return List.of();
         }
 
-        return findAvailableProductsForCategory(scannedProduct, prioritizedCategory).stream()
+        return findAvailableProductsForCategory(scannedProduct, prioritizedCategory, preferences).stream()
                 .filter(p -> !excludedRfids.contains(safe(p.getRfid())))
                 .filter(p -> normalizeCategory(p.getCategory()).equals(prioritizedCategory))
                 .sorted(Comparator
-                        .comparingInt((Product p) -> scoreSwapSuggestion(scannedProduct, p, vibe, prioritizedCategory))
+                        .comparingInt((Product p) -> scoreSwapSuggestion(scannedProduct, p, vibe, prioritizedCategory, preferences))
                         .reversed()
                         .thenComparing(p -> safe(p.getRetailerName()))
                         .thenComparing(p -> safe(p.getStoreName()))
                         .thenComparing(p -> safe(p.getItemName())))
                 .limit(3)
-                .map(candidate -> toRecommendationDto(scannedProduct, candidate, vibe))
+                .map(candidate -> toRecommendationDto(scannedProduct, candidate, vibe, preferences))
                 .collect(Collectors.toList());
     }
 
@@ -1424,7 +2099,17 @@ public class InventoryService {
             String vibe,
             String prioritizedCategory
     ) {
-        int score = scoreSuggestion(scannedProduct, candidate, vibe);
+        return scoreSwapSuggestion(scannedProduct, candidate, vibe, prioritizedCategory, null);
+    }
+
+    private int scoreSwapSuggestion(
+            Product scannedProduct,
+            Product candidate,
+            String vibe,
+            String prioritizedCategory,
+            CustomerPreferenceRequest preferences
+    ) {
+        int score = scoreSuggestion(scannedProduct, candidate, vibe, preferences);
         String candidateCategory = normalizeCategory(candidate.getCategory());
 
         if (candidateCategory.equals(prioritizedCategory)) {
@@ -1461,6 +2146,8 @@ public class InventoryService {
                 score += 4;
             }
         }
+
+        score += calculatePreferenceScoreBoost(candidate, preferences);
 
         return score;
     }
@@ -1521,12 +2208,22 @@ public class InventoryService {
             String targetCategory,
             Set<String> excludedRfids
     ) {
-        return findAvailableProductsForCategory(scannedProduct, targetCategory).stream()
+        return findBestCandidateForCategory(scannedProduct, vibe, targetCategory, excludedRfids, null);
+    }
+
+    private Product findBestCandidateForCategory(
+            Product scannedProduct,
+            String vibe,
+            String targetCategory,
+            Set<String> excludedRfids,
+            CustomerPreferenceRequest preferences
+    ) {
+        return findAvailableProductsForCategory(scannedProduct, targetCategory, preferences).stream()
                 .filter(p -> !safe(p.getRfid()).equalsIgnoreCase(safe(scannedProduct.getRfid())))
                 .filter(p -> normalizeCategory(p.getCategory()).equals(targetCategory))
                 .filter(p -> !excludedRfids.contains(safe(p.getRfid())))
                 .sorted(Comparator
-                        .comparingInt((Product p) -> scoreSuggestion(scannedProduct, p, vibe))
+                        .comparingInt((Product p) -> scoreSuggestion(scannedProduct, p, vibe, preferences))
                         .reversed()
                         .thenComparing(p -> safe(p.getRetailerName()))
                         .thenComparing(p -> safe(p.getStoreName()))
@@ -1540,6 +2237,16 @@ public class InventoryService {
             String expectedCategory,
             String scannedRfid,
             Product scannedProduct
+    ) {
+        return findProductIfValidForContext(rfid, expectedCategory, scannedRfid, scannedProduct, null);
+    }
+
+    private Product findProductIfValidForContext(
+            String rfid,
+            String expectedCategory,
+            String scannedRfid,
+            Product scannedProduct,
+            CustomerPreferenceRequest preferences
     ) {
         if (rfid == null || rfid.isBlank()) {
             return null;
@@ -1571,31 +2278,80 @@ public class InventoryService {
             return null;
         }
 
+        if (!matchesCustomerPreferences(product, preferences)) {
+            return null;
+        }
+
         return product;
     }
 
     private RecommendationItemDTO toRecommendationDto(Product scannedProduct, Product candidate, String vibe) {
-        int styleMatch = calculateStyleMatch(scannedProduct, candidate, vibe);
-        int colorMatch = calculateColorMatch(scannedProduct, candidate);
-        int occasionMatch = calculateOccasionMatch(candidate, vibe);
-        int overallMatch = clampScore((styleMatch + colorMatch + occasionMatch) / 3);
+        return toRecommendationDto(scannedProduct, candidate, vibe, null);
+    }
 
-        String reason = generateRecommendationReason(scannedProduct, candidate, vibe);
+    private RecommendationItemDTO toRecommendationDto(
+            Product scannedProduct,
+            Product candidate,
+            String vibe,
+            CustomerPreferenceRequest preferences
+    ) {
+        int styleMatch = calculateStyleMatch(scannedProduct, candidate, vibe);
+        int colorMatch = calculateColorMatch(scannedProduct, candidate, preferences);
+        int occasionMatch = calculateOccasionMatch(candidate, vibe);
+
+        int preferenceMatch = calculatePreferenceMatchScore(candidate, preferences);
+        int budgetMatch = calculateBudgetMatchScore(candidate, preferences);
+        int sizeMatch = calculateSizeMatchScore(candidate, preferences);
+        int fitMatch = calculateFitMatchScore(candidate, preferences);
+        int materialMatch = calculateMaterialMatchScore(candidate, preferences);
+
+        int overallMatch = clampScore(Math.round(
+                (styleMatch * 0.30f)
+                        + (colorMatch * 0.20f)
+                        + (occasionMatch * 0.20f)
+                        + (preferenceMatch * 0.30f)
+        ));
+
+        String reason = generateRecommendationReason(scannedProduct, candidate, vibe, preferences);
+        String preferenceNote = generatePreferenceMatchNote(candidate, preferences);
 
         RecommendationItemDTO dto = new RecommendationItemDTO();
+
         dto.setRfid(safe(candidate.getRfid()));
         dto.setName(safe(candidate.getItemName()));
         dto.setBrand(safeBrand(candidate));
         dto.setCategory(safe(candidate.getCategory()));
         dto.setColor(safeColor(candidate));
         dto.setRetailer(safe(candidate.getRetailerName()));
+        dto.setRetailerKey(safe(candidate.getRetailerKey()));
+        dto.setStoreCode(safe(candidate.getStoreCode()));
+        dto.setStoreName(safe(candidate.getStoreName()));
+
         dto.setPrice(safePrice(candidate.getPrice()));
+
         dto.setMatchScore(overallMatch);
         dto.setStyleMatch(styleMatch);
         dto.setColorMatch(colorMatch);
         dto.setOccasionMatch(occasionMatch);
+
+        dto.setPreferenceMatch(preferenceMatch);
+        dto.setBudgetMatch(budgetMatch);
+        dto.setSizeMatch(sizeMatch);
+        dto.setFitMatch(fitMatch);
+        dto.setMaterialMatch(materialMatch);
+
         dto.setReason(reason);
+        dto.setPreferenceNote(preferenceNote);
         dto.setImageUrl(safeImage(candidate.getImageUrl()));
+
+        dto.setSize(safe(candidate.getSize()));
+        dto.setFit(safe(candidate.getFit()));
+        dto.setMaterial(safe(candidate.getMaterial()));
+        dto.setGender(safe(candidate.getGender()));
+        dto.setSeason(safe(candidate.getSeason()));
+        dto.setOccasion(safe(candidate.getOccasion()));
+        dto.setStyleTags(safe(candidate.getStyleTags()));
+        dto.setPattern(safe(candidate.getPattern()));
 
         return dto;
     }
@@ -1653,22 +2409,43 @@ public class InventoryService {
     }
 
     private int calculateColorMatch(Product scannedProduct, Product candidate) {
+        return calculateColorMatch(scannedProduct, candidate, null);
+    }
+
+    private int calculateColorMatch(
+            Product scannedProduct,
+            Product candidate,
+            CustomerPreferenceRequest preferences
+    ) {
         String scannedColor = safeLower(safeColor(scannedProduct));
         String candidateColor = safeLower(safeColor(candidate));
 
+        int score;
+
         if (scannedColor.isBlank() || candidateColor.isBlank()) {
-            return 82;
+            score = 82;
+        } else if (scannedColor.equals(candidateColor)) {
+            score = 96;
+        } else if (isNeutral(scannedColor) || isNeutral(candidateColor)) {
+            score = 92;
+        } else {
+            score = 86;
         }
 
-        if (scannedColor.equals(candidateColor)) {
-            return 96;
+        if (preferences != null) {
+            String favoriteColors = safeLower(preferences.getFavoriteColors());
+            String avoidedColors = safeLower(preferences.getAvoidedColors());
+
+            if (!favoriteColors.isBlank() && containsPreferenceToken(favoriteColors, candidateColor)) {
+                score += 8;
+            }
+
+            if (!avoidedColors.isBlank() && containsPreferenceToken(avoidedColors, candidateColor)) {
+                score -= 18;
+            }
         }
 
-        if (isNeutral(scannedColor) || isNeutral(candidateColor)) {
-            return 92;
-        }
-
-        return 86;
+        return clampScore(score);
     }
 
     private int calculateOccasionMatch(Product candidate, String vibe) {
@@ -1698,13 +2475,55 @@ public class InventoryService {
 
         return clampScore(score);
     }
-
     private String generateRecommendationReason(Product scannedProduct, Product candidate, String vibe) {
+        return generateRecommendationReason(scannedProduct, candidate, vibe, null);
+    }
+
+    private String generateRecommendationReason(
+            Product scannedProduct,
+            Product candidate,
+            String vibe,
+            CustomerPreferenceRequest preferences
+    ) {
         String scannedCategory = normalizeCategory(scannedProduct.getCategory());
         String candidateCategory = normalizeCategory(candidate.getCategory());
         String scannedColor = safeLower(safeColor(scannedProduct));
         String candidateColor = safeLower(safeColor(candidate));
         String vibeLower = safeLower(vibe);
+
+        if (preferences != null) {
+            String favoriteColors = safeLower(preferences.getFavoriteColors());
+            String fitPreference = safeLower(preferences.getFitPreference());
+            String sizeTop = safeLower(preferences.getSizeTop());
+            String sizeBottom = safeLower(preferences.getSizeBottom());
+            String shoeSize = safeLower(preferences.getShoeSize());
+
+            if (!favoriteColors.isBlank() && containsPreferenceToken(favoriteColors, candidateColor)) {
+                return "This piece matches the customer's preferred color direction while still supporting the full outfit.";
+            }
+
+            if (!fitPreference.isBlank() && safeLower(candidate.getFit()).contains(fitPreference)) {
+                return "This piece supports the customer's preferred fit and keeps the outfit aligned with their profile.";
+            }
+
+            String candidateSize = safeLower(candidate.getSize());
+
+            if ("tops".equals(candidateCategory) && !sizeTop.isBlank() && candidateSize.contains(sizeTop)) {
+                return "This top aligns with the customer's preferred top size and supports the outfit.";
+
+            }
+
+            if ("bottoms".equals(candidateCategory) && !sizeBottom.isBlank() && candidateSize.contains(sizeBottom)) {
+                return "This bottom aligns with the customer's preferred bottom size and supports the outfit.";
+
+            }
+
+            if ("shoes".equals(candidateCategory) && !shoeSize.isBlank() && candidateSize.contains(shoeSize)) {
+                return "These shoes align with the customer's preferred shoe size and complete the outfit.";
+
+            }
+
+        }
 
         if (safe(candidate.getStoreCode()).equalsIgnoreCase(safe(scannedProduct.getStoreCode()))
                 && !safe(candidate.getStoreCode()).isBlank()) {
@@ -1747,6 +2566,14 @@ public class InventoryService {
     }
 
     private int calculateMainMatchScore(Product product, String vibe) {
+        return calculateMainMatchScore(product, vibe, null);
+    }
+
+    private int calculateMainMatchScore(
+            Product product,
+            String vibe,
+            CustomerPreferenceRequest preferences
+    ) {
         int score = 84;
 
         String category = normalizeCategory(product.getCategory());
@@ -1785,10 +2612,21 @@ public class InventoryService {
             score += 2;
         }
 
+        score += calculatePreferenceScoreBoost(product, preferences);
+
         return clampScore(score);
     }
 
     private int scoreSuggestion(Product scannedProduct, Product candidate, String vibe) {
+        return scoreSuggestion(scannedProduct, candidate, vibe, null);
+    }
+
+    private int scoreSuggestion(
+            Product scannedProduct,
+            Product candidate,
+            String vibe,
+            CustomerPreferenceRequest preferences
+    ) {
         int score = 0;
 
         String scannedCategory = normalizeCategory(scannedProduct.getCategory());
@@ -1875,7 +2713,591 @@ public class InventoryService {
             score -= 10;
         }
 
+        score += calculatePreferenceScoreBoost(candidate, preferences);
+
         return score;
+    }
+
+    private int calculatePreferenceScoreBoost(Product product, CustomerPreferenceRequest preferences) {
+        if (product == null || preferences == null || !preferences.hasAnyPreference()) {
+            return 0;
+        }
+
+        int boost = 0;
+
+        boost += scoreToBoost(calculateBudgetMatchScore(product, preferences), 12);
+        boost += scoreToBoost(calculateColorPreferenceMatchScore(product, preferences), 14);
+        boost += scoreToBoost(calculateSizeMatchScore(product, preferences), 10);
+        boost += scoreToBoost(calculateFitMatchScore(product, preferences), 10);
+        boost += scoreToBoost(calculateGenderMatchScore(product, preferences), 6);
+        boost += scoreToBoost(calculateMaterialMatchScore(product, preferences), 8);
+        boost += scoreToBoost(calculateStyleKeywordMatchScore(product, preferences), 10);
+
+        if (hasDislikedStyleMatch(product, preferences)) {
+            boost -= 24;
+        }
+
+        if (hasDislikedMaterialMatch(product, preferences)) {
+            boost -= 18;
+        }
+
+        return boost;
+    }
+
+    private int calculatePreferenceMatchScore(Product product, CustomerPreferenceRequest preferences) {
+        if (product == null || preferences == null || !preferences.hasAnyPreference()) {
+            return 82;
+        }
+
+        List<Integer> scores = new ArrayList<>();
+
+        if (preferences.hasBudgetPreference()) {
+            scores.add(calculateBudgetMatchScore(product, preferences));
+        }
+
+        if (preferences.hasColorPreference()) {
+            scores.add(calculateColorPreferenceMatchScore(product, preferences));
+        }
+
+        if (preferences.hasSizePreference()) {
+            scores.add(calculateSizeMatchScore(product, preferences));
+        }
+
+        if (preferences.hasFitPreference()) {
+            scores.add(calculateFitMatchScore(product, preferences));
+        }
+
+        if (!safe(preferences.getGenderStyle()).isBlank()) {
+            scores.add(calculateGenderMatchScore(product, preferences));
+        }
+
+        if (preferences.hasMaterialPreference()) {
+            scores.add(calculateMaterialMatchScore(product, preferences));
+        }
+
+        if (preferences.hasStyleKeywordPreference()) {
+            scores.add(calculateStyleKeywordMatchScore(product, preferences));
+        }
+
+        if (scores.isEmpty()) {
+            return 82;
+        }
+
+        int average = Math.round(
+                (float) scores.stream()
+                        .mapToInt(Integer::intValue)
+                        .average()
+                        .orElse(82)
+        );
+
+        if (hasDislikedStyleMatch(product, preferences)) {
+            average -= 18;
+        }
+
+        if (hasDislikedMaterialMatch(product, preferences)) {
+            average -= 14;
+        }
+
+        return clampScore(average);
+    }
+
+    private int calculateBudgetMatchScore(Product product, CustomerPreferenceRequest preferences) {
+        if (product == null || preferences == null || !preferences.hasBudgetPreference()) {
+            return 82;
+        }
+
+        double price = safePrice(product.getPrice());
+        Double minBudget = toNullableDouble(preferences.getBudgetMin());
+        Double maxBudget = toNullableDouble(preferences.getBudgetMax());
+
+        if (price <= 0) {
+            return 78;
+        }
+
+        boolean belowBudget = minBudget != null && price < minBudget;
+        boolean aboveBudget = maxBudget != null && price > maxBudget;
+
+        if (!belowBudget && !aboveBudget) {
+            return 96;
+        }
+
+        if (belowBudget) {
+            return 84;
+        }
+
+        double overBy = price - maxBudget;
+
+        if (overBy <= 25) {
+            return 86;
+        }
+
+        if (overBy <= 75) {
+            return 78;
+        }
+
+        return 70;
+    }
+
+    private int calculateColorPreferenceMatchScore(Product product, CustomerPreferenceRequest preferences) {
+        if (product == null || preferences == null || !preferences.hasColorPreference()) {
+            return 82;
+        }
+
+        String productColor = safeLower(safeColor(product));
+        String favoriteColors = safeLower(preferences.getFavoriteColors());
+        String avoidedColors = safeLower(preferences.getAvoidedColors());
+
+        if (!avoidedColors.isBlank() && containsPreferenceToken(avoidedColors, productColor)) {
+            return 70;
+        }
+
+        if (!favoriteColors.isBlank() && containsPreferenceToken(favoriteColors, productColor)) {
+            return 96;
+        }
+
+        if (isNeutral(productColor)) {
+            return 88;
+        }
+
+        return 82;
+    }
+
+    private int calculateSizeMatchScore(Product product, CustomerPreferenceRequest preferences) {
+        if (product == null || preferences == null || !preferences.hasSizePreference()) {
+            return 82;
+        }
+
+        String productCategory = normalizeCategory(product.getCategory());
+        String productSize = safeLower(product.getSize());
+
+        if (productSize.isBlank()) {
+            return 78;
+        }
+
+        if ("tops".equals(productCategory)) {
+            String sizeTop = safeLower(preferences.getSizeTop());
+            return !sizeTop.isBlank() && sizeMatches(productSize, sizeTop) ? 96 : 76;
+        }
+
+        if ("bottoms".equals(productCategory)) {
+            String sizeBottom = safeLower(preferences.getSizeBottom());
+            return !sizeBottom.isBlank() && sizeMatches(productSize, sizeBottom) ? 96 : 76;
+        }
+
+        if ("shoes".equals(productCategory)) {
+            String shoeSize = safeLower(preferences.getShoeSize());
+            return !shoeSize.isBlank() && sizeMatches(productSize, shoeSize) ? 96 : 76;
+        }
+
+        return 82;
+    }
+
+    private int calculateFitMatchScore(Product product, CustomerPreferenceRequest preferences) {
+        if (product == null || preferences == null || !preferences.hasFitPreference()) {
+            return 82;
+        }
+
+        String productFit = safeLower(product.getFit());
+        String fitPreference = safeLower(preferences.getFitPreference());
+
+        if (productFit.isBlank()) {
+            return 78;
+        }
+
+        if (productFit.contains(fitPreference) || fitPreference.contains(productFit)) {
+            return 96;
+        }
+
+        if (areCompatibleFits(productFit, fitPreference)) {
+            return 88;
+        }
+
+        return 76;
+    }
+
+    private int calculateGenderMatchScore(Product product, CustomerPreferenceRequest preferences) {
+        if (product == null || preferences == null || safe(preferences.getGenderStyle()).isBlank()) {
+            return 82;
+        }
+
+        String productGender = safeLower(product.getGender());
+        String genderStyle = safeLower(preferences.getGenderStyle());
+
+        if (genderStyle.isBlank() || "any".equals(genderStyle) || "all".equals(genderStyle)) {
+            return 90;
+        }
+
+        if (productGender.isBlank()) {
+            return 80;
+        }
+
+        if ("unisex".equals(productGender)
+                || productGender.contains(genderStyle)
+                || genderStyle.contains(productGender)) {
+            return 96;
+        }
+
+        return 76;
+    }
+
+    private int calculateMaterialMatchScore(Product product, CustomerPreferenceRequest preferences) {
+        if (product == null || preferences == null || !preferences.hasMaterialPreference()) {
+            return 82;
+        }
+
+        String productMaterial = safeLower(product.getMaterial());
+        String preferredMaterials = safeLower(preferences.getPreferredMaterials());
+        String dislikedMaterials = safeLower(preferences.getDislikedMaterials());
+
+        if (productMaterial.isBlank()) {
+            return 78;
+        }
+
+        if (!dislikedMaterials.isBlank() && containsPreferenceToken(dislikedMaterials, productMaterial)) {
+            return 70;
+        }
+
+        if (!preferredMaterials.isBlank() && containsPreferenceToken(preferredMaterials, productMaterial)) {
+            return 96;
+        }
+
+        return 82;
+    }
+
+    private int calculateStyleKeywordMatchScore(Product product, CustomerPreferenceRequest preferences) {
+        if (product == null || preferences == null || !preferences.hasStyleKeywordPreference()) {
+            return 82;
+        }
+
+        String styleKeywords = safeLower(preferences.getStyleKeywords());
+        String dislikedStyles = safeLower(preferences.getDislikedStyles());
+
+        String searchableProductText = buildSearchableProductText(product);
+
+        if (!dislikedStyles.isBlank() && containsAnyPreferenceToken(dislikedStyles, searchableProductText)) {
+            return 70;
+        }
+
+        if (!styleKeywords.isBlank() && containsAnyPreferenceToken(styleKeywords, searchableProductText)) {
+            return 96;
+        }
+
+        return 82;
+    }
+
+    private int scoreToBoost(int score, int maxBoost) {
+        if (score >= 94) {
+            return maxBoost;
+        }
+
+        if (score >= 88) {
+            return Math.round(maxBoost * 0.65f);
+        }
+
+        if (score >= 82) {
+            return Math.round(maxBoost * 0.25f);
+        }
+
+        if (score >= 76) {
+            return 0;
+        }
+
+        return -Math.round(maxBoost * 0.75f);
+    }
+
+    private String generatePreferenceMatchNote(Product product, CustomerPreferenceRequest preferences) {
+        if (product == null || preferences == null || !preferences.hasAnyPreference()) {
+            return "";
+        }
+
+        List<String> matched = new ArrayList<>();
+        List<String> cautions = new ArrayList<>();
+
+        String productColor = safeLower(safeColor(product));
+        String productCategory = normalizeCategory(product.getCategory());
+        String productSize = safeLower(product.getSize());
+        String productFit = safeLower(product.getFit());
+        String productMaterial = safeLower(product.getMaterial());
+        String productGender = safeLower(product.getGender());
+
+        if (!safe(preferences.getFavoriteColors()).isBlank()
+                && containsPreferenceToken(preferences.getFavoriteColors(), productColor)) {
+            matched.add("favorite color");
+        }
+
+        if (!safe(preferences.getAvoidedColors()).isBlank()
+                && containsPreferenceToken(preferences.getAvoidedColors(), productColor)) {
+            cautions.add("avoided color");
+        }
+
+        if ("tops".equals(productCategory)
+                && !safe(preferences.getSizeTop()).isBlank()
+                && sizeMatches(productSize, preferences.getSizeTop())) {
+            matched.add("top size");
+        }
+
+        if ("bottoms".equals(productCategory)
+                && !safe(preferences.getSizeBottom()).isBlank()
+                && sizeMatches(productSize, preferences.getSizeBottom())) {
+            matched.add("bottom size");
+        }
+
+        if ("shoes".equals(productCategory)
+                && !safe(preferences.getShoeSize()).isBlank()
+                && sizeMatches(productSize, preferences.getShoeSize())) {
+            matched.add("shoe size");
+        }
+
+        if (!safe(preferences.getFitPreference()).isBlank()
+                && !productFit.isBlank()
+                && productFit.contains(safeLower(preferences.getFitPreference()))) {
+            matched.add("fit preference");
+        }
+
+        if (!safe(preferences.getGenderStyle()).isBlank()
+                && !productGender.isBlank()
+                && ("any".equalsIgnoreCase(preferences.getGenderStyle())
+                || "all".equalsIgnoreCase(preferences.getGenderStyle())
+                || "unisex".equals(productGender)
+                || productGender.contains(safeLower(preferences.getGenderStyle()))
+                || safeLower(preferences.getGenderStyle()).contains(productGender))) {
+            matched.add("gender/style preference");
+        }
+
+        if (!safe(preferences.getPreferredMaterials()).isBlank()
+                && !productMaterial.isBlank()
+                && containsPreferenceToken(preferences.getPreferredMaterials(), productMaterial)) {
+            matched.add("preferred material");
+        }
+
+        if (!safe(preferences.getDislikedMaterials()).isBlank()
+                && !productMaterial.isBlank()
+                && containsPreferenceToken(preferences.getDislikedMaterials(), productMaterial)) {
+            cautions.add("disliked material");
+        }
+
+        if (preferences.hasBudgetPreference()) {
+            int budgetScore = calculateBudgetMatchScore(product, preferences);
+
+            if (budgetScore >= 90) {
+                matched.add("budget");
+            } else if (budgetScore <= 78) {
+                cautions.add("budget range");
+            }
+        }
+
+        if (!safe(preferences.getStyleKeywords()).isBlank()
+                && containsAnyPreferenceToken(preferences.getStyleKeywords(), buildSearchableProductText(product))) {
+            matched.add("style keywords");
+        }
+
+        if (!safe(preferences.getDislikedStyles()).isBlank()
+                && containsAnyPreferenceToken(preferences.getDislikedStyles(), buildSearchableProductText(product))) {
+            cautions.add("disliked style");
+        }
+
+        if (!matched.isEmpty() && cautions.isEmpty()) {
+            return "Matched your preferences because it aligns with "
+                    + joinHumanReadable(matched)
+                    + ".";
+        }
+
+        if (!matched.isEmpty()) {
+            return "Matched your preferences for "
+                    + joinHumanReadable(matched)
+                    + ", but watch the "
+                    + joinHumanReadable(cautions)
+                    + ".";
+        }
+
+        if (!cautions.isEmpty()) {
+            return "This is less aligned with your preferences because of "
+                    + joinHumanReadable(cautions)
+                    + ".";
+        }
+
+        return "This recommendation was balanced against your saved preferences.";
+    }
+
+    private boolean hasDislikedStyleMatch(Product product, CustomerPreferenceRequest preferences) {
+        if (product == null || preferences == null) {
+            return false;
+        }
+
+        String dislikedStyles = safeLower(preferences.getDislikedStyles());
+
+        if (dislikedStyles.isBlank()) {
+            return false;
+        }
+
+        return containsAnyPreferenceToken(dislikedStyles, buildSearchableProductText(product));
+    }
+
+    private boolean hasDislikedMaterialMatch(Product product, CustomerPreferenceRequest preferences) {
+        if (product == null || preferences == null) {
+            return false;
+        }
+
+        String dislikedMaterials = safeLower(preferences.getDislikedMaterials());
+        String productMaterial = safeLower(product.getMaterial());
+
+        if (dislikedMaterials.isBlank() || productMaterial.isBlank()) {
+            return false;
+        }
+
+        return containsPreferenceToken(dislikedMaterials, productMaterial);
+    }
+
+    private String buildSearchableProductText(Product product) {
+        if (product == null) {
+            return "";
+        }
+
+        return String.join(" ",
+                safeLower(product.getItemName()),
+                safeLower(product.getBrand()),
+                safeLower(product.getCategory()),
+                safeLower(product.getColor()),
+                safeLower(product.getFit()),
+                safeLower(product.getMaterial()),
+                safeLower(product.getGender()),
+                safeLower(product.getSeason()),
+                safeLower(product.getOccasion()),
+                safeLower(product.getStyleTags()),
+                safeLower(product.getPattern())
+        );
+    }
+
+    private boolean areCompatibleFits(String productFit, String fitPreference) {
+        String product = safeLower(productFit);
+        String preferred = safeLower(fitPreference);
+
+        if (product.isBlank() || preferred.isBlank()) {
+            return false;
+        }
+
+        if ("regular".equals(preferred) && containsAny(product, "classic", "standard", "straight")) {
+            return true;
+        }
+
+        if ("relaxed".equals(preferred) && containsAny(product, "loose", "oversized", "easy")) {
+            return true;
+        }
+
+        if ("slim".equals(preferred) && containsAny(product, "tailored", "fitted", "skinny")) {
+            return true;
+        }
+
+        if ("oversized".equals(preferred) && containsAny(product, "relaxed", "loose", "boxy")) {
+            return true;
+        }
+
+        return false;
+    }
+
+    private String joinHumanReadable(List<String> values) {
+        if (values == null || values.isEmpty()) {
+            return "";
+        }
+
+        if (values.size() == 1) {
+            return values.get(0);
+        }
+
+        if (values.size() == 2) {
+            return values.get(0) + " and " + values.get(1);
+        }
+
+        return String.join(", ", values.subList(0, values.size() - 1))
+                + ", and "
+                + values.get(values.size() - 1);
+    }
+
+    private boolean containsPreferenceToken(String preferencesText, String value) {
+        String safePreferencesText = safeLower(preferencesText);
+        String safeValue = safeLower(value);
+
+        if (safePreferencesText.isBlank() || safeValue.isBlank()) {
+            return false;
+        }
+
+        String[] tokens = safePreferencesText.split("[,;/|]+");
+
+        for (String token : tokens) {
+            String cleanedToken = safeLower(token);
+
+            if (cleanedToken.isBlank()) {
+                continue;
+            }
+
+            if (safeValue.contains(cleanedToken) || cleanedToken.contains(safeValue)) {
+                return true;
+            }
+        }
+
+        return safePreferencesText.contains(safeValue);
+    }
+
+    private boolean sizeMatches(String productSize, String preferredSize) {
+        String safeProductSize = safeLower(productSize);
+        String safePreferredSize = safeLower(preferredSize);
+
+        if (safeProductSize.isBlank() || safePreferredSize.isBlank()) {
+            return false;
+        }
+
+        if (safeProductSize.equals(safePreferredSize)) {
+            return true;
+        }
+
+        if (safeProductSize.contains(safePreferredSize)) {
+            return true;
+        }
+
+        return containsPreferenceToken(safePreferredSize, safeProductSize);
+    }
+
+    private boolean containsAnyPreferenceToken(String preferencesText, String searchableText) {
+        String safePreferencesText = safeLower(preferencesText);
+        String safeSearchableText = safeLower(searchableText);
+
+        if (safePreferencesText.isBlank() || safeSearchableText.isBlank()) {
+            return false;
+        }
+
+        String[] tokens = safePreferencesText.split("[,;/|]+");
+
+        for (String token : tokens) {
+            String cleanedToken = safeLower(token);
+
+            if (!cleanedToken.isBlank() && safeSearchableText.contains(cleanedToken)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private Double toNullableDouble(Object value) {
+        if (value == null) {
+            return null;
+        }
+
+        if (value instanceof Number number) {
+            return number.doubleValue();
+        }
+
+        try {
+            String text = String.valueOf(value).trim();
+
+            if (text.isBlank()) {
+                return null;
+            }
+
+            return Double.parseDouble(text);
+        } catch (NumberFormatException e) {
+            return null;
+        }
     }
 
     private Set<String> getTargetCategories(String scannedCategory, String vibe) {
@@ -1926,6 +3348,254 @@ public class InventoryService {
         };
     }
 
+    private void enrichLookResponseWithStylingNotes(
+            LookResponseDTO response,
+            Product scannedProduct,
+            String vibe,
+            FullOutfitDTO fullOutfit
+    ) {
+        enrichLookResponseWithStylingNotes(response, scannedProduct, vibe, fullOutfit, null);
+    }
+
+    private void enrichLookResponseWithStylingNotes(
+            LookResponseDTO response,
+            Product scannedProduct,
+            String vibe,
+            FullOutfitDTO fullOutfit,
+            CustomerPreferenceRequest preferences
+    ) {
+        if (response == null || scannedProduct == null) {
+            return;
+        }
+
+        response.setStylingNote(generateStylingNote(scannedProduct, vibe, fullOutfit));
+        response.setOccasionNote(generateOccasionNote(scannedProduct, vibe));
+        response.setSeasonNote(generateSeasonNote(scannedProduct, vibe));
+        response.setColorNote(generateColorPairingNote(scannedProduct, fullOutfit));
+        response.setFitNote(generateFitNote(scannedProduct));
+        response.setMaterialNote(generateMaterialNote(scannedProduct));
+        response.setPreferenceNote(generatePreferenceReadyNote(scannedProduct, vibe, preferences));
+    }
+
+    private String generateStylingNote(
+            Product product,
+            String vibe,
+            FullOutfitDTO fullOutfit
+    ) {
+        String itemName = safe(product.getItemName());
+        String category = normalizeCategory(product.getCategory());
+        String vibeName = safe(vibe).isBlank() ? "casual" : safe(vibe).toLowerCase();
+
+        String itemCopy = itemName.isBlank() ? "This piece" : itemName;
+
+        String outfitDepth = fullOutfit == null
+                ? "It can work as a flexible styling anchor."
+                : "The generated look balances the anchor item with complementary categories for a complete outfit.";
+
+        return itemCopy + " is styled for a " + vibeName + " direction. "
+                + getCategoryStylingSentence(category)
+                + " "
+                + outfitDepth;
+    }
+
+    private String getCategoryStylingSentence(String normalizedCategory) {
+        return switch (safeLower(normalizedCategory)) {
+            case "tops" -> "As a top, it sets the visual tone near the face and works best when balanced with structured bottoms or clean footwear.";
+            case "bottoms" -> "As a bottom, it grounds the silhouette and works best with a proportional top and shoes that match the outfit energy.";
+            case "shoes" -> "As footwear, it finishes the outfit and should echo either the color, texture, or formality of the other pieces.";
+            case "outerwear" -> "As outerwear, it frames the whole look and should support the outfit without overpowering the anchor item.";
+            default -> "It works as a flexible anchor that can be styled across multiple outfit directions.";
+        };
+    }
+
+    private String generateOccasionNote(Product product, String vibe) {
+        String productOccasion = safe(product.getOccasion());
+        String vibeLower = safeLower(vibe);
+
+        if (!productOccasion.isBlank()) {
+            return "Tagged for " + productOccasion
+                    + ", which supports the selected "
+                    + (vibeLower.isBlank() ? "styling" : vibeLower)
+                    + " direction.";
+        }
+
+        return switch (vibeLower) {
+            case "formal" -> "Best suited for polished settings, workwear styling, dinners, or elevated events.";
+            case "date night" -> "Works well for evening plans where the outfit should feel confident but not overdone.";
+            case "streetwear" -> "Best for casual social settings, weekend wear, and expressive everyday looks.";
+            case "luxury" -> "Works for elevated retail styling, premium casualwear, or refined smart-casual occasions.";
+            default -> "Strong for everyday wear, casual outings, and flexible store styling.";
+        };
+    }
+
+    private String generateSeasonNote(Product product, String vibe) {
+        String season = safe(product.getSeason());
+        String material = safe(product.getMaterial());
+        String category = normalizeCategory(product.getCategory());
+
+        if (!season.isBlank() && !material.isBlank()) {
+            return "Tagged for " + season + ", with " + material.toLowerCase()
+                    + " giving the piece a clear seasonal texture.";
+        }
+
+        if (!season.isBlank()) {
+            return "Tagged for " + season + ", making it easier to place in the right weather or seasonal story.";
+        }
+
+        if (!material.isBlank()) {
+            return "The " + material.toLowerCase()
+                    + " material helps determine whether this should be styled as a light, midweight, or cold-weather piece.";
+        }
+
+        return switch (category) {
+            case "outerwear" -> "Outerwear naturally works well for transitional or cooler-weather styling.";
+            case "tops" -> "This top can be layered or worn alone depending on weather and fabric weight.";
+            case "bottoms" -> "These bottoms can move across seasons when paired with the right top and footwear.";
+            case "shoes" -> "Footwear seasonality depends on texture, coverage, and color weight.";
+            default -> "This piece can be adapted across seasons with the right layers.";
+        };
+    }
+
+    private String generateColorPairingNote(Product product, FullOutfitDTO fullOutfit) {
+        String color = safeColor(product);
+        String colorLower = safeLower(color);
+
+        if (isNeutral(colorLower)) {
+            return color + " is a versatile neutral, so it pairs easily with black, white, denim, camel, navy, grey, and other grounded tones.";
+        }
+
+        if (containsAny(colorLower, "blue", "navy")) {
+            return "Blue tones pair well with white, grey, camel, black, denim, and clean neutral footwear.";
+        }
+
+        if (containsAny(colorLower, "black")) {
+            return "Black creates structure and works well with white, grey, denim, camel, metallic accents, or tonal black layers.";
+        }
+
+        if (containsAny(colorLower, "white", "cream")) {
+            return "Light tones keep the outfit clean and pair well with navy, black, camel, denim, grey, or soft neutrals.";
+        }
+
+        if (containsAny(colorLower, "camel", "brown", "tan", "khaki")) {
+            return "Warm earth tones pair well with white, navy, denim, black, olive, cream, and textured neutrals.";
+        }
+
+        return "Use one neutral anchor and one supporting tone to keep the outfit balanced around the item’s color.";
+    }
+
+    private String generateFitNote(Product product) {
+        String fit = safe(product.getFit());
+        String size = safe(product.getSize());
+        String category = normalizeCategory(product.getCategory());
+
+        if (!fit.isBlank() && !size.isBlank()) {
+            return "Tagged as " + fit + " in size " + size
+                    + ", so styling should preserve the intended silhouette.";
+        }
+
+        if (!fit.isBlank()) {
+            return "The " + fit
+                    + " fit should be balanced with pieces that do not fight the silhouette.";
+        }
+
+        if (!size.isBlank()) {
+            return "Size " + size
+                    + " is available, so the final outfit should keep proportion and comfort in mind.";
+        }
+
+        return switch (category) {
+            case "tops" -> "Balance the top with bottoms that keep the outfit proportion clean.";
+            case "bottoms" -> "Pair the bottom with a top that complements the rise, leg shape, and overall silhouette.";
+            case "shoes" -> "Shoes should support comfort, proportion, and the outfit’s level of polish.";
+            case "outerwear" -> "Outerwear should leave enough room for layering without making the look feel bulky.";
+            default -> "Keep the silhouette balanced and comfortable across the full look.";
+        };
+    }
+
+    private String generateMaterialNote(Product product) {
+        String material = safe(product.getMaterial());
+        String pattern = safe(product.getPattern());
+        String tags = safe(product.getStyleTags());
+
+        List<String> parts = new ArrayList<>();
+
+        if (!material.isBlank()) {
+            parts.add("material: " + material);
+        }
+
+        if (!pattern.isBlank()) {
+            parts.add("pattern: " + pattern);
+        }
+
+        if (!tags.isBlank()) {
+            parts.add("style tags: " + tags);
+        }
+
+        if (!parts.isEmpty()) {
+            return String.join(", ", parts)
+                    + ". Use these details to decide whether the outfit should feel clean, textured, polished, or expressive.";
+        }
+
+        return "Mix at least one smooth piece with one structured or textured piece to make the outfit feel intentional.";
+    }
+
+    private String generatePreferenceReadyNote(Product product, String vibe) {
+        return generatePreferenceReadyNote(product, vibe, null);
+    }
+
+    private String generatePreferenceReadyNote(
+            Product product,
+            String vibe,
+            CustomerPreferenceRequest preferences
+    ) {
+        String gender = safe(product.getGender());
+        String vibeName = safe(vibe).isBlank() ? "selected" : safe(vibe).toLowerCase();
+
+        if (preferences != null) {
+            List<String> matchedPreferences = new ArrayList<>();
+
+            if (!safe(preferences.getSizeTop()).isBlank()
+                    || !safe(preferences.getSizeBottom()).isBlank()
+                    || !safe(preferences.getShoeSize()).isBlank()) {
+                matchedPreferences.add("size");
+            }
+
+            if (!safe(preferences.getFitPreference()).isBlank()) {
+                matchedPreferences.add("fit");
+            }
+
+            if (!safe(preferences.getFavoriteColors()).isBlank()) {
+                matchedPreferences.add("favorite colors");
+            }
+
+            if (!safe(preferences.getAvoidedColors()).isBlank()) {
+                matchedPreferences.add("avoided colors");
+            }
+
+            if (preferences.getBudgetMin() != null || preferences.getBudgetMax() != null) {
+                matchedPreferences.add("budget");
+            }
+
+            if (!safe(preferences.getStyleKeywords()).isBlank()) {
+                matchedPreferences.add("style keywords");
+            }
+
+            if (!matchedPreferences.isEmpty()) {
+                return "This " + vibeName + " recommendation has been filtered against customer preferences for "
+                        + String.join(", ", matchedPreferences)
+                        + ".";
+            }
+        }
+
+        if (!gender.isBlank()) {
+            return "Tagged for " + gender
+                    + " styling and can later be matched against customer profile preferences like size, budget, color, and preferred fit.";
+        }
+
+        return "This " + vibeName
+                + " recommendation is ready to connect with future customer preferences like size, budget, favorite colors, and preferred silhouettes.";
+    }
+
     private String generateWhyItWorks(Product product, String vibe) {
         String color = safeColor(product);
         String category = safe(product.getCategory());
@@ -1941,6 +3611,7 @@ public class InventoryService {
             BagItem item,
             String userId,
             String tenantId,
+            String retailerKey,
             String storeCode
     ) {
         if (item == null) {
@@ -1949,6 +3620,7 @@ public class InventoryService {
 
         String safeUserId = safe(userId);
         String safeTenantId = safe(tenantId);
+        String safeRetailerKey = safe(retailerKey);
         String safeStoreCode = safe(storeCode);
 
         boolean userMatches = safeUserId.isBlank()
@@ -1957,10 +3629,53 @@ public class InventoryService {
         boolean tenantMatches = safeTenantId.isBlank()
                 || safe(item.getTenantId()).equalsIgnoreCase(safeTenantId);
 
+        boolean retailerMatches = safeRetailerKey.isBlank()
+                || safe(item.getRetailerKey()).equalsIgnoreCase(safeRetailerKey);
+
         boolean storeMatches = safeStoreCode.isBlank()
                 || safe(item.getStoreCode()).equalsIgnoreCase(safeStoreCode);
 
-        return userMatches && tenantMatches && storeMatches;
+        return userMatches && tenantMatches && retailerMatches && storeMatches;
+    }
+
+    private List<TrendEvent> loadTrendEventsForStore(
+            String retailerKey,
+            String storeCode,
+            String eventType
+    ) {
+        String safeRetailerKey = safe(retailerKey);
+        String safeStoreCode = safe(storeCode);
+        String safeEventType = safe(eventType);
+
+        boolean hasStoreScope = !safeRetailerKey.isBlank()
+                && !safeStoreCode.isBlank()
+                && !"ALL".equalsIgnoreCase(safeRetailerKey)
+                && !"ALL".equalsIgnoreCase(safeStoreCode);
+
+        if (hasStoreScope && !"ALL".equalsIgnoreCase(safeEventType) && !safeEventType.isBlank()) {
+            return trendEventRepository.findByRetailerKeyIgnoreCaseAndStoreCodeIgnoreCaseAndEventTypeIgnoreCaseOrderByCreatedAtDesc(
+                    safeRetailerKey.toUpperCase(),
+                    safeStoreCode.toUpperCase(),
+                    safeEventType
+            );
+        }
+
+        if (hasStoreScope) {
+            return trendEventRepository.findByRetailerKeyIgnoreCaseAndStoreCodeIgnoreCaseOrderByCreatedAtDesc(
+                    safeRetailerKey.toUpperCase(),
+                    safeStoreCode.toUpperCase()
+            );
+        }
+
+        return trendEventRepository.findAll().stream()
+                .filter(event -> "ALL".equalsIgnoreCase(safeEventType)
+                        || safeEventType.isBlank()
+                        || safe(event.getEventType()).equalsIgnoreCase(safeEventType))
+                .sorted(Comparator.comparing(
+                        TrendEvent::getCreatedAt,
+                        Comparator.nullsLast(Comparator.naturalOrder())
+                ).reversed())
+                .collect(Collectors.toList());
     }
 
     private boolean matchesTrendRetailer(TrendEvent event, String retailerKey) {
@@ -2010,8 +3725,10 @@ public class InventoryService {
             return false;
         }
 
+        String safeText = safeLower(text);
+
         for (String keyword : keywords) {
-            if (text.contains(keyword)) {
+            if (safeText.contains(safeLower(keyword))) {
                 return true;
             }
         }
@@ -2064,6 +3781,27 @@ public class InventoryService {
 
         String expectedRetailerName = mapRetailerKeyToName(safeRetailerKey);
         return safe(product.getRetailerName()).equalsIgnoreCase(expectedRetailerName);
+    }
+
+    private boolean matchesCustomerPreferences(Product product, CustomerPreferenceRequest preferences) {
+        if (product == null || preferences == null) {
+            return true;
+        }
+
+        String productColor = safeLower(safeColor(product));
+        String avoidedColors = safeLower(preferences.getAvoidedColors());
+
+        if (!avoidedColors.isBlank() && containsPreferenceToken(avoidedColors, productColor)) {
+            return false;
+        }
+
+        /*
+         * Do not hard-block budget, size, fit, gender, material, or style.
+         * Those should influence ranking and preferenceMatchScore instead.
+         *
+         * We only hard-block avoided colors because color avoidance is usually explicit.
+         */
+        return true;
     }
 
     private boolean matchesStoreSelection(Product product, String storeCode) {
@@ -2153,13 +3891,71 @@ public class InventoryService {
         };
     }
 
+    private void saveScanHistory(
+            Product product,
+            String vibe,
+            String userId,
+            String tenantId,
+            String storeId,
+            String userEmail,
+            String retailerKey,
+            String storeCode
+    ) {
+        if (product == null) {
+            return;
+        }
+
+        try {
+            ScanHistory scan = new ScanHistory();
+
+            scan.setUserId(safe(userId));
+            scan.setTenantId(safe(tenantId));
+            scan.setStoreId(safe(storeId));
+            scan.setUserEmail(safe(userEmail));
+
+            String resolvedRetailerKey = safe(retailerKey).isBlank()
+                    ? safe(product.getRetailerKey()).toUpperCase()
+                    : safe(retailerKey).toUpperCase();
+
+            String resolvedStoreCode = safe(storeCode).isBlank()
+                    ? safe(product.getStoreCode()).toUpperCase()
+                    : safe(storeCode).toUpperCase();
+
+            scan.setRetailerKey(resolvedRetailerKey);
+            scan.setRetailerName(safe(product.getRetailerName()));
+            scan.setStoreCode(resolvedStoreCode);
+            scan.setStoreName(safe(product.getStoreName()));
+
+            scan.setRfid(safe(product.getRfid()));
+            scan.setItemName(safe(product.getItemName()));
+            scan.setBrand(safeBrand(product));
+            scan.setCategory(safe(product.getCategory()));
+            scan.setColor(safeColor(product));
+            scan.setPrice(safePrice(product.getPrice()));
+            scan.setImageUrl(safeImage(product.getImageUrl()));
+            scan.setVibe(safe(vibe).isBlank() ? "Casual" : safe(vibe));
+
+            scanHistoryRepository.save(scan);
+        } catch (RuntimeException e) {
+            /*
+             * Scan history should never block the customer scan flow.
+             * If analytics persistence fails, the scan result still returns.
+             */
+        }
+    }
+
     private void saveTrendEvent(String eventType, Product product) {
+        if (product == null) {
+            return;
+        }
+
         TrendEvent event = new TrendEvent();
-        event.setEventType(eventType);
-        event.setRetailerName(product.getRetailerName());
-        event.setItemName(product.getItemName());
-        event.setRetailerKey(product.getRetailerKey());
-        event.setStoreCode(product.getStoreCode());
+
+        event.setEventType(safe(eventType).toUpperCase());
+        event.setRetailerName(safe(product.getRetailerName()));
+        event.setItemName(safe(product.getItemName()));
+        event.setRetailerKey(safe(product.getRetailerKey()).toUpperCase());
+        event.setStoreCode(safe(product.getStoreCode()).toUpperCase());
         event.setCreatedAt(LocalDateTime.now());
 
         trendEventRepository.save(event);

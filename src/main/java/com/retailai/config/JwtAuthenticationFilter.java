@@ -32,16 +32,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     @Override
     protected boolean shouldNotFilter(@NonNull HttpServletRequest request) {
-        String path = request.getServletPath();
-        String uri = request.getRequestURI();
-        String method = request.getMethod();
+        String method = clean(request.getMethod()).toUpperCase();
+        String servletPath = normalizePath(request.getServletPath());
+        String requestUri = normalizePath(request.getRequestURI());
 
-        String safePath = path == null ? "" : path.trim();
-        String safeUri = uri == null ? "" : uri.trim();
+        if ("OPTIONS".equals(method)) {
+            return true;
+        }
 
-        return "OPTIONS".equalsIgnoreCase(method)
-                || isPublicPath(safePath)
-                || isPublicPath(safeUri);
+        return isPublicPath(servletPath) || isPublicPath(requestUri);
     }
 
     @Override
@@ -59,7 +58,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         debug("Authorization header present: " + (authHeader != null));
 
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            debug("No Bearer token found.");
+            debug("No Bearer token found. Continuing without authentication.");
             SecurityContextHolder.clearContext();
             filterChain.doFilter(request, response);
             return;
@@ -68,9 +67,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         try {
             final String token = authHeader.substring(7).trim();
 
-            debug("Token present after trim: " + !token.isBlank());
-
             if (token.isBlank()) {
+                debug("Bearer token was blank.");
                 SecurityContextHolder.clearContext();
                 filterChain.doFilter(request, response);
                 return;
@@ -87,21 +85,17 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             }
 
             final String email = clean(jwtService.extractEmail(token));
-            final String role = clean(jwtService.extractRole(token));
+            final String role = normalizeRole(jwtService.extractRole(token));
 
             debug("Email from token: " + email);
             debug("Role from token: " + role);
             debug("Existing auth in context: " + SecurityContextHolder.getContext().getAuthentication());
 
-            if (!email.isBlank()
-                    && SecurityContextHolder.getContext().getAuthentication() == null) {
-
-                String normalizedRole = normalizeRole(role);
-
+            if (!email.isBlank() && SecurityContextHolder.getContext().getAuthentication() == null) {
                 List<SimpleGrantedAuthority> authorities =
-                        normalizedRole.isBlank()
+                        role.isBlank()
                                 ? Collections.emptyList()
-                                : List.of(new SimpleGrantedAuthority("ROLE_" + normalizedRole));
+                                : List.of(new SimpleGrantedAuthority("ROLE_" + role));
 
                 User principal = new User(email, "", authorities);
 
@@ -139,23 +133,56 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     }
 
     private boolean isPublicPath(String path) {
-        if (path == null || path.isBlank()) {
+        String safePath = normalizePath(path);
+
+        if (safePath.isBlank()) {
             return true;
         }
 
-        return path.equals("/")
-                || path.equals("/index.html")
-                || path.equals("/favicon.ico")
-                || path.equals("/retailers.js")
-                || path.equals("/health")
-                || path.equals("/error")
-                || path.startsWith("/h2-console")
-                || path.startsWith("/css/")
-                || path.startsWith("/js/")
-                || path.startsWith("/images/")
-                || path.startsWith("/webjars/")
-                || path.equals("/api/v1/saas/auth/login")
-                || path.equals("/api/v1/saas/auth/signup");
+        return safePath.equals("/")
+                || safePath.equals("/index.html")
+                || safePath.equals("/landing.html")
+                || safePath.equals("/mirror.html")
+                || safePath.equals("/merchant-dashboard.html")
+                || safePath.equals("/merchant-inventory.html")
+                || safePath.equals("/merchant-activity.html")
+                || safePath.equals("/favicon.ico")
+                || safePath.equals("/retailers.js")
+                || safePath.equals("/health")
+                || safePath.equals("/error")
+
+                || safePath.startsWith("/css/")
+                || safePath.startsWith("/js/")
+                || safePath.startsWith("/images/")
+                || safePath.startsWith("/images/products/")
+                || safePath.startsWith("/images.products/")
+                || safePath.startsWith("/webjars/")
+                || safePath.startsWith("/assets/")
+
+                || safePath.startsWith("/h2-console/")
+
+                || safePath.equals("/api/v1/saas/auth/login")
+                || safePath.equals("/api/v1/saas/auth/signup");
+    }
+
+    private String normalizePath(String value) {
+        String cleaned = clean(value);
+
+        if (cleaned.isBlank()) {
+            return "";
+        }
+
+        int queryIndex = cleaned.indexOf("?");
+
+        if (queryIndex >= 0) {
+            cleaned = cleaned.substring(0, queryIndex);
+        }
+
+        if (!cleaned.startsWith("/")) {
+            cleaned = "/" + cleaned;
+        }
+
+        return cleaned;
     }
 
     private String normalizeRole(String role) {

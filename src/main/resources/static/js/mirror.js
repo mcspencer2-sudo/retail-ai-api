@@ -2393,21 +2393,25 @@ function setPixelAssociateRecommendations(payload) {
       JSON.stringify(safePayload)
     );
   } catch (error) {
-    console.warn("Unable to persist associate recommendations:", error);
+    if (window.PIXEL_ASSOCIATE_DEBUG === true) {
+      console.warn("Unable to persist associate recommendations:", error);
+    }
   }
 
-  console.group("Pixel Associate Recommendations");
-  console.table(
-    safePayload.recommendations.map(item => ({
-      priority: item.priority,
-      scope: item.scope,
-      title: item.title,
-      action: item.action,
-      source: item.source
-    }))
-  );
-  console.log("Full recommendations payload:", safePayload);
-  console.groupEnd();
+  if (window.PIXEL_ASSOCIATE_DEBUG === true) {
+    console.groupCollapsed("Pixel Associate Recommendations");
+    console.table(
+      safePayload.recommendations.map(item => ({
+        priority: item.priority,
+        scope: item.scope,
+        title: item.title,
+        action: item.action,
+        source: item.source
+      }))
+    );
+    console.log("Full recommendations payload:", safePayload);
+    console.groupEnd();
+  }
 
   return safePayload;
 }
@@ -2814,7 +2818,9 @@ async function handleScan() {
      if (currentMirrorMainPendingFullOutfit) {
        const fullOutfit = currentMirrorMainPendingFullOutfit;
 
-       console.log("Using fullOutfit returned from scan response:", fullOutfit);
+       if (window.PIXEL_OUTFIT_DEBUG === true) {
+         console.log("Using fullOutfit returned from scan response:", fullOutfit);
+       }
 
        renderFullOutfit(fullOutfit, true);
        incrementTryOnLooksCreated();
@@ -9263,19 +9269,24 @@ function renderMirrorMainOutfitShowcase(fullOutfit) {
     return false;
   }
 
-  console.log("REAL BACKEND FULL OUTFIT:", fullOutfit);
+  if (window.PIXEL_OUTFIT_DEBUG === true) {
+    console.groupCollapsed("Real Backend Full Outfit");
+    console.log("Full outfit:", fullOutfit);
 
-  console.table({
-    topImage: getMirrorMainOutfitItemImage(fullOutfit?.top, "Top"),
-    bottomImage: getMirrorMainOutfitItemImage(fullOutfit?.bottom, "Bottom"),
-    shoesImage: getMirrorMainOutfitItemImage(fullOutfit?.shoes, "Shoes"),
-    outerwearImage: getMirrorMainOutfitItemImage(fullOutfit?.outerwear, "Outerwear"),
+    console.table({
+      topImage: getMirrorMainOutfitItemImage(fullOutfit?.top, "Top"),
+      bottomImage: getMirrorMainOutfitItemImage(fullOutfit?.bottom, "Bottom"),
+      shoesImage: getMirrorMainOutfitItemImage(fullOutfit?.shoes, "Shoes"),
+      outerwearImage: getMirrorMainOutfitItemImage(fullOutfit?.outerwear, "Outerwear"),
 
-    rawTopImage: fullOutfit?.top?.imageUrl,
-    rawBottomImage: fullOutfit?.bottom?.imageUrl,
-    rawShoesImage: fullOutfit?.shoes?.imageUrl,
-    rawOuterwearImage: fullOutfit?.outerwear?.imageUrl
-  });
+      rawTopImage: fullOutfit?.top?.imageUrl,
+      rawBottomImage: fullOutfit?.bottom?.imageUrl,
+      rawShoesImage: fullOutfit?.shoes?.imageUrl,
+      rawOuterwearImage: fullOutfit?.outerwear?.imageUrl
+    });
+
+    console.groupEnd();
+  }
 
   showcase.classList.add("mirror-main-look-board");
 
@@ -9293,11 +9304,6 @@ function renderMirrorMainOutfitShowcase(fullOutfit) {
     hideMirrorMainOutfitShowcase();
     return false;
   }
-
-  const top = getMirrorMainOutfitRoleItem(fullOutfit, "top");
-  const bottom = getMirrorMainOutfitRoleItem(fullOutfit, "bottom");
-  const shoes = getMirrorMainOutfitRoleItem(fullOutfit, "shoes");
-  const outerwear = getMirrorMainOutfitRoleItem(fullOutfit, "outerwear");
 
   const analysis =
     typeof getAdvancedOutfitScores === "function"
@@ -11441,21 +11447,347 @@ function showMirrorAssociateInlineDebugHealth() {
 }
 
 function openMirrorAssociateAdminControls() {
-  const report = runMirrorAssociateDebugHealth();
+  const shell = buildMirrorAssociateControl();
+  const panel = shell.querySelector(".mirror-associate-panel");
 
-  if (typeof openShortcutHelp === "function") {
-    openShortcutHelp();
+  if (!panel) {
+    return false;
   }
 
-  if (typeof setStatus === "function") {
-    setStatus("Admin controls opened. Shortcut/help panel is available.", "ready");
-  }
+  const storeName =
+    getMirrorShowroomDisplayStore?.() ||
+    getMirrorStoreDisplayName?.() ||
+    "Current Store";
 
-  if (typeof showToast === "function") {
-    showToast("Admin controls opened.", "info");
-  }
+  const runtime =
+    typeof getMirrorRuntime === "function"
+      ? getMirrorRuntime()
+      : window.MirrorRuntimeState || {};
 
-  return report;
+  const latestIntent =
+    typeof getMirrorAssociateLatestCheckoutIntent === "function"
+      ? getMirrorAssociateLatestCheckoutIntent()
+      : null;
+
+  const inventoryCount = Array.isArray(window.MirrorAssociateInventoryPayload?.items)
+    ? window.MirrorAssociateInventoryPayload.items.length
+    : 0;
+
+  const savedLooks = safeParseJson(localStorage.getItem("pixelMirrorSavedLooks")) || [];
+  const checkoutIntents =
+    typeof getPixelCheckoutIntents === "function"
+      ? getPixelCheckoutIntents()
+      : [];
+
+  shell.classList.add("is-open");
+  document.body.classList.add("mirror-associate-control-open");
+
+  panel.innerHTML = `
+    <div class="mirror-associate-inline-view">
+      <header class="mirror-associate-inline-head">
+        <div>
+          <p>Admin Controls</p>
+          <h3>Mirror Session Admin</h3>
+        </div>
+
+        <button
+          class="mirror-associate-inline-close"
+          type="button"
+          id="mirrorAssociateInlineCloseBtn"
+          aria-label="Close admin controls"
+        >
+          ×
+        </button>
+      </header>
+
+      <section class="mirror-associate-inline-stats">
+        <div>
+          <span>Store</span>
+          <strong>${escapeMirrorShowroomHtml(storeName)}</strong>
+        </div>
+
+        <div>
+          <span>Bag</span>
+          <strong>${escapeMirrorShowroomHtml(String(getMirrorMainBagCount?.() || 0))}</strong>
+        </div>
+
+        <div>
+          <span>Checkout</span>
+          <strong>${escapeMirrorShowroomHtml(String(checkoutIntents.length))}</strong>
+        </div>
+
+        <div>
+          <span>Inventory</span>
+          <strong>${escapeMirrorShowroomHtml(String(inventoryCount))}</strong>
+        </div>
+      </section>
+
+      <section class="mirror-associate-inline-section">
+        <h4>Safe Demo Controls</h4>
+
+        <button class="mirror-associate-action accent" type="button" data-admin-action="demo-reset">
+          <span class="mirror-associate-action-icon">↺</span>
+          <span>
+            <strong>Reset Demo Session</strong>
+            <small>Clear product, outfit, bag counters, checkout request, and session demo state</small>
+          </span>
+          <em>›</em>
+        </button>
+
+        <button class="mirror-associate-action" type="button" data-admin-action="clear-checkout">
+          <span class="mirror-associate-action-icon">×</span>
+          <span>
+            <strong>Clear Checkout Intent</strong>
+            <small>
+              ${
+                latestIntent
+                  ? `Remove current request for ${escapeMirrorShowroomHtml(latestIntent.anchorItem || "complete look")}`
+                  : "No active checkout request is currently queued"
+              }
+            </small>
+          </span>
+          <em>›</em>
+        </button>
+
+        <button class="mirror-associate-action" type="button" data-admin-action="clear-associate-cache">
+          <span class="mirror-associate-action-icon">◇</span>
+          <span>
+            <strong>Clear Associate Cache</strong>
+            <small>Remove local associate recommendations and cached inventory payload</small>
+          </span>
+          <em>›</em>
+        </button>
+
+        <button class="mirror-associate-action" type="button" data-admin-action="health">
+          <span class="mirror-associate-action-icon">⌘</span>
+          <span>
+            <strong>Run Health Check</strong>
+            <small>Open visible mirror diagnostics panel</small>
+          </span>
+          <em>›</em>
+        </button>
+      </section>
+
+      <section class="mirror-associate-inline-section">
+        <h4>Runtime Context</h4>
+
+        <article class="mirror-associate-timeline-row">
+          <strong>Retailer</strong>
+          <span>${escapeMirrorShowroomHtml(runtime.retailerKey || getSelectedRetailerKey?.() || "Unknown")}</span>
+        </article>
+
+        <article class="mirror-associate-timeline-row">
+          <strong>Store Code</strong>
+          <span>${escapeMirrorShowroomHtml(runtime.storeCode || getSelectedStoreCode?.() || "No store code")}</span>
+        </article>
+
+        <article class="mirror-associate-timeline-row">
+          <strong>Store Context Protected</strong>
+          <span>Demo reset keeps retailer, store code, store name, theme, and vibe intact.</span>
+        </article>
+      </section>
+
+      <section class="mirror-associate-inline-section">
+        <h4>Saved Local State</h4>
+
+        <article class="mirror-associate-timeline-row">
+          <strong>Saved Looks</strong>
+          <span>${escapeMirrorShowroomHtml(String(Array.isArray(savedLooks) ? savedLooks.length : 0))} local saved look record${Array.isArray(savedLooks) && savedLooks.length === 1 ? "" : "s"}</span>
+        </article>
+
+        <article class="mirror-associate-timeline-row">
+          <strong>Checkout Requests</strong>
+          <span>${escapeMirrorShowroomHtml(String(checkoutIntents.length))} checkout request${checkoutIntents.length === 1 ? "" : "s"} stored locally</span>
+        </article>
+
+        <article class="mirror-associate-timeline-row">
+          <strong>Associate Recommendations</strong>
+          <span>${window.PixelAssociateRecommendations ? "Active recommendation payload available" : "No active recommendation payload"}</span>
+        </article>
+      </section>
+
+      <footer class="mirror-associate-footer">
+        <button
+          class="mirror-associate-return"
+          type="button"
+          data-admin-action="customer-mirror"
+        >
+          ← Return to Customer Mirror
+        </button>
+
+        <p>Admin actions are local demo-safe controls for the current mirror station.</p>
+      </footer>
+    </div>
+  `;
+
+  const closeAndReturnToAssociateControl = () => {
+    shell.remove();
+    buildMirrorAssociateControl();
+    showMirrorAssociateControl();
+  };
+
+  const clearAssociateCache = () => {
+    const recommendationKey =
+      typeof getPixelAssociateRecommendationStoreKey === "function"
+        ? getPixelAssociateRecommendationStoreKey()
+        : "";
+
+    if (recommendationKey) {
+      localStorage.removeItem(recommendationKey);
+    }
+
+    localStorage.removeItem("mirrorAssociateInventoryPayload");
+
+    window.PixelAssociateRecommendations = null;
+    window.MirrorAssociateInventoryPayload = null;
+
+    showToast?.("Associate cache cleared.", "success");
+    setStatus?.("Associate cache cleared.", "success");
+
+    if (typeof addTryOnTimelineEvent === "function") {
+      addTryOnTimelineEvent(
+        "admin",
+        "Associate cache cleared",
+        "Associate recommendations and cached inventory payload were cleared.",
+        [storeName]
+      );
+    }
+
+    return true;
+  };
+
+  const clearCheckoutIntent = () => {
+    if (typeof clearMirrorAssociateCheckoutIntent === "function") {
+      clearMirrorAssociateCheckoutIntent();
+    } else if (typeof writePixelCheckoutIntents === "function") {
+      writePixelCheckoutIntents([]);
+      window.PixelMirrorLatestCheckoutIntent = null;
+    }
+
+    showToast?.("Checkout intent cleared.", "success");
+    setStatus?.("Checkout intent cleared.", "success");
+
+    return true;
+  };
+
+  const runDemoReset = () => {
+    let resetResult = null;
+
+    if (window.MirrorMainExperience?.demoReset) {
+      resetResult = window.MirrorMainExperience.demoReset({
+        reload: false,
+        keepRetailerContext: true
+      });
+    } else {
+      localStorage.removeItem("pixelMirrorCheckoutIntents");
+      localStorage.removeItem("pixelMirrorSavedLooks");
+      localStorage.removeItem("pixelMirrorTryOnSession");
+
+      window.PixelMirrorLatestCheckoutIntent = null;
+      window.PixelAssociateRecommendations = null;
+
+      if (typeof clearMirrorTimelineOnly === "function") {
+        clearMirrorTimelineOnly();
+      }
+
+      if (typeof resetMirrorMainForAnotherScan === "function") {
+        resetMirrorMainForAnotherScan();
+      } else if (typeof resetMirror === "function") {
+        resetMirror();
+      }
+
+      resetResult = {
+        resetAt: new Date().toISOString(),
+        reload: false,
+        keptRetailerContext: true,
+        fallbackReset: true
+      };
+
+      console.group("Universal Stylist Demo Reset");
+      console.table(resetResult);
+      console.groupEnd();
+    }
+
+    if (typeof updateMirrorAssociateControlStats === "function") {
+      updateMirrorAssociateControlStats();
+    }
+
+    if (typeof updateMirrorMainBagCount === "function") {
+      updateMirrorMainBagCount();
+    }
+
+    if (typeof renderMirrorMainRecentScans === "function") {
+      renderMirrorMainRecentScans();
+    }
+
+    if (typeof renderMirrorMainTimeline === "function") {
+      renderMirrorMainTimeline();
+    }
+
+    showToast?.("Demo session reset.", "success");
+    setStatus?.("Demo session reset. Store context preserved.", "success");
+
+    return resetResult;
+  };
+
+  panel.querySelector("#mirrorAssociateInlineCloseBtn")?.addEventListener("click", closeAndReturnToAssociateControl);
+
+  panel.querySelectorAll("[data-admin-action]").forEach(button => {
+    button.addEventListener("click", () => {
+      const action = String(button.dataset.adminAction || "").trim().toLowerCase();
+
+      if (action === "demo-reset") {
+        runDemoReset();
+        openMirrorAssociateAdminControls();
+        return;
+      }
+
+      if (action === "clear-checkout") {
+        clearCheckoutIntent();
+        openMirrorAssociateAdminControls();
+        return;
+      }
+
+      if (action === "clear-associate-cache") {
+        clearAssociateCache();
+        openMirrorAssociateAdminControls();
+        return;
+      }
+
+      if (action === "health") {
+        if (typeof showMirrorAssociateInlineDebugHealth === "function") {
+          showMirrorAssociateInlineDebugHealth();
+        } else {
+          runMirrorAssociateDebugHealth();
+        }
+        return;
+      }
+
+      if (action === "customer-mirror") {
+        hideMirrorAssociateControl();
+
+        if (typeof showMirrorMainExperience === "function") {
+          showMirrorMainExperience();
+        }
+
+        setStatus?.("Returned to Customer Mirror.", "ready");
+        showToast?.("Returned to Customer Mirror.", "success");
+      }
+    });
+  });
+
+  setStatus?.("Admin controls opened.", "ready");
+  showToast?.("Admin controls opened.", "info");
+
+  return {
+    opened: true,
+    storeName,
+    retailerKey: runtime.retailerKey || getSelectedRetailerKey?.() || "",
+    storeCode: runtime.storeCode || getSelectedStoreCode?.() || "",
+    checkoutIntentCount: checkoutIntents.length,
+    inventoryCount,
+    savedLookCount: Array.isArray(savedLooks) ? savedLooks.length : 0
+  };
 }
 
 async function syncMirrorAssociateInventoryFromBackend() {
@@ -12379,12 +12711,254 @@ function bindMirrorAssociateControlEvents(shell) {
   });
 }
 
+function resetUniversalStylistDemoState(options = {}) {
+  const {
+    reload = false,
+    keepRetailerContext = true,
+    showFeedback = true
+  } = options || {};
+
+  const preservedContext = keepRetailerContext
+    ? {
+        retailerKey:
+          localStorage.getItem("retailerKey") ||
+          localStorage.getItem("currentRetailerKey") ||
+          "",
+        currentRetailerKey:
+          localStorage.getItem("currentRetailerKey") ||
+          localStorage.getItem("retailerKey") ||
+          "",
+        storeCode:
+          localStorage.getItem("storeCode") ||
+          localStorage.getItem("currentStoreCode") ||
+          "",
+        currentStoreCode:
+          localStorage.getItem("currentStoreCode") ||
+          localStorage.getItem("storeCode") ||
+          "",
+        storeName:
+          localStorage.getItem("storeName") ||
+          localStorage.getItem("currentStoreName") ||
+          "",
+        currentStoreName:
+          localStorage.getItem("currentStoreName") ||
+          localStorage.getItem("storeName") ||
+          "",
+        mirrorRuntime:
+          localStorage.getItem(MIRROR_RUNTIME_STORAGE_KEY) ||
+          ""
+      }
+    : null;
+
+  const localKeysToClear = [
+    TRY_ON_SESSION_KEY,
+    PIXEL_CHECKOUT_INTENTS_KEY,
+    "pixelMirrorSavedLooks",
+    "pixelAssociateRecommendations",
+    "mirrorAssociateInventoryPayload",
+    "pixelMirrorIdleDelayMs"
+  ];
+
+  localKeysToClear.forEach(key => {
+    try {
+      localStorage.removeItem(key);
+    } catch (_) {}
+  });
+
+  try {
+    Object.keys(localStorage).forEach(key => {
+      if (
+        key.startsWith("pixelAssociateRecommendations:") ||
+        key.startsWith("pixelMirrorCheckoutIntents:")
+      ) {
+        localStorage.removeItem(key);
+      }
+    });
+  } catch (_) {}
+
+  if (preservedContext) {
+    Object.entries(preservedContext).forEach(([key, value]) => {
+      if (!value) return;
+
+      if (key === "mirrorRuntime") {
+        localStorage.setItem(MIRROR_RUNTIME_STORAGE_KEY, value);
+        return;
+      }
+
+      localStorage.setItem(key, value);
+    });
+  }
+
+  window.PixelAssociateRecommendations = null;
+  window.PixelMirrorLatestCheckoutIntent = null;
+  window.MirrorAssociateInventoryPayload = null;
+
+  currentRfid = "";
+  currentLoadedItem = null;
+  lastScannedItem = null;
+  currentMirrorMainFullOutfit = null;
+  currentMirrorMainPendingFullOutfit = null;
+  savedRfids = new Set();
+
+  document.body.classList.remove(
+    "mirror-main-demo-product-active",
+    "mirror-main-outfit-active",
+    "mirror-associate-control-open",
+    "ambient-idle-active",
+    "cinematic-mode"
+  );
+
+  const rfidInput = document.getElementById("rfidInput");
+  const mainRfidInput = document.getElementById("mirrorMainRfidInput");
+
+  if (rfidInput) {
+    rfidInput.value = "";
+  }
+
+  if (mainRfidInput) {
+    mainRfidInput.value = "";
+  }
+
+  document.getElementById("resultPanel")?.classList.remove("show", "scan-reveal");
+  document.getElementById("outfitPanel")?.classList.remove("show", "scan-reveal");
+  document.getElementById("bagPanel")?.classList.remove("show", "scan-reveal");
+
+  if (typeof hideMirrorMainOutfitShowcase === "function") {
+    hideMirrorMainOutfitShowcase();
+  }
+
+  if (typeof closeMirrorMainBagDrawer === "function") {
+    closeMirrorMainBagDrawer();
+  }
+
+  if (typeof closeMirrorMainProfileDrawer === "function") {
+    closeMirrorMainProfileDrawer();
+  }
+
+  if (typeof closeMirrorMainShowroomOverlay === "function") {
+    closeMirrorMainShowroomOverlay();
+  }
+
+  if (typeof hideMirrorAssociateControl === "function") {
+    hideMirrorAssociateControl();
+  }
+
+  if (typeof setMirrorMainProductVisible === "function") {
+    setMirrorMainProductVisible(false);
+  }
+
+  if (typeof setMirrorMainScanningState === "function") {
+    setMirrorMainScanningState(false);
+  }
+
+  if (typeof setMirrorMainLookSaveButtonState === "function") {
+    setMirrorMainLookSaveButtonState(false);
+  }
+
+  if (typeof setMirrorMainCheckoutButtonState === "function") {
+    setMirrorMainCheckoutButtonState("ready");
+  }
+
+  if (typeof setSaveButtonDefault === "function") {
+    setSaveButtonDefault(true);
+  }
+
+  if (typeof refreshMirrorRuntime === "function") {
+    refreshMirrorRuntime();
+  }
+
+  if (typeof writeTryOnSession === "function" && typeof getDefaultTryOnSession === "function") {
+    writeTryOnSession(getDefaultTryOnSession());
+  }
+
+  if (typeof renderTryOnMemory === "function") {
+    renderTryOnMemory();
+  }
+
+  if (typeof renderTryOnTimeline === "function") {
+    renderTryOnTimeline();
+  }
+
+  if (typeof renderMirrorMainRecentScans === "function") {
+    renderMirrorMainRecentScans();
+  }
+
+  if (typeof renderMirrorMainTimeline === "function") {
+    renderMirrorMainTimeline();
+  }
+
+  if (typeof updateMirrorMainProductCard === "function") {
+    updateMirrorMainProductCard();
+  }
+
+  if (typeof updateMirrorMainBagCount === "function") {
+    updateMirrorMainBagCount();
+  }
+
+  if (typeof updateMirrorAssociateControlStats === "function") {
+    updateMirrorAssociateControlStats();
+  }
+
+  if (window.MirrorCustomerJourney?.landing) {
+    window.MirrorCustomerJourney.landing();
+  } else if (typeof setMirrorCustomerStage === "function") {
+    setMirrorCustomerStage(MIRROR_CUSTOMER_STAGES.LANDING);
+  }
+
+  if (typeof setStatus === "function") {
+    setStatus("Demo reset complete. Mirror is ready for a clean pitch.", "success");
+  }
+
+  if (showFeedback && typeof showToast === "function") {
+    showToast("Demo reset complete.", "success");
+  }
+
+  if (typeof speakPixelConcierge === "function") {
+    speakPixelConcierge("ready");
+  }
+
+  if (typeof resetAmbientIdleTimer === "function") {
+    resetAmbientIdleTimer();
+  }
+
+  if (reload) {
+    window.setTimeout(() => {
+      window.location.reload();
+    }, 450);
+  }
+
+  const report = {
+    resetAt: new Date().toISOString(),
+    reload,
+    keptRetailerContext: keepRetailerContext,
+    retailerKey: getSelectedRetailerKey?.() || "",
+    storeCode: getSelectedStoreCode?.() || "",
+    storeName:
+      getMirrorShowroomDisplayStore?.() ||
+      getMirrorStoreDisplayName?.() ||
+      "Current Store",
+    bagCount: savedRfids.size,
+    checkoutIntentCleared: !window.PixelMirrorLatestCheckoutIntent,
+    associateCacheCleared: !window.PixelAssociateRecommendations,
+    currentProductCleared: !currentLoadedItem,
+    currentOutfitCleared: !currentMirrorMainFullOutfit
+  };
+
+  console.group("Universal Stylist Demo Reset");
+  console.table(report);
+  console.groupEnd();
+
+  return report;
+}
+
 function exposeMirrorMainExperienceTools() {
   window.MirrorMainExperience = {
     show: showMirrorMainExperience,
     hide: hideMirrorMainExperience,
     build: buildMirrorMainExperience,
     demoProduct: showMirrorMainDemoProduct,
+    demoReset: resetUniversalStylistDemoState,
+    resetDemo: resetUniversalStylistDemoState,
     updateProduct: updateMirrorMainProductCard,
     updateBagCount: updateMirrorMainBagCount,
     openProfile: openMirrorMainProfileDrawer,
@@ -12459,12 +13033,15 @@ function exposeMirrorMainExperienceTools() {
     window.PixelMirrorDebug.openAssociateInventory = showMirrorAssociateInlineInventory;
     window.PixelMirrorDebug.syncAssociateInventory = syncMirrorAssociateInventoryFromBackend;
     window.PixelMirrorDebug.openAssociateDebugHealth = showMirrorAssociateInlineDebugHealth;
+    window.PixelMirrorDebug.demoReset = resetUniversalStylistDemoState;
+    window.PixelMirrorDebug.resetDemo = resetUniversalStylistDemoState;
   }
 
   console.log("MirrorMainExperience tools ready. Try:");
   console.log("MirrorMainExperience.show()");
   console.log("MirrorMainExperience.health()");
   console.log("MirrorMainExperience.health({ autoBuild: true })");
+  console.log("MirrorMainExperience.demoReset()");
 }
 
 document.addEventListener("DOMContentLoaded", () => {
